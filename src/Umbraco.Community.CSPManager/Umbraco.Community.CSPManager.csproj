@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <StaticWebAssetBasePath>App_Plugins/CspManager</StaticWebAssetBasePath>
+  </PropertyGroup>
+
+  <PropertyGroup>    
+    <Product>Umbraco.Community.CSPManager</Product>
+    <PackageId>Umbraco.Community.CSPManager</PackageId>
+    <IsPackable>true</IsPackable>
+    <Title>Umbraco.Community.CSPManager</Title>
+    <Description>Enabled CSP management with in the Umbraco back office</Description>
+    <PackageTags>umbraco plugin package umbraco-marketplace Contetn-Sent-Security-Policy securitycsp</PackageTags>
+    <RootNamespace>Umbraco.Community.CSPManager</RootNamespace>
+    <Authors>Matthew Wise</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</PackageProjectUrl>
+    <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <Version>$(AssemblyVersion)</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.0.0" />
+    <PackageReference Include="Umbraco.Cms.Core" Version="10.3.2" />
+    <PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="10.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\Readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+</Project>
