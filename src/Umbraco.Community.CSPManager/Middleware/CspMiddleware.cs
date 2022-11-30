@@ -60,7 +60,7 @@ public class CspMiddleware
 		await _next(context);
 	}
 
-	public IDictionary<string,string> ConstructCspDictionary(CspDefinition definition)
+	private static IDictionary<string,string> ConstructCspDictionary(CspDefinition definition)
 	{
 		var csp = new Dictionary<string, string>();
 		foreach (var item in CspConstants.AllDirectives.Enumerate())
