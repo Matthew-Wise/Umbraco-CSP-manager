@@ -13,6 +13,9 @@ public static class CspConstants
 	public static readonly Guid BackofficeDefinitionId = new("c378c885-b3af-472e-9eb2-e6261c38da41");
 	public static readonly Guid FrontEndDefinitionId = new("fac780be-53af-41dc-b51d-1aa647100221");
 
+	public const string FrontEndCacheKey = "csp-frontend";
+	public const string BackOfficeCacheKey = "csp-backoffice";
+
 	public static readonly List<CspDefinitionSource> DefaultBackOfficeCsp = new()
 	{
 		new CspDefinitionSource
