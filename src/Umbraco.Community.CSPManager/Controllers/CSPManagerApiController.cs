@@ -20,7 +20,7 @@ public class CSPManagerApiController : UmbracoAuthorizedJsonController {
     [HttpGet]
 	public async Task<CspDefinition?> GetDefinition(bool isBackOffice = false)
     {
-        var definition = await _cspService.GetCspDefinitionAsync(isBackOffice);
+        var definition = await _cspService.GetCspDefinitionAsync(isBackOffice, null);
         return definition;
     }
 

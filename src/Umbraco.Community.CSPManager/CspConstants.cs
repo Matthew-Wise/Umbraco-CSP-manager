@@ -9,9 +9,7 @@ public static class CspConstants
 	public const string PluginAlias = "CspManager";
 
 	public static readonly Guid DefaultBackofficeId = new("9cbfa28c-2b19-40f4-9f8e-bbc52bd8e780");
-
-	public static readonly Guid BackofficeDefinitionId = new("c378c885-b3af-472e-9eb2-e6261c38da41");
-	public static readonly Guid FrontEndDefinitionId = new("fac780be-53af-41dc-b51d-1aa647100221");
+	public static readonly Guid DefaultFrontEndId = new("fac780be-53af-41dc-b51d-1aa647100221");
 
 	public const string FrontEndCacheKey = "csp-frontend";
 	public const string BackOfficeCacheKey = "csp-backoffice";
