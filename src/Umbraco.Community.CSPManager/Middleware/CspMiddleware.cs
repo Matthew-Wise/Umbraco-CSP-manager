@@ -40,7 +40,7 @@ public class CspMiddleware
 		
 		//TODO: Caching
 		
-		var definition = await _cspService.GetCspDefinitionAsync(context.Request.IsBackOfficeRequest());
+		var definition = await _cspService.GetCspDefinitionAsync(context.Request.IsBackOfficeRequest(), true);
 
 		_eventAggregator.Publish(new CspWritingNotification(definition, context));
 

@@ -23,15 +23,15 @@ public class CspService : ICspService
 		_scopeProvider = scopeProvider;
 	}
 
-	public async Task<CspDefinition?> GetCspDefinitionAsync(bool IsBackOfficeRequest)
+	public async Task<CspDefinition?> GetCspDefinitionAsync(bool IsBackOfficeRequest, bool? enabled = null)
 	{
 		CspDefinition? definition = null;
 		using var scope = _scopeProvider.CreateScope();
 		
 		//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
-		definition = await GetDefinitionAsync(scope, IsBackOfficeRequest)
+		definition = await GetDefinitionAsync(scope, IsBackOfficeRequest, enabled)
 			?? new CspDefinition { 
-				Id = IsBackOfficeRequest ? CspConstants.BackofficeDefinitionId : CspConstants.FrontEndDefinitionId,
+				Id = IsBackOfficeRequest ? CspConstants.DefaultBackofficeId : CspConstants.DefaultFrontEndId,
 				Enabled = false,
 				IsBackOffice = IsBackOfficeRequest 
 			};
@@ -42,14 +42,19 @@ public class CspService : ICspService
 		return definition;
 	}
 	
-	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice)
+	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice, bool? enabled = null)
 	{
 		var sql = scope.SqlContext.Sql()
 			.SelectAll()
 			.From<CspDefinition>()
 			.LeftJoin<CspDefinitionSource>()
 			.On<CspDefinition, CspDefinitionSource>((d, s) => d.Id == s.DefinitionId)
-			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice && x.Enabled == true);
+			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice);
+
+		if(enabled != null) {
+			sql.Where<CspDefinition>(x => x.Enabled == enabled);
+		}
+
 		var raw = sql.SQL;
 		var data = await Task.FromResult(scope.Database.FetchOneToMany<CspDefinition>(c => c.Sources, sql));
 		return data.FirstOrDefault();
@@ -70,6 +75,9 @@ public class CspService : ICspService
 	private static async Task<CspDefinition> SaveDefinitionAsync(IScope scope, CspDefinition definition)
 	{
 		await scope.Database.SaveAsync<CspDefinition>(definition);
+		foreach(var source in definition.Sources) {
+			await scope.Database.SaveAsync<CspDefinitionSource>(source);
+		}
 		return definition;
 	}
 
@@ -80,7 +88,7 @@ public class CspService : ICspService
 			return;
 		}
 
-		var source = definition.Sources.FirstOrDefault(x => x.Source.InvariantEquals("wws:"));
+		var source = definition.Sources.FirstOrDefault(x => x.Source.InvariantEquals("wss:"));
 		if (source == null)
 		{
 			definition.Sources.Add(new CspDefinitionSource

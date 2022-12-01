@@ -69,7 +69,7 @@
 
 			<uui-box ng-if="!vm.loading" headline="Sources" class="form-horizontal">		
 				
-				<div ng-repeat="(sourceIndex, source) in vm.definition.Sources">
+				<div ng-repeat="(sourceIndex, source) in vm.definition.Sources" class="mb2">
 					<button type="button" class="csp-accordion-btn" ng-click="vm.expandAccordion($event, sourceIndex)">Source: {{source.Source}}
 						<span class="ml-auto">
 							<uui-icon-registry-essential>
