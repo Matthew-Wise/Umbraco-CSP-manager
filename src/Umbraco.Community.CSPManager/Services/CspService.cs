@@ -30,12 +30,12 @@ public class CspService : ICspService
 		_runtimeCache = appCaches.RuntimeCache;
 	}
 
-	public async Task<CspDefinition?> GetCspDefinitionAsync(bool isBackOfficeRequest, bool? enabled = null)
+	public async Task<CspDefinition?> GetCspDefinitionAsync(bool isBackOfficeRequest)
 	{		
 		using var scope = _scopeProvider.CreateScope();
 		
 		//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
-		CspDefinition? definition = await GetDefinitionAsync(scope, isBackOfficeRequest, enabled)
+		CspDefinition? definition = await GetDefinitionAsync(scope, isBackOfficeRequest)
 			?? new CspDefinition { 
 				Id = isBackOfficeRequest ? CspConstants.DefaultBackofficeId : CspConstants.DefaultFrontEndId,
 				Enabled = false,
@@ -54,11 +54,11 @@ public class CspService : ICspService
 
 		return await _runtimeCache.GetCacheItem(cacheKey, async () =>
 		{
-			return await GetCspDefinitionAsync(isBackOfficeRequest, true);
+			return await GetCspDefinitionAsync(isBackOfficeRequest);
 		});
 	}
 
-	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice, bool? enabled = null)
+	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice)
 	{
 		var sql = scope.SqlContext.Sql()
 			.SelectAll()
@@ -66,10 +66,6 @@ public class CspService : ICspService
 			.LeftJoin<CspDefinitionSource>()
 			.On<CspDefinition, CspDefinitionSource>((d, s) => d.Id == s.DefinitionId)
 			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice);
-
-		if(enabled != null) {
-			sql.Where<CspDefinition>(x => x.Enabled == enabled);
-		}
 
 		var raw = sql.SQL;
 		var data = await Task.FromResult(scope.Database.FetchOneToMany<CspDefinition>(c => c.Sources, sql));

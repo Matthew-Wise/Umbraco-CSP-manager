@@ -1,4 +1,4 @@
-namespace Umbraco.Community.CSPManager.Controllers;
+﻿namespace Umbraco.Community.CSPManager.Controllers;
 
 using CommunityToolkit.HighPerformance;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +20,7 @@ public class CSPManagerApiController : UmbracoAuthorizedJsonController {
     [HttpGet]
 	public async Task<CspDefinition?> GetDefinition(bool isBackOffice = false)
     {
-        var definition = await _cspService.GetCspDefinitionAsync(isBackOffice, null);
+        var definition = await _cspService.GetCspDefinitionAsync(isBackOffice);
         return definition;
     }
 
