@@ -38,7 +38,7 @@ public class CspMiddleware
 			return;
 		}
 		
-		var definition = await _cspService.GetCspDefinitionAsync(context.Request.IsBackOfficeRequest(), true);
+		var definition = await _cspService.GetCachedCspDefinitionAsync(context.Request.IsBackOfficeRequest());
 
 		_eventAggregator.Publish(new CspWritingNotification(definition, context));
 

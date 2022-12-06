@@ -30,29 +30,34 @@ public class CspService : ICspService
 		_runtimeCache = appCaches.RuntimeCache;
 	}
 
-	public async Task<CspDefinition?> GetCspDefinitionAsync(bool IsBackOfficeRequest, bool? enabled = null)
+	public async Task<CspDefinition?> GetCspDefinitionAsync(bool isBackOfficeRequest, bool? enabled = null)
 	{		
-		string cacheKey = IsBackOfficeRequest ? CspConstants.BackOfficeCacheKey : CspConstants.FrontEndCacheKey;
+		using var scope = _scopeProvider.CreateScope();
+		
+		//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
+		CspDefinition? definition = await GetDefinitionAsync(scope, isBackOfficeRequest, enabled)
+			?? new CspDefinition { 
+				Id = isBackOfficeRequest ? CspConstants.DefaultBackofficeId : CspConstants.DefaultFrontEndId,
+				Enabled = false,
+				IsBackOffice = isBackOfficeRequest 
+			};
+			
+		AddWebsocketsForAspNet(definition);
+
+		scope.Complete();
+		return definition;
+	}
+
+	public async Task<CspDefinition?> GetCachedCspDefinitionAsync(bool isBackOfficeRequest)
+	{
+		string cacheKey = isBackOfficeRequest ? CspConstants.BackOfficeCacheKey : CspConstants.FrontEndCacheKey;
 
 		return await _runtimeCache.GetCacheItem(cacheKey, async () =>
 		{
-			using var scope = _scopeProvider.CreateScope();
-		
-			//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
-			CspDefinition? definition = await GetDefinitionAsync(scope, IsBackOfficeRequest, enabled)
-				?? new CspDefinition { 
-					Id = IsBackOfficeRequest ? CspConstants.DefaultBackofficeId : CspConstants.DefaultFrontEndId,
-					Enabled = false,
-					IsBackOffice = IsBackOfficeRequest 
-				};
-			
-			AddWebsocketsForAspNet(definition);
-
-			scope.Complete();
-			return definition;
-		});	
+			return await GetCspDefinitionAsync(isBackOfficeRequest, true);
+		});
 	}
-	
+
 	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice, bool? enabled = null)
 	{
 		var sql = scope.SqlContext.Sql()

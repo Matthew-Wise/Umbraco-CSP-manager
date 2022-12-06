@@ -5,7 +5,9 @@ using Models;
 
 public interface ICspService
 {
-	Task<CspDefinition?> GetCspDefinitionAsync(bool IsBackOfficeRequest, bool? enabled);
+	Task<CspDefinition?> GetCspDefinitionAsync(bool IsBackOfficeRequest, bool? enabled = null);
+
+	Task<CspDefinition?> GetCachedCspDefinitionAsync(bool IsBackOfficeRequest);
 
 	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition);
 }
