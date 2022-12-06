@@ -109,7 +109,7 @@
 						overlayService.close();
 					},
 					submit: function () {
-						vm.definition.Sources = vm.definition.Sources.splice(sourceIndex, 1);
+						vm.definition.Sources.splice(sourceIndex, 1);
 						overlayService.close();
 					}
 				};
