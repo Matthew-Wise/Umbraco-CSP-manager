@@ -70,7 +70,7 @@
 			<uui-box ng-if="!vm.loading" headline="Sources" class="form-horizontal">		
 				
 				<div ng-repeat="(sourceIndex, source) in vm.definition.Sources" class="mb2">
-					<button type="button" class="csp-accordion-btn" ng-click="vm.expandAccordion($event, sourceIndex)">Source: {{source.Source}}
+					<button type="button" class="csp-accordion-btn" ng-class="{'active': vm.expanded.includes(sourceIndex) ? true : false}" ng-click="vm.expandAccordion($event, sourceIndex)">Source: {{source.Source}}
 						<span class="ml-auto">
 							<uui-icon-registry-essential>
 								<uui-action-bar>
@@ -83,8 +83,9 @@
 								</uui-action-bar>
 							</uui-icon-registry-essential>
 							<uui-symbol-expand ng-attr-open="{{vm.expanded.includes(sourceIndex) ? true : undefined}}"></uui-symbol-expand>
-						</span></button>
-					<div class="csp-accordion">					
+						</span>
+					</button>
+					<div class="csp-accordion" ng-class="{'show': vm.expanded.includes(sourceIndex) ? true : false}">					
 						<div class="control-group umb-control-group">
 							<div class="umb-el-wrap">
 								<div class="control-header">

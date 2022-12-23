@@ -67,6 +67,8 @@
 				Source: "",
 				Directives: []
 			});
+
+			vm.expanded.push(vm.definition.Sources.length - 1);
 		}
 		
 		vm.updateDirectiveOnSource = updateDirectiveOnSource;
@@ -84,17 +86,11 @@
 			if(event.target.nextElementSibling == undefined) {
 				return;
 			}
-			event.target.classList.toggle("active");
-
 			if(vm.expanded.includes(sourceIndex)) {
 				vm.expanded = vm.expanded.filter(e => e !== sourceIndex);
 			} else {
 				vm.expanded.push(sourceIndex);
 			}
-
-			var accordion = event.target.nextElementSibling;
-
-			accordion.classList.toggle("show");
 		}
 
 		vm.deleteSource = deleteSource;
@@ -110,6 +106,8 @@
 					},
 					submit: function () {
 						vm.definition.Sources.splice(sourceIndex, 1);
+						vm.expanded = vm.expanded.filter(e => e !== sourceIndex);
+
 						overlayService.close();
 					}
 				};
