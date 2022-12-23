@@ -65,8 +65,8 @@ public class CspService : ICspService
 			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice);
 
 		var raw = sql.SQL;
-		var data = await Task.FromResult(scope.Database.FetchOneToMany<CspDefinition>(c => c.Sources, sql));
-		return data.FirstOrDefault();
+		var data = scope.Database.FetchOneToMany<CspDefinition>(c => c.Sources, sql);
+		return await Task.FromResult(data.FirstOrDefault());
 	}
 
 	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition) {
