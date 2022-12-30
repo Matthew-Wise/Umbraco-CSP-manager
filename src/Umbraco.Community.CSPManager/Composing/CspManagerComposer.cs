@@ -8,6 +8,9 @@ using Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Services;
+using Umbraco.Cms.Core.Notifications;
+using Umbraco.Community.CSPManager.Notifications;
+using Umbraco.Community.CSPManager.Notifications.Handlers;
 
 public sealed class CspManagerComposer : IComposer
 {
@@ -27,5 +30,8 @@ public sealed class CspManagerComposer : IComposer
 				},
 				_ => { }));
 		});
+
+		builder.AddNotificationHandler<ServerVariablesParsingNotification, ServerVariablesHandler>();
+		builder.AddNotificationHandler<CspSavingNotification, CspSavingNotificationHandler>();
 	}
 }

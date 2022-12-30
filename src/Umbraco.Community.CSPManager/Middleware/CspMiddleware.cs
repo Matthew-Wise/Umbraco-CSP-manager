@@ -7,21 +7,27 @@ using Cms.Core.Services;
 using CommunityToolkit.HighPerformance;
 using Models;
 using Services;
+using Umbraco.Extensions;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Community.CSPManager.Notifications;
 
 public class CspMiddleware
 {
 	private readonly RequestDelegate _next;
 	private readonly IRuntimeState _runtimeState;
 	private readonly ICspService _cspService;
+	private readonly IEventAggregator _eventAggregator;
 
 	public CspMiddleware(
 		RequestDelegate next,
 		IRuntimeState runtimeState,
-		ICspService cspService)
+		ICspService cspService,
+		IEventAggregator eventAggregator)
 	{
 		_next = next;
 		_runtimeState = runtimeState;
 		_cspService = cspService;
+		_eventAggregator = eventAggregator;
 	}
 
 	public async Task InvokeAsync(HttpContext context)
@@ -32,9 +38,9 @@ public class CspMiddleware
 			return;
 		}
 		
-		//TODO: Caching
-		
-		var definition = _cspService.GetCspDefinition(context);
+		var definition = await _cspService.GetCachedCspDefinitionAsync(context.Request.IsBackOfficeRequest());
+
+		_eventAggregator.Publish(new CspWritingNotification(definition, context));
 
 		if (definition is not { Enabled: true })
 		{

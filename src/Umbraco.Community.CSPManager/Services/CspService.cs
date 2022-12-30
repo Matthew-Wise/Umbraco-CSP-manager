@@ -3,67 +3,94 @@
 using Cms.Core.Events;
 using Cms.Core.Hosting;
 using Cms.Infrastructure.Scoping;
-using Cms.Core.Web;
-using Extensions;
-using Microsoft.AspNetCore.Http;
 using Models;
-using Notifications;
-using NPoco;
+using Umbraco.Extensions;
+using Umbraco.Cms.Core.Cache;
+using Umbraco.Community.CSPManager.Notifications;
 
 public class CspService : ICspService
 {
 	private readonly IEventAggregator _eventAggregator;
 	private readonly IHostingEnvironment _hostingEnvironment;
-	private readonly IUmbracoContextAccessor _umbracoContextAccessor;
 	private readonly IScopeProvider _scopeProvider;
+	private readonly IAppPolicyCache _runtimeCache;
 
-	public CspService(IEventAggregator eventAggregator, IHostingEnvironment hostingEnvironment,
-		IUmbracoContextAccessor umbracoContextAccessor, IScopeProvider scopeProvider)
+	public CspService(
+		IEventAggregator eventAggregator, 
+		IHostingEnvironment hostingEnvironment,
+		IScopeProvider scopeProvider,
+		AppCaches appCaches)
 	{
 		_eventAggregator = eventAggregator;
 		_hostingEnvironment = hostingEnvironment;
-		_umbracoContextAccessor = umbracoContextAccessor;
 		_scopeProvider = scopeProvider;
+		_runtimeCache = appCaches.RuntimeCache;
 	}
 
-	public CspDefinition? GetCspDefinition(HttpContext httpContext)
-	{
-		CspDefinition? definition = null;
+	public async Task<CspDefinition?> GetCspDefinitionAsync(bool isBackOfficeRequest)
+	{		
 		using var scope = _scopeProvider.CreateScope();
-		if (_umbracoContextAccessor.TryGetUmbracoContext(out var umbracoContext))
-		{
-			if (umbracoContext.IsFrontEndUmbracoRequest())
-			{
-				definition = GetDefinition(scope, false) ??
-				             new CspDefinition { Enabled = false, IsBackOffice = false };
-			}
-		}
-
-		if (httpContext.Request.IsBackOfficeRequest())
-		{
-			//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
-			definition = GetDefinition(scope, true) ?? new CspDefinition { Enabled = false, IsBackOffice = true };
-		}
-
+		
+		//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
+		CspDefinition? definition = await GetDefinitionAsync(scope, isBackOfficeRequest)
+			?? new CspDefinition { 
+				Id = isBackOfficeRequest ? CspConstants.DefaultBackofficeId : CspConstants.DefaultFrontEndId,
+				Enabled = false,
+				IsBackOffice = isBackOfficeRequest 
+			};
+			
 		AddWebsocketsForAspNet(definition);
-
-		_eventAggregator.Publish(new CspWritingNotification(definition, httpContext));
 
 		scope.Complete();
 		return definition;
 	}
-	
-	private static CspDefinition? GetDefinition(IScope scope, bool isBackOffice)
+
+	public async Task<CspDefinition?> GetCachedCspDefinitionAsync(bool isBackOfficeRequest)
+	{
+		string cacheKey = isBackOfficeRequest ? CspConstants.BackOfficeCacheKey : CspConstants.FrontEndCacheKey;
+
+		return await _runtimeCache.GetCacheItem(cacheKey, async () =>
+		{
+			return await GetCspDefinitionAsync(isBackOfficeRequest);
+		});
+	}
+
+	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice)
 	{
 		var sql = scope.SqlContext.Sql()
 			.SelectAll()
 			.From<CspDefinition>()
 			.LeftJoin<CspDefinitionSource>()
 			.On<CspDefinition, CspDefinitionSource>((d, s) => d.Id == s.DefinitionId)
-			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice && x.Enabled == true);
+			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice);
+
 		var raw = sql.SQL;
 		var data = scope.Database.FetchOneToMany<CspDefinition>(c => c.Sources, sql);
-		return data.FirstOrDefault();
+		return await Task.FromResult(data.FirstOrDefault());
+	}
+
+	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition) {
+		if(definition == null){
+			throw new ArgumentException("Definition is null");
+		}
+		using var scope = _scopeProvider.CreateScope();
+		
+		definition = await SaveDefinitionAsync(scope, definition);
+
+		scope.Complete();
+
+		_eventAggregator.Publish(new CspSavingNotification(definition));
+
+		return definition;
+	}
+
+	private static async Task<CspDefinition> SaveDefinitionAsync(IScope scope, CspDefinition definition)
+	{
+		await scope.Database.SaveAsync<CspDefinition>(definition);
+		foreach(var source in definition.Sources) {
+			await scope.Database.SaveAsync<CspDefinitionSource>(source);
+		}
+		return definition;
 	}
 
 	private void AddWebsocketsForAspNet(CspDefinition? definition)
@@ -73,11 +100,12 @@ public class CspService : ICspService
 			return;
 		}
 
-		var source = definition.Sources.FirstOrDefault(x => x.Source.InvariantEquals("wws:"));
+		var source = definition.Sources.FirstOrDefault(x => x.Source.InvariantEquals("wss:"));
 		if (source == null)
 		{
 			definition.Sources.Add(new CspDefinitionSource
 			{
+				DefinitionId = definition.Id,
 				Source = "wss:",
 				Directives = new List<string> { CspConstants.Directives.DefaultSource }
 			});	

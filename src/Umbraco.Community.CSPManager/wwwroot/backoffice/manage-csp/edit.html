@@ -1,7 +1,47 @@
+<style>
+	.csp-accordion-btn {
+		display: flex;
+		width: 100%;
+		text-align: left;
+		padding: 0.5rem 1rem;
+    	align-items: center;
+		background-color: var( --uui-button-background-color, var(--uui-color-surface-alt,#f3f3f5) );
+		color: var(--uui-button-contrast, var(--color-standalone));
+    	border-color: var(--uui-button-border-color, transparent);
+		font-weight: var(--uui-button-font-weight, 700);
+		border-radius: var( --uui-button-border-radius, var(--uui-border-radius,3px) );
+		border-style: solid;
+		border-width: var(--uui-button-border-width, 1px);
+	}
+
+	.csp-accordion-btn.active {
+		border-color: var(--uui-button-border-color, --color-standalone);
+		border-bottom-color: var(--uui-button-border-color, transparent);
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
+	}
+	
+	.csp-accordion {
+		display: none;
+		padding: 1rem;
+		border-style: solid;
+		border-width: var(--uui-button-border-width, 1px);
+		border-radius: var( --uui-button-border-radius, var(--uui-border-radius,3px) );
+		background-color: var(--uui-button-background-color, transparent);
+		color: var(--uui-button-contrast, var(--color-standalone));
+		border-color: var(--uui-button-border-color, --color-standalone);
+		font-weight: var(--uui-button-font-weight, 700);
+	}
+
+	.csp-accordion.show {
+		display: block;
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+	}
+</style>
+
 <div ng-controller="cspManagerEditController as vm">
-
-	<umb-editor-view footer="false">
-
+	<umb-editor-view>
 		<umb-editor-header name="vm.page.name"
 						   name-locked="true"
 						   hide-icon="true"
@@ -10,8 +50,87 @@
 		</umb-editor-header>
 
 		<umb-editor-container>
+			<uui-loader ng-if="vm.loading"></uui-loader>
 
-			<umb-load-indicator ng-if="vm.loading"></umb-load-indicator>
+			<uui-box ng-if="!vm.loading" headline="Settings" style="margin-bottom: 10px;">
+				<umb-checkbox
+					name="definitionEnabled"
+					value="{{vm.definition.Enabled}}"
+					model="vm.definition.Enabled"
+					text="Enabled">
+				</umb-checkbox>
+				<umb-checkbox
+					name="definitionReportOnly"
+					value="{{vm.definition.ReportOnly}}"
+					model="vm.definition.ReportOnly"
+					text="Report Only">
+				</umb-checkbox>
+			</uui-box>
+
+			<uui-box ng-if="!vm.loading" headline="Sources" class="form-horizontal">		
+				
+				<div ng-repeat="(sourceIndex, source) in vm.definition.Sources" class="mb2">
+					<button type="button" class="csp-accordion-btn" ng-class="{'active': vm.expanded.includes(sourceIndex) ? true : false}" ng-click="vm.expandAccordion($event, sourceIndex)">Source: {{source.Source}}
+						<span class="ml-auto">
+							<uui-icon-registry-essential>
+								<uui-action-bar>
+									<uui-button label="copy" look="secondary" color="default" ng-click="vm.copySource(sourceIndex)">
+										<uui-icon name="copy"></uui-icon>
+									</uui-button>
+									<uui-button label="remove" look="secondary" color="default" ng-click="vm.deleteSource(sourceIndex)">
+										<uui-icon name="remove"></uui-icon>
+									</uui-button>
+								</uui-action-bar>
+							</uui-icon-registry-essential>
+							<uui-symbol-expand ng-attr-open="{{vm.expanded.includes(sourceIndex) ? true : undefined}}"></uui-symbol-expand>
+						</span>
+					</button>
+					<div class="csp-accordion" ng-class="{'show': vm.expanded.includes(sourceIndex) ? true : false}">					
+						<div class="control-group umb-control-group">
+							<div class="umb-el-wrap">
+								<div class="control-header">
+									<label class="control-label" for="source-{{sourceIndex}}">Source Url</label>
+								</div>
+								<div class="controls">
+									<input id="source-{{sourceIndex}}" type="text" ng-model="vm.definition.Sources[sourceIndex].Source" class="umb-property-editor umb-textstring textstring" />
+								</div>
+							</div>
+						</div>
+						
+						<div class="control-group umb-control-group">
+							<div class="umb-el-wrap">
+								<div class="control-header">
+									<label class="control-label">Directives Set</label>
+								</div>
+								<div class="controls" style="
+									display: grid; 
+									grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+									grid-template-rows: repeat(auto-fill);">
+
+									<label ng-repeat="(index, directive) in vm.cspDirectiveOptions">					
+										<umb-checkbox 
+											name="directives"
+											value="{{directive.value}}"
+											model="source.Directives.includes(directive.value)"
+											text="{{directive.value}}"
+											on-change="vm.updateDirectiveOnSource(source, directive.value)">
+										</umb-checkbox>
+									</label>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>					
+
+				<uui-button look="outline" color="default" type="button" label="Add Source" ng-click="vm.addSource()" class="mt3"></uui-button>
+
+			</uui-box>
 		</umb-editor-container>
+
+		<umb-editor-footer>
+			<umb-editor-footer-content-right>
+				<uui-button look="primary" color="positive" type="button" label="Save" ng-click="vm.save()" state="{{vm.saving}}"></uui-button>
+			</umb-editor-footer-content-right>
+		</umb-editor-footer>
 	</umb-editor-view>
 </div>
