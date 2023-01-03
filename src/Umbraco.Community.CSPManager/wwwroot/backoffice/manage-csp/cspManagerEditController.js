@@ -73,6 +73,7 @@
 		
 		vm.updateDirectiveOnSource = updateDirectiveOnSource;
 		function updateDirectiveOnSource(source, directive) {
+			debugger;
 			if(source.Directives.includes(directive)) {
 				source.Directives = source.Directives.filter(e => e !== directive);
 			} else {

@@ -16,7 +16,7 @@ public class CspService : ICspService
 	private readonly IAppPolicyCache _runtimeCache;
 
 	public CspService(
-		IEventAggregator eventAggregator, 
+		IEventAggregator eventAggregator,
 		IHostingEnvironment hostingEnvironment,
 		IScopeProvider scopeProvider,
 		AppCaches appCaches)
@@ -27,35 +27,33 @@ public class CspService : ICspService
 		_runtimeCache = appCaches.RuntimeCache;
 	}
 
-	public async Task<CspDefinition?> GetCspDefinitionAsync(bool isBackOfficeRequest)
-	{		
+	public CspDefinition GetCspDefinition(bool isBackOfficeRequest)
+	{
 		using var scope = _scopeProvider.CreateScope();
-		
+
 		//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
-		CspDefinition? definition = await GetDefinitionAsync(scope, isBackOfficeRequest)
-			?? new CspDefinition { 
+		CspDefinition definition = GetDefinition(scope, isBackOfficeRequest)
+			?? new CspDefinition
+			{
 				Id = isBackOfficeRequest ? CspConstants.DefaultBackofficeId : CspConstants.DefaultFrontEndId,
 				Enabled = false,
-				IsBackOffice = isBackOfficeRequest 
+				IsBackOffice = isBackOfficeRequest
 			};
-			
+
 		AddWebsocketsForAspNet(definition);
 
 		scope.Complete();
 		return definition;
 	}
 
-	public async Task<CspDefinition?> GetCachedCspDefinitionAsync(bool isBackOfficeRequest)
+	public CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest)
 	{
 		string cacheKey = isBackOfficeRequest ? CspConstants.BackOfficeCacheKey : CspConstants.FrontEndCacheKey;
 
-		return await _runtimeCache.GetCacheItem(cacheKey, async () =>
-		{
-			return await GetCspDefinitionAsync(isBackOfficeRequest);
-		});
+		return _runtimeCache.GetCacheItem(cacheKey, () => GetCspDefinition(isBackOfficeRequest));
 	}
 
-	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice)
+	private static CspDefinition? GetDefinition(IScope scope, bool isBackOffice)
 	{
 		var sql = scope.SqlContext.Sql()
 			.SelectAll()
@@ -64,38 +62,45 @@ public class CspService : ICspService
 			.On<CspDefinition, CspDefinitionSource>((d, s) => d.Id == s.DefinitionId)
 			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice);
 
-		var raw = sql.SQL;
 		var data = scope.Database.FetchOneToMany<CspDefinition>(c => c.Sources, sql);
-		return await Task.FromResult(data.FirstOrDefault());
+		return data.FirstOrDefault();
 	}
 
-	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition) {
-		if(definition == null){
-			throw new ArgumentException("Definition is null");
-		}
+	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition)
+	{
 		using var scope = _scopeProvider.CreateScope();
-		
+
 		definition = await SaveDefinitionAsync(scope, definition);
 
 		scope.Complete();
 
-		_eventAggregator.Publish(new CspSavingNotification(definition));
+		await _eventAggregator.PublishAsync(new CspSavedNotification(definition));
 
 		return definition;
 	}
 
 	private static async Task<CspDefinition> SaveDefinitionAsync(IScope scope, CspDefinition definition)
 	{
-		await scope.Database.SaveAsync<CspDefinition>(definition);
-		foreach(var source in definition.Sources) {
-			await scope.Database.SaveAsync<CspDefinitionSource>(source);
+		await scope.Database.SaveAsync(definition);
+
+		var sourceValues = definition.Sources.Select(s => s.Source).ToList();
+
+		await scope.Database.DeleteManyAsync<CspDefinitionSource>()
+			.Where(s => sourceValues.Contains(s.Source) == false)			
+			.Execute();
+			
+
+		foreach (var source in definition.Sources)
+		{
+			await scope.Database.SaveAsync(source);
 		}
+
 		return definition;
 	}
 
-	private void AddWebsocketsForAspNet(CspDefinition? definition)
+	private void AddWebsocketsForAspNet(CspDefinition definition)
 	{
-		if (!_hostingEnvironment.IsDebugMode || definition == null)
+		if (!_hostingEnvironment.IsDebugMode)
 		{
 			return;
 		}
@@ -108,7 +113,7 @@ public class CspService : ICspService
 				DefinitionId = definition.Id,
 				Source = "wss:",
 				Directives = new List<string> { CspConstants.Directives.DefaultSource }
-			});	
+			});
 		}
 	}
 }

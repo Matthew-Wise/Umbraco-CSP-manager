@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 [PluginController(CspConstants.PluginAlias)]
 [Tree(CspConstants.PluginAlias, "manage-csp", TreeTitle = "CSP Manager")]
-public class CspManagementTreeController : TreeController
+public sealed class CspManagementTreeController : TreeController
 {
 	private readonly IMenuItemCollectionFactory _menuItemCollectionFactory;
 

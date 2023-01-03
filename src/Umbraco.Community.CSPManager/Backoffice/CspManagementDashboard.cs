@@ -2,7 +2,7 @@
 
 using Cms.Core.Dashboards;
 
-public class CspManagementDashboard : IDashboard
+public sealed class CspManagementDashboard : IDashboard
 {
 	public string Alias => CspConstants.PackageAlias;
 	public string? View => $"/App_Plugins/{CspConstants.PluginAlias}/backoffice/dashboard.html";

@@ -32,15 +32,15 @@ public class CspMiddleware
 
 	public async Task InvokeAsync(HttpContext context)
 	{
-		if (_runtimeState.Level == RuntimeLevel.Install)
+		if (_runtimeState.Level != RuntimeLevel.Run)
 		{
 			await _next(context);
 			return;
 		}
 		
-		var definition = await _cspService.GetCachedCspDefinitionAsync(context.Request.IsBackOfficeRequest());
+		var definition = _cspService.GetCachedCspDefinition(context.Request.IsBackOfficeRequest());
 
-		_eventAggregator.Publish(new CspWritingNotification(definition, context));
+		await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
 
 		if (definition is not { Enabled: true })
 		{
@@ -52,7 +52,7 @@ public class CspMiddleware
 		var cspValue = string.Join(";", csp.Select(x => x.Key + " " + x.Value));
 		if (!string.IsNullOrEmpty(cspValue))
 		{
-			context.Response.Headers.Add("Content-Security-Policy", cspValue);
+			context.Response.Headers.Add(definition.ReportOnly ? CspConstants.ReportOnlyHeaderName : CspConstants.HeaderName, cspValue);
 		}
 		
 		await _next(context);
