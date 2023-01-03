@@ -52,7 +52,7 @@ public class CspMiddleware
 		var cspValue = string.Join(";", csp.Select(x => x.Key + " " + x.Value));
 		if (!string.IsNullOrEmpty(cspValue))
 		{
-			context.Response.Headers.Add(CspConstants.HeaderName, cspValue);
+			context.Response.Headers.Add(definition.ReportOnly ? CspConstants.ReportOnlyHeaderName : CspConstants.HeaderName, cspValue);
 		}
 		
 		await _next(context);

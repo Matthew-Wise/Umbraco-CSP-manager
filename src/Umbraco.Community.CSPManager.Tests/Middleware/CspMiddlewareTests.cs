@@ -93,7 +93,7 @@ public class CspMiddlewareTests
 		var response = await _host.GetTestClient().GetAsync(uri);
 		if (definition.Enabled)
 		{
-			await Verify(response.Headers.GetValues(CspConstants.HeaderName))
+			await Verify(response.Headers)
 				.UseFileName($"{nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled)}_{TestContext.CurrentContext.Test.Name}");
 		}
 		else
@@ -114,6 +114,16 @@ public class CspMiddlewareTests
 					IsBackOffice = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
 				}) { TestName = "Backoffice enabled" };
+			
+			yield return new TestCaseData("/umbraco",
+				new CspDefinition
+				{
+					Id = CspConstants.DefaultBackofficeId,
+					Enabled = true,
+					IsBackOffice = true,
+					ReportOnly = true,
+					Sources = CspConstants.DefaultBackOfficeCsp
+				}) { TestName = "Backoffice Report Only" };
 
 			yield return new TestCaseData("/umbraco",
 				new CspDefinition

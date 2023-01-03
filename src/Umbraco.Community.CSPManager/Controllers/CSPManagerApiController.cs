@@ -21,7 +21,7 @@ public sealed class CSPManagerApiController : UmbracoAuthorizedJsonController
 	public CspDefinition GetDefinition(bool isBackOffice = false) => _cspService.GetCspDefinition(isBackOffice);
 
 	[HttpGet]
-	public static ICollection<string> GetCspDirectiveOptions() => CspConstants.AllDirectives.ToArray();
+	public ICollection<string> GetCspDirectiveOptions() => CspConstants.AllDirectives.ToArray();
 
 	[HttpPost]
     public async Task<CspDefinition> SaveDefinition(CspDefinition definition) 
