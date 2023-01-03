@@ -1,13 +1,12 @@
 ﻿namespace Umbraco.Community.CSPManager.Services;
 
-using Microsoft.AspNetCore.Http;
 using Models;
 
 public interface ICspService
 {
-	Task<CspDefinition?> GetCspDefinitionAsync(bool IsBackOfficeRequest);
+	public CspDefinition GetCspDefinition(bool isBackOfficeRequest);
 
-	Task<CspDefinition?> GetCachedCspDefinitionAsync(bool IsBackOfficeRequest);
+	public CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest);
 
 	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition);
 }

@@ -14,6 +14,7 @@ public static class CspConstants
 	public const string FrontEndCacheKey = "csp-frontend";
 	public const string BackOfficeCacheKey = "csp-backoffice";
 
+	public const string HeaderName = "Content-Security-Policy";
 	public static readonly List<CspDefinitionSource> DefaultBackOfficeCsp = new()
 	{
 		new CspDefinitionSource

@@ -32,6 +32,6 @@ public sealed class CspManagerComposer : IComposer
 		});
 
 		builder.AddNotificationHandler<ServerVariablesParsingNotification, ServerVariablesHandler>();
-		builder.AddNotificationHandler<CspSavingNotification, CspSavingNotificationHandler>();
+		builder.AddNotificationHandler<CspSavedNotification, CspSavedNotificationHandler>();
 	}
 }
