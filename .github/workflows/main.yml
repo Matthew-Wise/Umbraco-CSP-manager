@@ -1,4 +1,4 @@
-name: CI - Build to Nuget
+name: Build
 
 on:
   create:

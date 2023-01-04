@@ -73,34 +73,6 @@ public class CspServiceTests : UmbracoIntegrationTest
 		definition.Enabled.Should().BeFalse();
 		definition.Id.Should().Be(isBackOffice ? CspConstants.DefaultBackofficeId : CspConstants.DefaultFrontEndId);
 	}
-	
-	[Test]
-	public void GetCspDefinition_ReturnsAddsWss_IfIsDebug()
-	{
-		var service = new CspService(GetRequiredService<IEventAggregator>(),
-			Mock.Of<IHostingEnvironment>(x => x.IsDebugMode == true),
-			ScopeProvider,
-			AppCaches);
-		var definition = service.GetCspDefinition(true);
-		definition.Sources.Should().ContainEquivalentOf(new CspDefinitionSource
-		{
-			DefinitionId = CspConstants.DefaultBackofficeId,
-			Source = "wss:",
-			Directives = new List<string> { CspConstants.Directives.DefaultSource }
-		});
-	}
-	
-	[Test]
-	public void GetCspDefinition_DoesNotContainWss_IfIsNotDebug()
-	{
-		var definition = _sud.GetCspDefinition(true);
-		definition.Sources.Should().NotContainEquivalentOf(new CspDefinitionSource
-		{
-			DefinitionId = CspConstants.DefaultBackofficeId,
-			Source = "wss:",
-			Directives = new List<string> { CspConstants.Directives.DefaultSource }
-		});
-	}
 
 	[Test]
 	public void GetCspDefinition_ReturnsStoredDefinition()

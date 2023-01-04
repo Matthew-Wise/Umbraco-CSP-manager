@@ -1,0 +1,37 @@
+{
+    "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+    "AlternatePackageNames": [],
+    "AuthorDetails": {
+        "Name": "Matthew Wise",
+        "Description": "DotNet Dev and Umbraco MVP",
+        "Url": "https://github.com/Matthew-Wise/",
+        "ImageUrl": "https://github.com/Matthew-Wise.png",
+        "Contributors": [
+            {
+                "Name": "Digipex",
+                "Url": "https://github.com/Digipex"
+            },
+            {
+                "Name": "Jacob Spencer",
+                "Url": "https://github.com/jaymarvels"
+            },
+            {
+                "Name": "twentysix digital",
+                "Url": "https://www.twentysixdigital.com/"
+            }
+        ]
+    },
+    "Category": "Developer Tools",
+    "DocumentationUrl": "https://github.com/Matthew-Wise/Umbraco-CSP-manager",
+    "LicenseTypes": [
+        "Free"
+    ],
+    "IssueTrackerUrl": "https://github.com/Matthew-Wise/Umbraco-CSP-manager/issues",
+    "PackageType": "Package",
+    "Screenshots": [
+        {
+            "ImageUrl": "https://github.com/Matthew-Wise/Umbraco-CSP-manager/images/managment-screen.png",
+            "Caption": "Managment dashboard for CSP"
+        }
+    ]
+}

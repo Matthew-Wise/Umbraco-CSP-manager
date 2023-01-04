@@ -39,9 +39,7 @@ public class CspService : ICspService
 				Enabled = false,
 				IsBackOffice = isBackOfficeRequest
 			};
-
-		AddWebsocketsForAspNet(definition);
-
+		
 		scope.Complete();
 		return definition;
 	}
@@ -96,24 +94,5 @@ public class CspService : ICspService
 		}
 
 		return definition;
-	}
-
-	private void AddWebsocketsForAspNet(CspDefinition definition)
-	{
-		if (!_hostingEnvironment.IsDebugMode)
-		{
-			return;
-		}
-
-		var source = definition.Sources.FirstOrDefault(x => x.Source.InvariantEquals("wss:"));
-		if (source == null)
-		{
-			definition.Sources.Add(new CspDefinitionSource
-			{
-				DefinitionId = definition.Id,
-				Source = "wss:",
-				Directives = new List<string> { CspConstants.Directives.DefaultSource }
-			});
-		}
 	}
 }
