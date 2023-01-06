@@ -32,8 +32,8 @@
 		function getCspDirectiveOptions() {
 			cspManagerResource.getCspDirectiveOptions()
 				.then(function (result) {
-					var newItems = [];
-					for (var i = 0; i < result.length; i++) {
+					let newItems = [];
+					for (let i = 0; i < result.length; i++) {
 						newItems.push({ id: result[i], sortOrder: 0, value: result[i] });
 					}
 
@@ -73,7 +73,6 @@
 		
 		vm.updateDirectiveOnSource = updateDirectiveOnSource;
 		function updateDirectiveOnSource(source, directive) {
-			debugger;
 			if(source.Directives.includes(directive)) {
 				source.Directives = source.Directives.filter(e => e !== directive);
 			} else {
