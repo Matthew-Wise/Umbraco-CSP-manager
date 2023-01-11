@@ -39,13 +39,18 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.x
+          dotnet-version: | 
+          6.x
+          7.x
 
       - name: Restore dependencies
         run: nuget restore $PROJECT
 
-      - name: Build
-        run: dotnet build $PROJECT --configuration $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
+      - name: Build net6.0
+        run: dotnet build $PROJECT --configuration $BUILD_CONFIG --framework 6.x -p:Version=$BUILD_VERSION --no-restore
+
+        - name: Build net7.0
+        run: dotnet build $PROJECT --configuration $BUILD_CONFIG --framework 7.x -p:Version=$BUILD_VERSION --no-restore
 
       - name: Run tests
         run: dotnet test $TESTPROJECT -c Release --no-build --verbosity normal --filter "Category!=LongRunning"

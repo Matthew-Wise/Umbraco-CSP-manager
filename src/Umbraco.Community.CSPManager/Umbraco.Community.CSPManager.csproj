@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>true</IsPackable>
@@ -33,9 +33,17 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.0.0" />
-    <PackageReference Include="Umbraco.Cms.Core" Version="10.3.2" />
-    <PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="10.3.2" />
   </ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+		<PackageReference Include="Umbraco.Cms.Core" Version="10.3.2" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="10.3.2" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+		<PackageReference Include="Umbraco.Cms.Core" Version="11.0.0" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="11.0.0" />
+	</ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\Readme.md">
