@@ -4,6 +4,7 @@ using Cms.Core.Events;
 using Cms.Core.Hosting;
 using Cms.Infrastructure.Scoping;
 using Models;
+using NPoco.Expressions;
 using Umbraco.Extensions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Community.CSPManager.Notifications;
@@ -82,12 +83,11 @@ public class CspService : ICspService
 		await scope.Database.SaveAsync(definition);
 
 		var sourceValues = definition.Sources.Select(s => s.Source).ToList();
-
-		await scope.Database.DeleteManyAsync<CspDefinitionSource>()
-			.Where(s => sourceValues.Contains(s.Source) == false)			
-			.Execute();
-			
-
+		var cmdDelete = scope.Database.DeleteManyAsync<CspDefinitionSource>()
+			.Where(s => !s.Source.In(sourceValues));
+		
+		await 	cmdDelete.Execute();
+		
 		foreach (var source in definition.Sources)
 		{
 			await scope.Database.SaveAsync(source);

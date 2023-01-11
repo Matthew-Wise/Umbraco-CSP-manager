@@ -39,16 +39,24 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.x
+          dotnet-version: |
+            6.x
+            7.x
 
-      - name: Restore dependencies
+      - name: Restore package dependencies
         run: nuget restore $PROJECT
 
-      - name: Build
-        run: dotnet build $PROJECT --configuration $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
+      - name: Restore test dependencies
+        run: nuget restore $TESTPROJECT
+
+      - name: Build package
+        run: dotnet build $PROJECT -c $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
+
+      - name: Build test
+        run: dotnet build $TESTPROJECT -c $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
 
       - name: Run tests
-        run: dotnet test $TESTPROJECT -c Release --no-build --verbosity normal --filter "Category!=LongRunning"
+        run: dotnet test $TESTPROJECT -c  $BUILD_CONFIG --no-build --verbosity normal --filter "Category!=LongRunning"
 
       - name: Publish
         if: startsWith(github.ref, 'refs/heads/release')

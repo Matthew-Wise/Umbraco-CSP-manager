@@ -53,9 +53,16 @@ public class CspMiddlewareTests
 						services.AddSingleton(_ => _eventAggregator);
 						services.AddSingleton(_ => Mock.Of<IRuntimeState>(x => x.Level == RuntimeLevel.Run));
 						services.AddSingleton(_ => TestHelper.GetHostingEnvironment());
+#if NET6_0
 						services.AddTransient(sp => new UmbracoRequestPaths(
 							sp.GetRequiredService<IOptions<GlobalSettings>>(),
 							sp.GetRequiredService<IHostingEnvironment>()));
+#else
+						services.AddTransient(sp => new UmbracoRequestPaths(
+							sp.GetRequiredService<IOptions<GlobalSettings>>(),
+							sp.GetRequiredService<IHostingEnvironment>(),
+							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
+#endif
 					})
 					.Configure(app =>
 					{
@@ -94,7 +101,8 @@ public class CspMiddlewareTests
 		if (definition.Enabled)
 		{
 			await Verify(response.Headers)
-				.UseFileName($"{nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled)}_{TestContext.CurrentContext.Test.Name}");
+				.UseFileName(
+					$"{nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled)}_{TestContext.CurrentContext.Test.Name}");
 		}
 		else
 		{
@@ -114,7 +122,7 @@ public class CspMiddlewareTests
 					IsBackOffice = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
 				}) { TestName = "Backoffice enabled" };
-			
+
 			yield return new TestCaseData("/umbraco",
 				new CspDefinition
 				{
