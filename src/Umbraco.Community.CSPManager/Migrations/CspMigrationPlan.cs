@@ -11,5 +11,6 @@ public sealed class CspMigrationPlan : PackageMigrationPlan
 	protected override void DefinePlan()
 	{
 		To<InitialCspManagerMigration>(InitialCspManagerMigration.MigrationKey);
+		To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey);
 	}
 }
