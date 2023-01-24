@@ -6,7 +6,7 @@
 
 Enables you to manage CSP for both the front and back end, via CMS section.
 
-![Management CSP section](/images/managment-screen.png)
+![Management CSP section](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/images/managment-screen.png "Csp Management screen")
 
 ## Installation
 
