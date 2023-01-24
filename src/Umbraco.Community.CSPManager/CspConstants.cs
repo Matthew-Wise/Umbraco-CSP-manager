@@ -68,6 +68,12 @@ public static class CspConstants
 			DefinitionId = DefaultBackofficeId,
 			Source = "dashboard.umbraco.com",
 			Directives = new List<string> { Directives.ImageSource }
+		},
+		new CspDefinitionSource
+		{
+			DefinitionId = DefaultBackofficeId,
+			Source = "www.gravatar.com",
+			Directives = new List<string> { Directives.ImageSource }
 		}
 	};
 
