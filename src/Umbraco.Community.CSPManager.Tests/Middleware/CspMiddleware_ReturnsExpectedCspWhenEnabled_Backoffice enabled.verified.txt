@@ -1,7 +1,7 @@
 ﻿[
   {
     Content-Security-Policy: [
-      default-src 'self' packages.umbraco.com our.umbraco.com;font-src 'self';img-src 'self' our.umbraco.com data: dashboard.umbraco.com;script-src 'self' 'unsafe-inline' 'unsafe-eval';style-src 'self' 'unsafe-inline'
+      default-src 'self' packages.umbraco.com our.umbraco.com;font-src 'self';img-src 'self' our.umbraco.com data: dashboard.umbraco.com www.gravatar.com;script-src 'self' 'unsafe-inline' 'unsafe-eval';style-src 'self' 'unsafe-inline'
     ]
   }
 ]
