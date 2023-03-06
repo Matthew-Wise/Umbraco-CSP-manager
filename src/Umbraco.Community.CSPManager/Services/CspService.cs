@@ -84,7 +84,7 @@ public class CspService : ICspService
 
 		var sourceValues = definition.Sources.Select(s => s.Source).ToList();
 		var cmdDelete = scope.Database.DeleteManyAsync<CspDefinitionSource>()
-			.Where(s => !s.Source.In(sourceValues));
+			.Where(s => !s.Source.In(sourceValues) && s.DefinitionId == definition.Id);
 		
 		await 	cmdDelete.Execute();
 		
