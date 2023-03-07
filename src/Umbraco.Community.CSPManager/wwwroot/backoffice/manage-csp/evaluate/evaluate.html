@@ -1,0 +1,34 @@
+﻿<style>
+	.csp-evaluate textarea {
+		margin-top: 10px;
+		width: 100%;
+	}
+
+	.csp-evaluate uui-icon {
+		vertical-align:middle;
+	}
+	.csp-evaluate .findings p {
+		margin: 0 0 10px 25px;
+	}
+</style>
+<div ng-controller="cspManagerEvaluateController as vm" class="csp-evaluate">
+	<uui-box headline="Evaluate" class="form-horizontal">
+		<uui-button look="primary" color="positive" type="button" label="Evaluate" ng-click="vm.evaluateCsp()" state="{{vm.evaluating}}">Evaluate</uui-button>
+		<textarea ng-if="vm.csp" ng-bind="vm.csp" readonly rows="5"></textarea>
+		<uui-button ng-if="vm.csp" href="https://csp-evaluator.withgoogle.com/?csp={{vm.csp}}" target="_blank"
+					look="secondary" label="view externally">View externally</uui-button>
+		<uui-icon-registry-essential>
+			<div class="findings" ng-repeat="(directive, finding) in vm.findings">
+				
+					<h3 ng-class="vm.issueColor(finding.severity)">
+						<uui-icon name="{{vm.icon(finding.severity)}}"></uui-icon> {{directive}}
+					</h3>
+
+					<p ng-repeat="issue in finding.issues" >						
+						<uui-icon name="{{vm.icon(issue.severity)}}" ng-class="vm.issueColor(issue.severity)"></uui-icon>
+						{{issue.description}}
+					</p>
+			</div>
+		</uui-icon-registry-essential>
+	</uui-box>
+</div>

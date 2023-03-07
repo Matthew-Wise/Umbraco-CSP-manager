@@ -4,13 +4,16 @@ using Cms.Infrastructure.Migrations;
 using Cms.Infrastructure.Persistence.DatabaseAnnotations;
 using Models;
 using NPoco;
+using Umbraco.Cms.Core.Configuration;
 
 public sealed class InitialCspManagerMigration : MigrationBase
 {
 	public const string MigrationKey = "csp-manager-init";
+	private readonly IUmbracoVersion UmbracoVersion;
 
-	public InitialCspManagerMigration(IMigrationContext context) : base(context)
+	public InitialCspManagerMigration(IMigrationContext context, IUmbracoVersion umbracoVersion) : base(context)
 	{
+		UmbracoVersion = umbracoVersion;
 	}
 
 	protected override void Migrate()
@@ -26,43 +29,48 @@ public sealed class InitialCspManagerMigration : MigrationBase
 				ReportOnly = false
 			});
 		}
-		
+
 		if (!TableExists(nameof(CspDefinitionSource)))
 		{
 			Create.Table<CspDefinitionSourceSchema>().Do();
 			foreach (var source in CspConstants.DefaultBackOfficeCsp)
 			{
+				if(UmbracoVersion.Version.Major >= 13 && source.Source == "www.gravatar.com")
+				{
+					continue;
+				}
+
 				Context.Database.Insert(source);
 			}
 		}
 	}
-	
+
 	[TableName((nameof(CspDefinition)))]
 	[PrimaryKey(nameof(Id), AutoIncrement = false)]
 	private class CspDefinitionSchema
 	{
 		[PrimaryKeyColumn(AutoIncrement = false)]
 		public Guid Id { get; set; }
-	
+
 		public bool Enabled { get; set; }
-	
+
 		public bool ReportOnly { get; set; }
-	
+
 		public bool IsBackOffice { get; set; }
 
 		[ResultColumn]
-		[Reference(ReferenceType.Many, 
+		[Reference(ReferenceType.Many,
 			ColumnName = nameof(Id),
 			ReferenceMemberName = nameof(CspDefinitionSource.DefinitionId))]
 		public List<CspDefinitionSource> Sources { get; set; } = new();
 	}
-	
+
 	[TableName((nameof(CspDefinitionSource)))]
-	[PrimaryKey(new []{ nameof(DefinitionId), nameof(Source)})]
+	[PrimaryKey(new[] { nameof(DefinitionId), nameof(Source) })]
 	private class CspDefinitionSourceSchema
 	{
 		[PrimaryKeyColumn(
-			AutoIncrement = false, 
+			AutoIncrement = false,
 			OnColumns = $"{nameof(DefinitionId)}, {nameof(Source)}")]
 		[ForeignKey(typeof(CspDefinition))]
 		public Guid DefinitionId { get; set; }

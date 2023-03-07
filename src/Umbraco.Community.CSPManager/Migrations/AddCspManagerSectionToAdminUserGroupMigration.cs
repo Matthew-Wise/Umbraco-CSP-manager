@@ -1,9 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Migrations;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Migrations;
 using UmbConstants = Umbraco.Cms.Core.Constants;
