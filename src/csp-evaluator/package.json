@@ -1,0 +1,20 @@
+{
+  "name": "csp-evaluator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bundle": "npx browserify -p esmify main.js -o ../Umbraco.Community.CSPManager/wwwroot/backoffice/manage-csp/evaluate/csp-evaluator.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csp_evaluator": "^1.1.1"
+  },
+  "devDependencies": {
+    "browserify": "^17.0.0",
+    "esmify": "^2.1.1"
+  }
+}
