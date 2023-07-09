@@ -57,9 +57,11 @@ public sealed class ReportingService : IReportingService
 		CspReportRecord cspRecord = new()
 		{
 			DocumentUri = documentUri.OriginalString, //TODO: Need to store these linked to ReportRecord..
-			IsBackOffice = isBackOffice,
+			IsBackOffice = isBackOffice,//TODO: Need to store these linked to ReportRecord..
 			Directive = directive ?? string.Empty,
-			BlockedUri = blockedUri ?? string.Empty
+			BlockedUri = blockedUri ?? string.Empty,
+			Instances = 1,//TODO: Need to store these linked to ReportRecord..
+			LastRecorded = DateTime.Now //Is this tied to each documentUri or this pairing?
 		};
 
 		//await scope.Database.SaveAsync(cspRecord);
