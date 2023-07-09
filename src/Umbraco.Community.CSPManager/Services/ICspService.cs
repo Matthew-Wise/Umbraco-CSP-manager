@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Services;
 
-using Models;
+using Umbraco.Community.CSPManager.Models;
 
 public interface ICspService
 {

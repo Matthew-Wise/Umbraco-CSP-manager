@@ -1,7 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Tests.Services;
 
 using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Migrations.Upgrade;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -12,7 +11,7 @@ using Umbraco.Community.CSPManager.Services;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Cms.Core.Cache;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications;
+using Umbraco.Community.CSPManager.Notifications;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -57,7 +56,6 @@ public class CspServiceTests : UmbracoIntegrationTest
 		}
 
 		_sud = new CspService(GetRequiredService<IEventAggregator>(),
-			GetRequiredService<IHostingEnvironment>(),
 			ScopeProvider,
 			AppCaches);
 	}

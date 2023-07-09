@@ -1,32 +1,36 @@
 ﻿namespace Umbraco.Community.CSPManager.Middleware;
 
 using System.Threading.Tasks;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 using Microsoft.AspNetCore.Http;
-using Cms.Core;
-using Cms.Core.Services;
-using CommunityToolkit.HighPerformance;
-using Models;
-using Services;
-using Umbraco.Extensions;
+using Microsoft.AspNetCore.Routing;
+using Umbraco.Community.CSPManager.Models;
+using Umbraco.Community.CSPManager.Services;
 using Umbraco.Cms.Core.Events;
+using Umbraco.Community.CSPManager.Controllers;
 using Umbraco.Community.CSPManager.Notifications;
+using Umbraco.Extensions;
 
 public class CspMiddleware
 {
 	private readonly RequestDelegate _next;
 	private readonly IRuntimeState _runtimeState;
 	private readonly ICspService _cspService;
+	private readonly LinkGenerator _linkGenerator;
 	private readonly IEventAggregator _eventAggregator;
 
 	public CspMiddleware(
 		RequestDelegate next,
 		IRuntimeState runtimeState,
 		ICspService cspService,
+		LinkGenerator linkGenerator,
 		IEventAggregator eventAggregator)
 	{
 		_next = next;
 		_runtimeState = runtimeState;
 		_cspService = cspService;
+		_linkGenerator = linkGenerator;
 		_eventAggregator = eventAggregator;
 	}
 
@@ -37,7 +41,7 @@ public class CspMiddleware
 			await _next(context);
 			return;
 		}
-		
+
 		var definition = _cspService.GetCachedCspDefinition(context.Request.IsBackOfficeRequest());
 
 		await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
@@ -54,22 +58,24 @@ public class CspMiddleware
 		{
 			context.Response.Headers.Add(definition.ReportOnly ? CspConstants.ReportOnlyHeaderName : CspConstants.HeaderName, cspValue);
 		}
-		
+
 		await _next(context);
 	}
 
-	private static IDictionary<string,string> ConstructCspDictionary(CspDefinition definition)
+	private IDictionary<string, string> ConstructCspDictionary(CspDefinition definition)
 	{
-		var csp = new Dictionary<string, string>();
-		foreach (var item in CspConstants.AllDirectives.Enumerate())
+		var csp = definition.Sources
+		.SelectMany(c => c.Directives.Select(d => new { Directive = d, c.Source }))
+		.GroupBy(x => x.Directive)
+		.ToDictionary(g => g.Key, g => string.Join(" ", g.Select(x => x.Source)));
+
+		if (definition.EnableReporting)
 		{
-			var key = item.Value;
-			var sources = definition.Sources
-				.Where(x => x.Directives.Contains(key))
-				.Select(x => x.Source).ToArray();
-			if (sources.Any())
+			var reportEndpoint = _linkGenerator.GetPathByAction(nameof(CspReportingController.Report), "CspReporting");
+			var reportUri = string.IsNullOrWhiteSpace(definition.ReportUri) ? reportEndpoint : definition.ReportUri;
+			if (!string.IsNullOrWhiteSpace(reportUri))
 			{
-				csp.Add(item.Value, string.Join(" ", sources));
+				csp.TryAdd("report-uri", reportUri);
 			}
 		}
 

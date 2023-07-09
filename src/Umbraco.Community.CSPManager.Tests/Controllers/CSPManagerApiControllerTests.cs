@@ -17,7 +17,7 @@ public class CSPManagerApiControllerTests
 		_cspService = Mock.Of<ICspService>();
 		_sud = new CSPManagerApiController(_cspService);
 	}
-	
+
 	[Test]
 	public async Task SaveDefinition_ThrowsOn_Default_DefinitionId()
 	{

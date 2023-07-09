@@ -1,29 +1,25 @@
 ﻿namespace Umbraco.Community.CSPManager.Services;
 
-using Cms.Core.Events;
-using Cms.Core.Hosting;
-using Cms.Infrastructure.Scoping;
-using Models;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Infrastructure.Scoping;
+using Umbraco.Community.CSPManager.Models;
 using NPoco.Expressions;
-using Umbraco.Extensions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Community.CSPManager.Notifications;
+using Umbraco.Extensions;
 
 public class CspService : ICspService
 {
 	private readonly IEventAggregator _eventAggregator;
-	private readonly IHostingEnvironment _hostingEnvironment;
 	private readonly IScopeProvider _scopeProvider;
 	private readonly IAppPolicyCache _runtimeCache;
 
 	public CspService(
 		IEventAggregator eventAggregator,
-		IHostingEnvironment hostingEnvironment,
 		IScopeProvider scopeProvider,
 		AppCaches appCaches)
 	{
 		_eventAggregator = eventAggregator;
-		_hostingEnvironment = hostingEnvironment;
 		_scopeProvider = scopeProvider;
 		_runtimeCache = appCaches.RuntimeCache;
 	}
@@ -32,7 +28,6 @@ public class CspService : ICspService
 	{
 		using var scope = _scopeProvider.CreateScope();
 
-		//TODO: Oembed providers - https://our.umbraco.com/documentation/extending/Embedded-Media-Provider/
 		CspDefinition definition = GetDefinition(scope, isBackOfficeRequest)
 			?? new CspDefinition
 			{
@@ -40,7 +35,7 @@ public class CspService : ICspService
 				Enabled = false,
 				IsBackOffice = isBackOfficeRequest
 			};
-		
+
 		scope.Complete();
 		return definition;
 	}
@@ -82,12 +77,14 @@ public class CspService : ICspService
 	{
 		await scope.Database.SaveAsync(definition);
 
+		definition.Sources = definition.Sources.Where(s => !string.IsNullOrWhiteSpace(s.Source)).ToList();
+
 		var sourceValues = definition.Sources.Select(s => s.Source).ToList();
 		var cmdDelete = scope.Database.DeleteManyAsync<CspDefinitionSource>()
 			.Where(s => !s.Source.In(sourceValues) && s.DefinitionId == definition.Id);
-		
-		await 	cmdDelete.Execute();
-		
+
+		await cmdDelete.Execute();
+
 		foreach (var source in definition.Sources)
 		{
 			await scope.Database.SaveAsync(source);

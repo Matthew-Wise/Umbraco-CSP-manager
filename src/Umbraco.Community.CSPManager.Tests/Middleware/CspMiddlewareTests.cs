@@ -121,7 +121,8 @@ public class CspMiddlewareTests
 					Enabled = true,
 					IsBackOffice = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
-				}) { TestName = "Backoffice enabled" };
+				})
+			{ TestName = "Backoffice enabled" };
 
 			yield return new TestCaseData("/umbraco",
 				new CspDefinition
@@ -131,7 +132,8 @@ public class CspMiddlewareTests
 					IsBackOffice = true,
 					ReportOnly = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
-				}) { TestName = "Backoffice Report Only" };
+				})
+			{ TestName = "Backoffice Report Only" };
 
 			yield return new TestCaseData("/umbraco",
 				new CspDefinition
@@ -140,7 +142,8 @@ public class CspMiddlewareTests
 					Enabled = false,
 					IsBackOffice = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
-				}) { TestName = "Backoffice disabled" };
+				})
+			{ TestName = "Backoffice disabled" };
 		}
 	}
 

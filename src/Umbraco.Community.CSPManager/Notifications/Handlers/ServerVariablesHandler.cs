@@ -18,12 +18,7 @@ internal sealed class ServerVariablesHandler : INotificationHandler<ServerVariab
 	public void Handle(ServerVariablesParsingNotification notification)
 	{
 		var serverVariables = notification.ServerVariables;
-		var umbracoUrlsObject = serverVariables["umbracoUrls"];
-
-		if (umbracoUrlsObject == null)
-		{
-			throw new ArgumentException("umbracoUrls is Null");
-		}
+		var umbracoUrlsObject = serverVariables["umbracoUrls"] ?? throw new ArgumentException("umbracoUrls is Null");
 
 		if (umbracoUrlsObject is not Dictionary<string, object> umbracoUrls)
 		{

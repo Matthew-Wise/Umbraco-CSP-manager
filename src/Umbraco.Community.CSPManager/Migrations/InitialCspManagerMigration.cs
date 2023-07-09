@@ -1,10 +1,10 @@
 ﻿namespace Umbraco.Community.CSPManager.Migrations;
 
-using Cms.Infrastructure.Migrations;
-using Cms.Infrastructure.Persistence.DatabaseAnnotations;
-using Models;
 using NPoco;
 using Umbraco.Cms.Core.Configuration;
+using Umbraco.Cms.Infrastructure.Migrations;
+using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
+using Umbraco.Community.CSPManager.Models;
 
 public sealed class InitialCspManagerMigration : MigrationBase
 {
@@ -35,7 +35,7 @@ public sealed class InitialCspManagerMigration : MigrationBase
 			Create.Table<CspDefinitionSourceSchema>().Do();
 			foreach (var source in CspConstants.DefaultBackOfficeCsp)
 			{
-				if(UmbracoVersion.Version.Major >= 13 && source.Source == "www.gravatar.com")
+				if (UmbracoVersion.Version.Major >= 13 && source.Source == "www.gravatar.com")
 				{
 					continue;
 				}

@@ -32,17 +32,17 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.0.0" />
+		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.0.*" />
   </ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-		<PackageReference Include="Umbraco.Cms.Core" Version="10.3.2" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="10.3.2" />
+		<PackageReference Include="Umbraco.Cms.Core" Version="10.*" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="10.*" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
-		<PackageReference Include="Umbraco.Cms.Core" Version="11.0.0" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="11.0.0" />
+		<PackageReference Include="Umbraco.Cms.Core" Version="11.*" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="11.*" />
 	</ItemGroup>
 
   <ItemGroup>

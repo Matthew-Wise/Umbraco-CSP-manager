@@ -1,11 +1,11 @@
 ﻿namespace Umbraco.Community.CSPManager.Backoffice;
 
-using Cms.Core;
-using Cms.Core.Events;
-using Cms.Core.Services;
-using Cms.Core.Trees;
-using Cms.Web.BackOffice.Trees;
-using Cms.Web.Common.Attributes;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Trees;
+using Umbraco.Cms.Web.BackOffice.Trees;
+using Umbraco.Cms.Web.Common.Attributes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
