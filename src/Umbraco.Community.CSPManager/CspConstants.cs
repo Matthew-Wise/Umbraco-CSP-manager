@@ -129,8 +129,6 @@ public static class CspConstants
 		//TODO: public const string UpgradeInsecureRequests = "upgrade-insecure-requests";
 
 		public const string WorkerSource = "worker-src";
-
-		public const string Nonce = "nonce";
 	}
 
 	public static ReadOnlySpan<string> AllDirectives => new[]
@@ -145,7 +143,7 @@ public static class CspConstants
 		Directives.StyleSourceAttribute, Directives.StyleSourceElement, Directives.StyleSource,
 		// Directives.TrustedTypes,
 		// Directives.UpgradeInsecureRequests,
-		Directives.WorkerSource, Directives.Nonce
+		Directives.WorkerSource
 	};
 	
 	public static class ServerVariables {
