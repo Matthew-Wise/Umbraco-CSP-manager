@@ -16,7 +16,7 @@ public class CspDefinition
 
 	public bool IsBackOffice { get; set; }
 
-	public bool EnableReporting { get; set; }
+	public string? ReportingDirective { get; set; }
 
 	public string? ReportUri { get; set; }
 

@@ -13,11 +13,11 @@ public class ReportingMigration : MigrationBase
 
 	protected override void Migrate()
 	{
-		if (!ColumnExists(nameof(CspDefinition), nameof(SchameUpdates.EnableReporting)))
+		if (!ColumnExists(nameof(CspDefinition), nameof(SchameUpdates.ReportingDirective)))
 		{
-			Create.Column(nameof(SchameUpdates.EnableReporting))
+			Create.Column(nameof(SchameUpdates.ReportingDirective))
 			.OnTable(nameof(CspDefinition))
-			.AsBoolean().NotNullable().WithDefaultValue(false).Do();
+			.AsString(500).Nullable().Do();
 		}
 
 		if (!ColumnExists(nameof(CspDefinition), nameof(SchameUpdates.ReportUri)))
@@ -30,7 +30,7 @@ public class ReportingMigration : MigrationBase
 
 	public class SchameUpdates
 	{
-		public bool EnableReporting { get; set; }
+		public string? ReportingDirective { get; set; }
 
 		public string? ReportUri { get; set; }
 	}

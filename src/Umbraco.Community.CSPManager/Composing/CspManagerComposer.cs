@@ -1,7 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Composing;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -20,7 +19,6 @@ public sealed class CspManagerComposer : IComposer
 		builder.ManifestFilters().Append<PackageManifestFilter>();
 		builder.AddSection<CspManagementSection>();
 		builder.Services.AddTransient<ICspService, CspService>();
-		builder.Services.AddTransient<IReportingService, ReportingService>();
 		builder.Services.Configure<UmbracoPipelineOptions>(options =>
 		{
 			options.AddFilter(new UmbracoPipelineFilter(
@@ -31,13 +29,6 @@ public sealed class CspManagerComposer : IComposer
 					applicationBuilder.UseMiddleware<CspMiddleware>();
 				},
 				_ => { }));
-		});
-
-		builder.Services.AddControllers(options =>
-		{
-			var jsonInputFormatter = options.InputFormatters
-			.OfType<SystemTextJsonInputFormatter>().FirstOrDefault();
-			jsonInputFormatter?.SupportedMediaTypes.Add("application/csp-report");
 		});
 
 		builder.AddNotificationHandler<ServerVariablesParsingNotification, ServerVariablesHandler>();

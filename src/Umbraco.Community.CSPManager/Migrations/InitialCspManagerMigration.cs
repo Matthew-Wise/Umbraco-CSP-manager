@@ -21,7 +21,7 @@ public sealed class InitialCspManagerMigration : MigrationBase
 		if (!TableExists(nameof(CspDefinition)))
 		{
 			Create.Table<CspDefinitionSchema>().Do();
-			Context.Database.Insert(new CspDefinition
+			Context.Database.Insert(nameof(CspDefinition), nameof(CspDefinition.Id), false, new
 			{
 				Id = CspConstants.DefaultBackofficeId,
 				IsBackOffice = true,
@@ -40,7 +40,7 @@ public sealed class InitialCspManagerMigration : MigrationBase
 					continue;
 				}
 
-				Context.Database.Insert(source);
+				Context.Database.Insert(nameof(CspDefinitionSource), $"{nameof(CspDefinitionSource.DefinitionId)},{nameof(CspDefinitionSource.Source)}", false, source);
 			}
 		}
 	}

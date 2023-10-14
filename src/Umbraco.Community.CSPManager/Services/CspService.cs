@@ -7,6 +7,7 @@ using NPoco.Expressions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Extensions;
+using System;
 
 public class CspService : ICspService
 {
