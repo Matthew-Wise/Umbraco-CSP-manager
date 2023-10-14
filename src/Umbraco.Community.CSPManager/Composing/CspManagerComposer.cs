@@ -4,7 +4,6 @@ using Backoffice;
 using Cms.Core.Composing;
 using Cms.Core.DependencyInjection;
 using Cms.Web.Common.ApplicationBuilder;
-using Helpers;
 using Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,6 @@ public sealed class CspManagerComposer : IComposer
 		builder.ManifestFilters().Append<PackageManifestFilter>();
 		builder.AddSection<CspManagementSection>();
 		builder.Services.AddTransient<ICspService, CspService>();
-		builder.Services.AddTransient<ICspNonceHelper, CspNonceHelper>();
 		builder.Services.Configure<UmbracoPipelineOptions>(options =>
 		{
 			options.AddFilter(new UmbracoPipelineFilter(
