@@ -1,4 +1,4 @@
-﻿namespace Umbraco.Community.CSPManager.TagHelpers;
+namespace Umbraco.Community.CSPManager.TagHelpers;
 
 using System;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -46,7 +46,7 @@ public class CspNonceTagHelper : TagHelper
 		else if (tag == StyleTag)
 		{
 			nonce = _cspService.GetCspStyleNonce(httpContext);
-			contextMarkerKey = "CspManagerScriptNonceSet";
+			contextMarkerKey = "CspManagerStyleNonceSet";
 		}
 		else
 		{
