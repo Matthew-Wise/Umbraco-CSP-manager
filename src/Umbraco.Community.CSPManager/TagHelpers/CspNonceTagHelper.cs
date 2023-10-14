@@ -13,6 +13,7 @@ public class CspNonceTagHelper : TagHelper
 	private const string ScriptTag = "script";
 	private const string StyleTag = "style";
 	private const string CspNonceAttributeName = "csp-manager-add-nonce";
+	private const string CspNonceDataAttributeName = "csp-manager-add-nonce-data-attribute";
 	private ICspService _cspService;
 
 	public CspNonceTagHelper(ICspService cspService)
@@ -25,6 +26,12 @@ public class CspNonceTagHelper : TagHelper
 	/// </summary>
 	[HtmlAttributeName(CspNonceAttributeName)]
 	public bool UseCspNonce { get; set; }
+
+	/// <summary>
+	/// Specifies a whether a nonce should also be output as a data attribute
+	/// </summary>
+	[HtmlAttributeName(CspNonceDataAttributeName)]
+	public bool IncludeDataAttribute { get; set; }
 
 	[HtmlAttributeNotBound, ViewContext]
 	public ViewContext ViewContext { get; set; }
@@ -61,5 +68,10 @@ public class CspNonceTagHelper : TagHelper
 		}
 
 		output.Attributes.Add(new TagHelperAttribute("nonce", nonce));
+
+		if (IncludeDataAttribute)
+		{
+			output.Attributes.Add(new TagHelperAttribute("data-nonce", nonce));
+		}
 	}
 }
