@@ -116,9 +116,9 @@ public class CspService : ICspService
 			return string.Empty;
 		}
 
-		if (!string.IsNullOrEmpty(cspManagerContext.ScriptNonce))
+		if (!string.IsNullOrEmpty(cspManagerContext.StyleNonce))
 		{
-			return cspManagerContext.ScriptNonce;
+			return cspManagerContext.StyleNonce;
 		}
 
 		var nonce = GenerateCspNonceValue();
