@@ -3,7 +3,7 @@
 using Microsoft.AspNetCore.Http;
 using Models;
 
-public class HttpContextWrapper : IHttpContextWrapper
+public class HttpContextWrapper
 {
 	private readonly HttpContext _context;
 
