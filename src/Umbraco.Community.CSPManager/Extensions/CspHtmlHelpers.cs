@@ -11,7 +11,14 @@ public static class CspHtmlHelpers
 	public static string? CspScriptNonceValue(this IHtmlHelper helper)
 	{
 		var context = helper.ViewContext.HttpContext;
-		var nonce = context.GetCspManagerContext()?.ScriptNonce;
+		var cspManagerContext = context.GetCspManagerContext();
+		var nonce = cspManagerContext?.ScriptNonce;
+		var scriptNonceEnabled = cspManagerContext?.StyleNonceEnabled;
+
+		if (!scriptNonceEnabled.Value)
+		{
+			cspManagerContext.ScriptNonceEnabled = true;
+		}
 
 		return nonce;
 	}
@@ -23,7 +30,14 @@ public static class CspHtmlHelpers
 	public static string? CspStyleNonceValue(this IHtmlHelper helper)
 	{
 		var context = helper.ViewContext.HttpContext;
-		var nonce = context.GetCspManagerContext()?.StyleNonce;
+		var cspManagerContext = context.GetCspManagerContext();
+		var nonce = cspManagerContext?.StyleNonce;
+		var styleNonceEnabled = cspManagerContext?.StyleNonceEnabled;
+
+		if (!styleNonceEnabled.Value)
+		{
+			cspManagerContext.StyleNonceEnabled = true;
+		}
 
 		return nonce;
 	}

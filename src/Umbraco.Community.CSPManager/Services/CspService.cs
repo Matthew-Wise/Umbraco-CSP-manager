@@ -8,6 +8,9 @@ using NPoco.Expressions;
 using Umbraco.Extensions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Community.CSPManager.Notifications;
+using CommunityToolkit.HighPerformance;
+using Microsoft.AspNetCore.Http;
+using System.Security.Cryptography;
 
 public class CspService : ICspService
 {
@@ -15,7 +18,6 @@ public class CspService : ICspService
 	private readonly IHostingEnvironment _hostingEnvironment;
 	private readonly IScopeProvider _scopeProvider;
 	private readonly IAppPolicyCache _runtimeCache;
-
 	public CspService(
 		IEventAggregator eventAggregator,
 		IHostingEnvironment hostingEnvironment,
@@ -78,6 +80,92 @@ public class CspService : ICspService
 		return definition;
 	}
 
+	public async Task<string> GenerateCspHeader(CspDefinition definition, HttpContextWrapper httpContext)
+	{
+		var csp = ConstructCspDictionary(definition, httpContext);
+		var cspValue = string.Join(";", csp.Select(x => x.Key + " " + x.Value));
+		return cspValue;
+	}
+
+	public string GetCspScriptNonce(HttpContextWrapper context)
+	{
+		var cspManagerContext = context.GetCspManagerContext();
+
+		if (cspManagerContext == null)
+		{
+			return string.Empty;
+		}
+
+		if (!string.IsNullOrEmpty(cspManagerContext.ScriptNonce))
+		{
+			return cspManagerContext.ScriptNonce;
+		}
+
+		var nonce = GenerateCspNonceValue();
+
+		SetCspDirectiveNonce(cspManagerContext, nonce, CspConstants.CspDirectives.ScriptSrc);
+
+		return nonce;
+	}
+	public string GetCspStyleNonce(HttpContextWrapper context)
+	{
+		var cspManagerContext = context.GetCspManagerContext();
+
+		if (cspManagerContext == null)
+		{
+			return string.Empty;
+		}
+
+		if (!string.IsNullOrEmpty(cspManagerContext.ScriptNonce))
+		{
+			return cspManagerContext.ScriptNonce;
+		}
+
+		var nonce = GenerateCspNonceValue();
+
+		SetCspDirectiveNonce(cspManagerContext, nonce, CspConstants.CspDirectives.StyleSrc);
+
+		return nonce;
+	}
+
+	public async Task SetCspHeaders(HttpContextWrapper context)
+	{
+		var definition = GetCachedCspDefinition(context.GetOriginalHttpContext<HttpContext>().Request.IsBackOfficeRequest());
+		var cspValue = GenerateCspHeader(definition, context).Result;
+		context.RemoveHttpHeader(definition.ReportOnly ? CspConstants.ReportOnlyHeaderName : CspConstants.HeaderName);
+		context.SetHttpHeader(definition.ReportOnly ? CspConstants.ReportOnlyHeaderName : CspConstants.HeaderName, cspValue);
+	}
+
+	private IDictionary<string, string> ConstructCspDictionary(CspDefinition definition, HttpContextWrapper httpContext)
+	{
+		var csp = new Dictionary<string, string>();
+		foreach (var item in CspConstants.AllDirectives.Enumerate())
+		{
+			var key = item.Value;
+			var sources = definition.Sources
+				.Where(x => x.Directives.Contains(key))
+				.Select(x => x.Source).ToList();
+			if (sources.Any())
+			{
+				var scriptNonce = GetCspScriptNonce(httpContext);
+				if (httpContext.GetCspManagerContext().ScriptNonceEnabled && !string.IsNullOrEmpty(scriptNonce) && key.Equals("script-src"))
+				{
+					sources.Add($"'nonce-{scriptNonce}'");
+				}
+
+				var styleNonce = GetCspStyleNonce(httpContext);
+				if (httpContext.GetCspManagerContext().StyleNonceEnabled && !string.IsNullOrEmpty(styleNonce) && key.Equals("style-src"))
+				{
+					sources.Add($"'nonce-{styleNonce}'");
+				}
+
+				csp.Add(item.Value, string.Join(" ", sources));
+			}
+		}
+
+		return csp;
+	}
+
 	private static async Task<CspDefinition> SaveDefinitionAsync(IScope scope, CspDefinition definition)
 	{
 		await scope.Database.SaveAsync(definition);
@@ -94,5 +182,27 @@ public class CspService : ICspService
 		}
 
 		return definition;
+	}
+
+	private static void SetCspDirectiveNonce(CspManagerContext cspManagerContext, string nonce, CspConstants.CspDirectives directive)
+	{
+		switch (directive)
+		{
+			case CspConstants.CspDirectives.ScriptSrc:
+				cspManagerContext.ScriptNonce = nonce;
+
+				break;
+			case CspConstants.CspDirectives.StyleSrc:
+				cspManagerContext.StyleNonce = nonce;
+				break;
+		}
+	}
+
+	private static string GenerateCspNonceValue()
+	{
+		using var rng = RandomNumberGenerator.Create();
+		var nonceBytes = new byte[18];
+		rng.GetBytes(nonceBytes);
+		return Convert.ToBase64String(nonceBytes);
 	}
 }
