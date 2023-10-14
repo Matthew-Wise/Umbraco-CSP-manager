@@ -1,6 +1,7 @@
 ﻿namespace Umbraco.Community.CSPManager.Extensions;
 
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Services;
 
 public static class CspHtmlHelpers
 {
@@ -10,14 +11,16 @@ public static class CspHtmlHelpers
 	/// <param name="helper"></param>
 	public static string? CspScriptNonceValue(this IHtmlHelper helper)
 	{
-		var context = helper.ViewContext.HttpContext;
-		var cspManagerContext = context.GetCspManagerContext();
+		var httpContext = new HttpContextWrapper(helper.ViewContext.HttpContext);
+		var cspService = helper.ViewContext.HttpContext.RequestServices.GetService(typeof(ICspService)) as ICspService;
+		var cspManagerContext = httpContext.GetCspManagerContext();
 		var nonce = cspManagerContext?.ScriptNonce;
-		var scriptNonceEnabled = cspManagerContext?.StyleNonceEnabled;
 
-		if (!scriptNonceEnabled.Value)
+		// First reference to a nonce, set header and mark that header has been set. We only need to set it once.
+		if (string.IsNullOrEmpty(httpContext.GetItem<string>("CspManagerScriptNonceSet")))
 		{
-			cspManagerContext.ScriptNonceEnabled = true;
+			httpContext.SetItem("CspManagerScriptNonceSet", "set");
+			cspService.SetCspHeaders(httpContext);
 		}
 
 		return nonce;
@@ -29,14 +32,16 @@ public static class CspHtmlHelpers
 	/// <param name="helper"></param>
 	public static string? CspStyleNonceValue(this IHtmlHelper helper)
 	{
-		var context = helper.ViewContext.HttpContext;
-		var cspManagerContext = context.GetCspManagerContext();
+		var httpContext = new HttpContextWrapper(helper.ViewContext.HttpContext);
+		var cspService = helper.ViewContext.HttpContext.RequestServices.GetService(typeof(ICspService)) as ICspService;
+		var cspManagerContext = httpContext.GetCspManagerContext();
 		var nonce = cspManagerContext?.StyleNonce;
-		var styleNonceEnabled = cspManagerContext?.StyleNonceEnabled;
 
-		if (!styleNonceEnabled.Value)
+		// First reference to a nonce, set header and mark that header has been set. We only need to set it once.
+		if (string.IsNullOrEmpty(httpContext.GetItem<string>("CspManagerScriptNonceSet")))
 		{
-			cspManagerContext.StyleNonceEnabled = true;
+			httpContext.SetItem("CspManagerScriptNonceSet", "set");
+			cspService.SetCspHeaders(httpContext);
 		}
 
 		return nonce;
