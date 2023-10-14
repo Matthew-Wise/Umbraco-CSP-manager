@@ -48,12 +48,12 @@ public class CspNonceTagHelper : TagHelper
 		if (tag == ScriptTag)
 		{
 			nonce = _cspService.GetCspScriptNonce(httpContext);
-			contextMarkerKey = "CspManagerScriptNonceSet";
+			contextMarkerKey = CspConstants.CspManagerScriptNonceSet;
 		}
 		else if (tag == StyleTag)
 		{
 			nonce = _cspService.GetCspStyleNonce(httpContext);
-			contextMarkerKey = "CspManagerStyleNonceSet";
+			contextMarkerKey = CspConstants.CspManagerScriptNonceSet;
 		}
 		else
 		{

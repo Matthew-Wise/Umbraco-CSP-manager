@@ -152,9 +152,7 @@ public static class CspConstants
 
 	public const string ContextKey = "CspManagerContext";
 
-	public const string CspManagerScriptNonceEnabled = "CspManagerScriptNonceEnabled";
-
-	public const string CspManagerStyleNonceEnabled = "CspManagerStyleNonceEnabled";
+	public const string CspManagerScriptNonceSet = "CspManagerScriptNonceSet";
 
 	public enum CspDirectives
 	{
