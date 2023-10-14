@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Umbraco.Community.CSPManage
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoSite", "DemoSite\DemoSite.csproj", "{E26F87E6-B5BA-4C15-B351-84A8EEA3C129}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Community.CSPManager.Tests", "Umbraco.Community.CSPManager.Tests\Umbraco.Community.CSPManager.Tests.csproj", "{E463F20B-D8A0-4B0A-80EC-98F2776CCE2A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Umbraco.Community.CSPManager.Tests", "Umbraco.Community.CSPManager.Tests\Umbraco.Community.CSPManager.Tests.csproj", "{E463F20B-D8A0-4B0A-80EC-98F2776CCE2A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DFF0AE72-E1D4-43A6-A76C-A9C521E54596}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

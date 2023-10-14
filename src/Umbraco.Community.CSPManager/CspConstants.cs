@@ -1,25 +1,25 @@
 ﻿namespace Umbraco.Community.CSPManager;
 
-using Models;
+using Umbraco.Community.CSPManager.Models;
 
 public static class CspConstants
 {
 	public const string PackageAlias = "Umbraco.Community.CSPManager";
-	
+
 	public const string PluginAlias = "CspManager";
 
 	public static readonly Guid DefaultBackofficeId = new("9cbfa28c-2b19-40f4-9f8e-bbc52bd8e780");
-	
+
 	public static readonly Guid DefaultFrontEndId = new("fac780be-53af-41dc-b51d-1aa647100221");
 
 	public const string FrontEndCacheKey = "csp-frontend";
-	
+
 	public const string BackOfficeCacheKey = "csp-backoffice";
 
 	public const string HeaderName = "Content-Security-Policy";
-	
+
 	public const string ReportOnlyHeaderName = HeaderName + "-Report-Only";
-	
+
 	public static readonly List<CspDefinitionSource> DefaultBackOfficeCsp = new()
 	{
 		new CspDefinitionSource
@@ -38,7 +38,7 @@ public static class CspConstants
 		new CspDefinitionSource
 		{
 			DefinitionId = DefaultBackofficeId,
-			Source = "packages.umbraco.com",
+			Source = "marketplace.umbraco.com",
 			Directives = new List<string> { Directives.DefaultSource }
 		},
 		new CspDefinitionSource
@@ -144,8 +144,9 @@ public static class CspConstants
 		// Directives.UpgradeInsecureRequests,
 		Directives.WorkerSource
 	};
-	
-	public static class ServerVariables {
+
+	public static class ServerVariables
+	{
 		public const string BaseUrl = "cspManagerBaseUrl";
 	}
 }

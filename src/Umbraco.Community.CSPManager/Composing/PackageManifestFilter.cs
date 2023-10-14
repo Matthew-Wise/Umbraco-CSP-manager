@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Composing;
 
-using Cms.Core.Manifest;
+using Umbraco.Cms.Core.Manifest;
 
 internal sealed class PackageManifestFilter : IManifestFilter
 {
@@ -9,7 +9,7 @@ internal sealed class PackageManifestFilter : IManifestFilter
 		manifests.Add(new PackageManifest
 		{
 			PackageName = CspConstants.PackageAlias,
-			Scripts = new[] { 
+			Scripts = new[] {
 				$"/App_Plugins/{CspConstants.PluginAlias}/backoffice/manage-csp/cspManagerEditController.js",
 				$"/App_Plugins/{CspConstants.PluginAlias}/backoffice/manage-csp/cspManager.resource.js",
 				$"/App_Plugins/{CspConstants.PluginAlias}/backoffice/manage-csp/manage/cspManagerManageController.js",
