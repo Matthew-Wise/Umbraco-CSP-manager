@@ -148,13 +148,13 @@ public class CspService : ICspService
 			if (sources.Any())
 			{
 				var scriptNonce = GetCspScriptNonce(httpContext);
-				if (httpContext.GetItem<string>("CspManagerScriptNonceSet") == "set" && !string.IsNullOrEmpty(scriptNonce) && key.Equals("script-src"))
+				if (httpContext.GetItem<string>(CspConstants.CspManagerScriptNonceSet) == "set" && !string.IsNullOrEmpty(scriptNonce) && key.Equals("script-src"))
 				{
 					sources.Add($"'nonce-{scriptNonce}'");
 				}
 
 				var styleNonce = GetCspStyleNonce(httpContext);
-				if (httpContext.GetItem<string>("CspManagerStyleNonceSet") == "set" && !string.IsNullOrEmpty(styleNonce) && key.Equals("style-src"))
+				if (httpContext.GetItem<string>(CspConstants.CspManagerStyleNonceSet) == "set" && !string.IsNullOrEmpty(styleNonce) && key.Equals("style-src"))
 				{
 					sources.Add($"'nonce-{styleNonce}'");
 				}

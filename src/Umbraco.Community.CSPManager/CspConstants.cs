@@ -154,6 +154,8 @@ public static class CspConstants
 
 	public const string CspManagerScriptNonceSet = "CspManagerScriptNonceSet";
 
+	public const string CspManagerStyleNonceSet = "CspManagerStyleNonceSet";
+
 	public enum CspDirectives
 	{
 		StyleSrc,

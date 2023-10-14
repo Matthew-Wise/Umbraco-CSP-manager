@@ -53,7 +53,7 @@ public class CspNonceTagHelper : TagHelper
 		else if (tag == StyleTag)
 		{
 			nonce = _cspService.GetCspStyleNonce(httpContext);
-			contextMarkerKey = CspConstants.CspManagerScriptNonceSet;
+			contextMarkerKey = CspConstants.CspManagerStyleNonceSet;
 		}
 		else
 		{
