@@ -1,5 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager;
 
+using Microsoft.AspNetCore.Http;
 using Models;
 
 public static class CspConstants
@@ -128,6 +129,8 @@ public static class CspConstants
 		//TODO: public const string UpgradeInsecureRequests = "upgrade-insecure-requests";
 
 		public const string WorkerSource = "worker-src";
+
+		public const string Nonce = "nonce";
 	}
 
 	public static ReadOnlySpan<string> AllDirectives => new[]
@@ -142,10 +145,18 @@ public static class CspConstants
 		Directives.StyleSourceAttribute, Directives.StyleSourceElement, Directives.StyleSource,
 		// Directives.TrustedTypes,
 		// Directives.UpgradeInsecureRequests,
-		Directives.WorkerSource
+		Directives.WorkerSource, Directives.Nonce
 	};
 	
 	public static class ServerVariables {
 		public const string BaseUrl = "cspManagerBaseUrl";
+	}
+
+	public const string ContextKey = "CspManagerContext";
+
+	public enum CspDirectives
+	{
+		StyleSrc,
+		ScriptSrc
 	}
 }

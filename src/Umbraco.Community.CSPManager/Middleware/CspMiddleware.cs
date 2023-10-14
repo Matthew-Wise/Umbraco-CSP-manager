@@ -5,11 +5,12 @@ using Microsoft.AspNetCore.Http;
 using Cms.Core;
 using Cms.Core.Services;
 using CommunityToolkit.HighPerformance;
+using Helpers;
 using Models;
 using Services;
 using Umbraco.Extensions;
-using Umbraco.Cms.Core.Events;
-using Umbraco.Community.CSPManager.Notifications;
+using Cms.Core.Events;
+using Notifications;
 
 public class CspMiddleware
 {
@@ -17,6 +18,7 @@ public class CspMiddleware
 	private readonly IRuntimeState _runtimeState;
 	private readonly ICspService _cspService;
 	private readonly IEventAggregator _eventAggregator;
+	private readonly ICspNonceHelper _cspNonceHelper;
 
 	public CspMiddleware(
 		RequestDelegate next,
@@ -28,6 +30,7 @@ public class CspMiddleware
 		_runtimeState = runtimeState;
 		_cspService = cspService;
 		_eventAggregator = eventAggregator;
+		_cspNonceHelper = (ICspNonceHelper)new CspNonceHelper();
 	}
 
 	public async Task InvokeAsync(HttpContext context)
@@ -48,7 +51,7 @@ public class CspMiddleware
 			return;
 		}
 
-		var csp = await Task.FromResult(ConstructCspDictionary(definition));
+		var csp = await Task.FromResult(ConstructCspDictionary(definition, context));
 		var cspValue = string.Join(";", csp.Select(x => x.Key + " " + x.Value));
 		if (!string.IsNullOrEmpty(cspValue))
 		{
@@ -58,7 +61,7 @@ public class CspMiddleware
 		await _next(context);
 	}
 
-	private static IDictionary<string,string> ConstructCspDictionary(CspDefinition definition)
+	private IDictionary<string,string> ConstructCspDictionary(CspDefinition definition, HttpContext context)
 	{
 		var csp = new Dictionary<string, string>();
 		foreach (var item in CspConstants.AllDirectives.Enumerate())
@@ -66,9 +69,18 @@ public class CspMiddleware
 			var key = item.Value;
 			var sources = definition.Sources
 				.Where(x => x.Directives.Contains(key))
-				.Select(x => x.Source).ToArray();
+				.Select(x => x.Source).ToList();
 			if (sources.Any())
 			{
+				if (item.Value.Equals("script-src"))
+				{
+					sources.Add($"'nonce-{_cspNonceHelper.GetCspScriptNonce(context)}'");
+				}
+
+				//if (item.Value.Equals("style-src"))
+				//{
+				//	sources.Add($"'nonce-{_cspConfigOverride.GetCspStyleNonce(context)}'");
+				//}
 				csp.Add(item.Value, string.Join(" ", sources));
 			}
 		}
