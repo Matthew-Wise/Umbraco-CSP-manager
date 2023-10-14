@@ -1,4 +1,4 @@
-namespace Umbraco.Community.CSPManager.TagHelpers;
+﻿namespace Umbraco.Community.CSPManager.TagHelpers;
 
 using System;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -54,7 +54,7 @@ public class CspNonceTagHelper : TagHelper
 		}
 
 		// First reference to a nonce, set header and mark that header has been set. We only need to set it once.
-		if (!string.IsNullOrEmpty(httpContext.GetItem<string>(contextMarkerKey)))
+		if (string.IsNullOrEmpty(httpContext.GetItem<string>(contextMarkerKey)))
 		{
 			httpContext.SetItem(contextMarkerKey, "set");
 			_cspService.SetCspHeaders(httpContext);
