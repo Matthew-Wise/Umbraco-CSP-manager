@@ -5,50 +5,39 @@ using Models;
 
 public class HttpContextWrapper
 {
-	private readonly HttpContext _context;
+	public HttpContext Context { get; private set; }
 
 	public HttpContextWrapper(HttpContext context)
 	{
-		_context = context;
+		Context = context;
 	}
 
-	public T GetOriginalHttpContext<T>() where T : class
-	{
-		return _context as T;
-	}
-
-	public CspManagerContext GetCspManagerContext()
-	{
-		return GetCspManagerContext(CspConstants.ContextKey);
-	}
+	public CspManagerContext? GetCspManagerContext() => GetCspManagerContext(CspConstants.ContextKey);
 
 	public void SetItem<T>(string key, T value) where T : class
-	{
-		_context.Items[key] = value;
+	{ 
+		Context.Items[key] = value;
 	}
 
-	public T GetItem<T>(string key) where T : class
-	{
-		return _context.Items.ContainsKey(key) ? (T)_context.Items[key] : null;
-	}
+	public T? GetItem<T>(string key) where T : class => Context.Items.TryGetValue(key, out var value) && value is T item ? item : null;
 
 	public void SetHttpHeader(string name, string value)
 	{
-		_context.Response.Headers[name] = value;
+		Context.Response.Headers[name] = value;
 	}
 
 	public void RemoveHttpHeader(string name)
 	{
-		_context.Response.Headers.Remove(name);
+		Context.Response.Headers.Remove(name);
 	}
 
-	private CspManagerContext GetCspManagerContext(string contextKey)
+	private CspManagerContext? GetCspManagerContext(string contextKey)
 	{
-		if (!_context.Items.ContainsKey(contextKey))
+		if (!Context.Items.ContainsKey(contextKey))
 		{
-			_context.Items[contextKey] = new CspManagerContext();
+			Context.Items[contextKey] = new CspManagerContext();
 		}
 
-		return (CspManagerContext)_context.Items[contextKey];
+		return Context.Items[contextKey] as CspManagerContext;
 	}
 }

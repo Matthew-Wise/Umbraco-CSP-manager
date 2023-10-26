@@ -1,73 +1,146 @@
-﻿<div ng-controller="cspManagerManageController as vm">
-	<uui-box ng-if="!vm.loading" headline="Settings" style="margin-bottom: 10px;">
-		<umb-checkbox name="definitionEnabled"
-					  value="{{vm.definition.Enabled}}"
-					  model="vm.definition.Enabled"
-					  text="Enabled">
-		</umb-checkbox>
-		<umb-checkbox name="definitionReportOnly"
-					  value="{{vm.definition.ReportOnly}}"
-					  model="vm.definition.ReportOnly"
-					  text="Report Only">
-		</umb-checkbox>
-	</uui-box>
+﻿<ng-form val-form-manager class="form-horizontal" ng-controller="cspManagerManageController as vm">
+	<div class="umb-editor-tab-bar">
+		<umb-tabs-nav tabs="vm.tabs"
+					  on-tab-change="vm.changeTab(tab)">
+		</umb-tabs-nav>
+	</div>
+	<umb-tab-content ng-if="vm.tab === 'Sources'">
+		<uui-box headline="Sources" class="umb-group-panel">
 
-	<uui-box headline="Sources" class="form-horizontal">
-
-		<div ng-repeat="(sourceIndex, source) in vm.definition.Sources" class="mb2">
-			<button type="button" class="csp-accordion-btn" ng-class="{'active': vm.expanded.includes(sourceIndex) ? true : false}" ng-click="vm.expandAccordion($event, sourceIndex)">
-				Source: {{source.Source}}
-				<span class="ml-auto">
-					<uui-icon-registry-essential>
-						<uui-action-bar>
-							<uui-button label="copy" look="secondary" color="default" ng-click="vm.copySource(sourceIndex)">
-								<uui-icon name="copy"></uui-icon>
-							</uui-button>
-							<uui-button label="remove" look="secondary" color="default" ng-click="vm.deleteSource(sourceIndex)">
-								<uui-icon name="remove"></uui-icon>
-							</uui-button>
-						</uui-action-bar>
-					</uui-icon-registry-essential>
-					<uui-symbol-expand ng-attr-open="{{vm.expanded.includes(sourceIndex) ? true : undefined}}"></uui-symbol-expand>
-				</span>
-			</button>
-			<div class="csp-accordion" ng-class="{'show': vm.expanded.includes(sourceIndex) ? true : false}">
-				<div class="control-group umb-control-group">
-					<div class="umb-el-wrap">
-						<div class="control-header">
-							<label class="control-label" for="source-{{sourceIndex}}">Source Url</label>
-						</div>
-						<div class="controls">
-							<input id="source-{{sourceIndex}}" type="text" ng-model="vm.definition.Sources[sourceIndex].Source" class="umb-property-editor umb-textstring textstring" />
+			<div ng-repeat="(sourceIndex, source) in vm.definition.Sources" class="mb2">
+				<button type="button" class="csp-accordion-btn" ng-class="{'active': vm.expanded.includes(sourceIndex) ? true : false}" ng-click="vm.expandAccordion($event, sourceIndex)">
+					Source: {{source.Source}}
+					<span class="ml-auto">
+						<uui-icon-registry-essential>
+							<uui-action-bar>
+								<uui-button label="copy" look="secondary" color="default" ng-click="vm.copySource(sourceIndex)">
+									<uui-icon name="copy"></uui-icon>
+								</uui-button>
+								<uui-button label="remove" look="secondary" color="default" ng-click="vm.deleteSource(sourceIndex)">
+									<uui-icon name="remove"></uui-icon>
+								</uui-button>
+							</uui-action-bar>
+						</uui-icon-registry-essential>
+						<uui-symbol-expand ng-attr-open="{{vm.expanded.includes(sourceIndex) ? true : undefined}}"></uui-symbol-expand>
+					</span>
+				</button>
+				<div class="csp-accordion" ng-class="{'show': vm.expanded.includes(sourceIndex) ? true : false}">
+					<div class="control-group umb-control-group">
+						<div class="umb-el-wrap">
+							<div class="control-header">
+								<label class="control-label" for="source-{{sourceIndex}}">Source Url</label>
+							</div>
+							<div class="controls">
+								<input id="source-{{sourceIndex}}" type="text" ng-model="vm.definition.Sources[sourceIndex].Source" class="umb-property-editor umb-textstring textstring" />
+							</div>
 						</div>
 					</div>
-				</div>
 
-				<div class="control-group umb-control-group">
-					<div class="umb-el-wrap">
-						<div class="control-header">
-							<label class="control-label">Directives Set</label>
-						</div>
-						<div class="controls" style="
-									display: grid;
-									grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-									grid-template-rows: repeat(auto-fill);">
+					<div class="control-group umb-control-group">
+						<div class="umb-el-wrap">
+							<div class="control-header">
+								<label class="control-label">Directives Set</label>
+							</div>
+							<div class="controls" style="
+								display: grid;
+								grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+								grid-template-rows: repeat(auto-fill);">
 
-							<label ng-repeat="(index, directive) in vm.cspDirectiveOptions">
-								<umb-checkbox name="directives"
-											  value="{{directive.value}}"
-											  model="source.Directives.includes(directive.value)"
-											  text="{{directive.value}}"
-											  on-change="vm.updateDirectiveOnSource(source, directive.value)">
-								</umb-checkbox>
-							</label>
+								<label ng-repeat="(index, directive) in vm.cspDirectiveOptions">
+									<umb-checkbox name="directives"
+												  value="{{directive.value}}"
+												  model="source.Directives.includes(directive.value)"
+												  text="{{directive.value}}"
+												  on-change="vm.updateDirectiveOnSource(source, directive.value)">
+									</umb-checkbox>
+								</label>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
 
-		<uui-button look="outline" color="default" type="button" label="Add Source" ng-click="vm.addSource()" class="mt3"></uui-button>
+			<uui-button look="outline" color="default" type="button" label="Add Source" ng-click="vm.addSource()" class="mt3"></uui-button>
 
-	</uui-box>
-</div>
+		</uui-box>
+	</umb-tab-content>
+	<umb-tab-content ng-if="vm.tab === 'Settings'">
+		<uui-box ng-if="!vm.loading" headline="Settings" class="umb-group-panel">
+			<div class="umb-group-panel__content">
+				<p>
+					The {{vm.definition.IsBackOffice ? "Back Office" : "Front end"}} CSP is currently <b>{{vm.definition.Enabled ? "enabled" : "disabled"}}</b>
+					{{vm.definition.Enabled && vm.definition.ReportOnly ? " and is in report only mode" : ""}}
+					{{vm.definition.Enabled && !vm.definition.ReportOnly ? " and will be enforced" : ""}}
+				</p>
+				<hr />
+				<div class="control-group umb-control-group">
+					<div class="umb-property">
+						<div class="control-header">
+							<label class="control-label" for="cspEnable">Toggle CSP header</label>
+							<small class="control-description">Enables/Disables the CSP header</small>
+						</div>
+						<div class="controls">
+							<umb-checkbox name="definitionEnabled" input-id="cspEnable"
+										  value="{{vm.definition.Enabled}}"
+										  model="vm.definition.Enabled"
+										  text="{{vm.definition.Enabled ? 'CSP enabled' : 'CSP disabled'}}">
+							</umb-checkbox>
+						</div>
+					</div>
+				</div>
+				<div class="control-group umb-control-group">
+					<div class="umb-property">
+						<div class="control-header">
+							<label class="control-label" for="cspReportOnly">Toggle Report only</label>
+							<small class="control-description">Changes the CSP header to report only mode</small>
+						</div>
+						<div class="controls">
+							<umb-checkbox name="definitionReportOnly" input-id="cspReportOnly"
+										  value="{{vm.definition.ReportOnly}}"
+										  model="vm.definition.ReportOnly"
+										  text="{{vm.definition.ReportOnly ? 'Report only mode' : 'Enforcement mode'}}">
+							</umb-checkbox>
+						</div>
+					</div>
+				</div>
+
+				<div class="control-group umb-control-group">
+					<div class="umb-property">
+						<h4>Reporting</h4>
+						<p>Report-Uri is deprecated in favour of report-to for CSP 3 -
+							<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/report-to">Mozilla documentation</a>
+						</p>
+					</div>
+				</div>
+
+				<div class="control-group umb-control-group">
+					<div class="umb-property">
+						<div class="control-header">
+							<label class="control-label" for="cspReporting">Toggle reporting</label>
+							<small class="control-description">When enabled allows for gathering of CSP errors</small>
+						</div>
+						<div class="controls">
+							<uui-radio-group name="cspReporting">
+								<uui-radio value="{{directive.value}}"
+										   ng-on-change="vm.changeReporting(directive.value)"
+										   ng-checked="directive.value == vm.definition.ReportingDirective"
+										   ng-repeat="(index, directive) in vm.reportingDirectives" 
+										   label="{{directive.label}}"></uui-radio>
+							</uui-radio-group>
+						</div>
+					</div>
+				</div>
+				<div class="control-group umb-control-group">
+					<div class="umb-property">
+						<div class="control-header">
+							<label class="control-label" for="report-value">Report value</label>
+						</div>
+						<div class="controls">
+							<input type="text" id="report-value" ng-model="vm.definition.ReportUri" class="umb-property-editor umb-textstring textstring" />
+						</div>
+					</div>
+				</div>
+			</div>
+		</uui-box>
+	</umb-tab-content>
+</ng-form>

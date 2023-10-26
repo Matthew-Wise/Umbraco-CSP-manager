@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Migrations;
 
-using Cms.Core.Packaging;
+using Umbraco.Cms.Core.Packaging;
 
 public sealed class CspMigrationPlan : PackageMigrationPlan
 {
@@ -12,5 +12,6 @@ public sealed class CspMigrationPlan : PackageMigrationPlan
 	{
 		To<InitialCspManagerMigration>(InitialCspManagerMigration.MigrationKey);
 		To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey);
+		To<ReportingMigration>(ReportingMigration.MigrationKey);
 	}
 }

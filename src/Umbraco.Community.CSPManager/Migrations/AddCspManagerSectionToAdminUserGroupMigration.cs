@@ -1,4 +1,5 @@
 ﻿namespace Umbraco.Community.CSPManager.Migrations;
+
 using System;
 using System.Linq;
 using Umbraco.Cms.Core.Services;

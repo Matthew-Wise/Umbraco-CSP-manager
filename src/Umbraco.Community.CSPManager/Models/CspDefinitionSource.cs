@@ -1,20 +1,20 @@
 ﻿namespace Umbraco.Community.CSPManager.Models;
 
-using Cms.Infrastructure.Persistence.DatabaseAnnotations;
+using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 using NPoco;
 
 [TableName((nameof(CspDefinitionSource)))]
-[PrimaryKey(new []{ nameof(DefinitionId), nameof(Source)})]
+[PrimaryKey(new[] { nameof(DefinitionId), nameof(Source) })]
 public class CspDefinitionSource
 {
 	[PrimaryKeyColumn(
-		AutoIncrement = false, 
+		AutoIncrement = false,
 		OnColumns = $"{nameof(DefinitionId)}, {nameof(Source)}")]
 	[ForeignKey(typeof(CspDefinition))]
 	public Guid DefinitionId { get; set; }
-	
+
 	[PrimaryKeyColumn(
-		AutoIncrement = false, 
+		AutoIncrement = false,
 		OnColumns = $"{nameof(DefinitionId)}, {nameof(Source)}")]
 	public string Source { get; init; } = string.Empty;
 

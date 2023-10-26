@@ -1,16 +1,16 @@
 ﻿namespace Umbraco.Community.CSPManager.Composing;
 
-using Backoffice;
-using Cms.Core.Composing;
-using Cms.Core.DependencyInjection;
-using Cms.Web.Common.ApplicationBuilder;
-using Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Services;
+using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Web.Common.ApplicationBuilder;
+using Umbraco.Community.CSPManager.Backoffice;
+using Umbraco.Community.CSPManager.Middleware;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Notifications.Handlers;
+using Umbraco.Community.CSPManager.Services;
 
 public sealed class CspManagerComposer : IComposer
 {

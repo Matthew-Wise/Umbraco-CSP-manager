@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Backoffice;
 
-using Cms.Core.Sections;
+using Umbraco.Cms.Core.Sections;
 
 public sealed class CspManagementSection : ISection
 {

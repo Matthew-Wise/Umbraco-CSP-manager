@@ -85,7 +85,7 @@ public class CspMiddlewareTests
 		Mock.Get(Services.GetRequiredService<IRuntimeState>())
 			.SetupGet(x => x.Level).Returns(runtimeLevel);
 
-		await _host.GetTestClient().GetAsync("/");
+		await _host.GetTestClient().GetAsync("/",	HttpCompletionOption.ResponseHeadersRead);
 		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinition(It.IsAny<bool>()), verifyCalls);
 		Mock.Get(_eventAggregator).Verify(x => x.PublishAsync(It.IsAny<CspWritingNotification>(),
 			It.IsAny<CancellationToken>()), verifyCalls);
@@ -101,8 +101,9 @@ public class CspMiddlewareTests
 		if (definition.Enabled)
 		{
 			await Verify(response.Headers)
+				.UseDirectory(nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled))
 				.UseFileName(
-					$"{nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled)}_{TestContext.CurrentContext.Test.Name}");
+					$"{TestContext.CurrentContext.Test.Name}");
 		}
 		else
 		{
@@ -121,7 +122,8 @@ public class CspMiddlewareTests
 					Enabled = true,
 					IsBackOffice = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
-				}) { TestName = "Backoffice enabled" };
+				})
+			{ TestName = "Backoffice enabled" };
 
 			yield return new TestCaseData("/umbraco",
 				new CspDefinition
@@ -131,7 +133,8 @@ public class CspMiddlewareTests
 					IsBackOffice = true,
 					ReportOnly = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
-				}) { TestName = "Backoffice Report Only" };
+				})
+			{ TestName = "Backoffice Report Only" };
 
 			yield return new TestCaseData("/umbraco",
 				new CspDefinition
@@ -140,7 +143,8 @@ public class CspMiddlewareTests
 					Enabled = false,
 					IsBackOffice = true,
 					Sources = CspConstants.DefaultBackOfficeCsp
-				}) { TestName = "Backoffice disabled" };
+				})
+			{ TestName = "Backoffice disabled" };
 		}
 	}
 

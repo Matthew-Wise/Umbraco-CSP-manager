@@ -16,6 +16,6 @@ public class CspWritingNotification : INotification
 	}
 
 	public CspDefinition? CspDefinition { get; set; }
-	
+
 	public HttpContext HttpContext { get; set; }
 }

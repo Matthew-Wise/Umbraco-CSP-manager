@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Backoffice;
 
-using Cms.Core.Dashboards;
+using Umbraco.Cms.Core.Dashboards;
 
 public sealed class CspManagementDashboard : IDashboard
 {

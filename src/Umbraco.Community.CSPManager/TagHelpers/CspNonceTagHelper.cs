@@ -1,9 +1,9 @@
 ﻿namespace Umbraco.Community.CSPManager.TagHelpers;
 
-using System;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.Extensions.Logging;
 using Services;
 
 [HtmlTargetElement(ScriptTag, Attributes = CspNonceAttributeName)]
@@ -14,11 +14,13 @@ public class CspNonceTagHelper : TagHelper
 	private const string StyleTag = "style";
 	private const string CspNonceAttributeName = "csp-manager-add-nonce";
 	private const string CspNonceDataAttributeName = "csp-manager-add-nonce-data-attribute";
-	private ICspService _cspService;
+	private readonly ICspService _cspService;
+	private readonly ILogger<CspNonceTagHelper> _logger;
 
-	public CspNonceTagHelper(ICspService cspService)
+	public CspNonceTagHelper(ICspService cspService, ILogger<CspNonceTagHelper> logger)
 	{
 		_cspService = cspService;
+		_logger = logger;
 	}
 
 	/// <summary>
@@ -34,37 +36,38 @@ public class CspNonceTagHelper : TagHelper
 	public bool IncludeDataAttribute { get; set; }
 
 	[HtmlAttributeNotBound, ViewContext]
-	public ViewContext ViewContext { get; set; }
+	public ViewContext ViewContext { get; set; } = null!;
 
 	public override void Process(TagHelperContext context, TagHelperOutput output)
 	{
-		if (!UseCspNonce) return;
+		if (!UseCspNonce)
+		{
+			return;
+		}
 
 		var httpContext = new HttpContextWrapper(ViewContext.HttpContext);
 		string nonce;
 		string contextMarkerKey;
 		var tag = output.TagName;
 
-		if (tag == ScriptTag)
+		switch (tag)
 		{
-			nonce = _cspService.GetCspScriptNonce(httpContext);
-			contextMarkerKey = CspConstants.CspManagerScriptNonceSet;
-		}
-		else if (tag == StyleTag)
-		{
-			nonce = _cspService.GetCspStyleNonce(httpContext);
-			contextMarkerKey = CspConstants.CspManagerStyleNonceSet;
-		}
-		else
-		{
-			throw new Exception($"Something went horribly wrong. You shouldn't be here for the tag {tag}.");
+			case ScriptTag:
+				nonce = _cspService.GetCspScriptNonce(httpContext);
+				contextMarkerKey = CspConstants.CspManagerScriptNonceSet;
+				break;
+			case StyleTag:
+				nonce = _cspService.GetCspStyleNonce(httpContext);
+				contextMarkerKey = CspConstants.CspManagerStyleNonceSet;
+				break;
+			default:
+				_logger.LogWarning("CSP Nonce used on an invalid tag {Tag}", tag);
+				return;
 		}
 
-		// First reference to a nonce, set header and mark that header has been set. We only need to set it once.
 		if (string.IsNullOrEmpty(httpContext.GetItem<string>(contextMarkerKey)))
 		{
 			httpContext.SetItem(contextMarkerKey, "set");
-			_cspService.SetCspHeaders(httpContext);
 		}
 
 		output.Attributes.Add(new TagHelperAttribute("nonce", nonce));

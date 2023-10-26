@@ -7,13 +7,13 @@
 		vm.save = save;
 
 		let init = () => {
-			navigationService.syncTree({ tree: 'manage-csp', path: ["-1", $routeParams.id], forceReload: false });
+			navigationService.syncTree({ tree: "manage-csp", path: ["-1", $routeParams.id], forceReload: false });
 
 			vm.page = {
 				isBackOffice: $routeParams.id === "1",
 				loading: true,
 				navigation: [{
-					active: false,
+					active: true,
 					alias: "edit",
 					icon: "icon-document-dashed-line",
 					name: "Edit",
@@ -23,7 +23,7 @@
 					badge: null
 				},
 				{
-					active: true,
+					active: false,
 					alias: "evaluate",
 					icon: "icon-lense",
 					name:"Evaluate",
@@ -33,19 +33,20 @@
 					badge: null
 				}]
 			};
-			vm.page.name = `Manage ${vm.page.isBackOffice ? "Back Office" : "Front end"} CSP`;
 
-			getDefinition(vm.page.isBackOffice);
+			vm.page.name = `Manage ${vm.page.isBackOffice ? "Back Office" : "Front end"} CSP`;
+			getDefinition();
 		}
 
-		function getDefinition(isBackOffice) {
-			cspManagerResource.getDefinition(isBackOffice)
+		function getDefinition() {
+			vm.page.loading = true;
+			cspManagerResource.getDefinition(vm.page.isBackOffice)
 				.then(function (result) {
 					vm.definition = result;
 					vm.page.loading = false;
 				}, function (error) {
 					console.warn(error);
-					notificationsService.error('Error', 'Failed to retrieve definition for CSP Manager');
+					notificationsService.error("Error", "Failed to retrieve definition for CSP Manager");
 				});
 		}
 
@@ -55,10 +56,12 @@
 				.then(function (result) {
 					vm.definition = result;
 					vm.saving = "success";
+					notificationsService.success("Success", "CSP Manager updated");
+					getDefinition(vm.page.isBackOffice)
 				}, function (error) {
 					vm.saving = "failed";
 					console.warn(error);
-					notificationsService.error('Error', 'Failed to save definition for CSP Manager');
+					notificationsService.error("Error", "Failed to save definition for CSP Manager");
 				});
 		}
 

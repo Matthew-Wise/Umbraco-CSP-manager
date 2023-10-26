@@ -1,10 +1,10 @@
 ﻿namespace Umbraco.Community.CSPManager.Migrations;
 
-using Cms.Infrastructure.Migrations;
-using Cms.Infrastructure.Persistence.DatabaseAnnotations;
-using Models;
 using NPoco;
 using Umbraco.Cms.Core.Configuration;
+using Umbraco.Cms.Infrastructure.Migrations;
+using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
+using Umbraco.Community.CSPManager.Models;
 
 public sealed class InitialCspManagerMigration : MigrationBase
 {
@@ -21,7 +21,7 @@ public sealed class InitialCspManagerMigration : MigrationBase
 		if (!TableExists(nameof(CspDefinition)))
 		{
 			Create.Table<CspDefinitionSchema>().Do();
-			Context.Database.Insert(new CspDefinition
+			Context.Database.Insert(nameof(CspDefinition), nameof(CspDefinition.Id), false, new
 			{
 				Id = CspConstants.DefaultBackofficeId,
 				IsBackOffice = true,
@@ -35,12 +35,12 @@ public sealed class InitialCspManagerMigration : MigrationBase
 			Create.Table<CspDefinitionSourceSchema>().Do();
 			foreach (var source in CspConstants.DefaultBackOfficeCsp)
 			{
-				if(UmbracoVersion.Version.Major >= 13 && source.Source == "www.gravatar.com")
+				if (UmbracoVersion.Version.Major >= 13 && source.Source == "www.gravatar.com")
 				{
 					continue;
 				}
 
-				Context.Database.Insert(source);
+				Context.Database.Insert(nameof(CspDefinitionSource), $"{nameof(CspDefinitionSource.DefinitionId)},{nameof(CspDefinitionSource.Source)}", false, source);
 			}
 		}
 	}

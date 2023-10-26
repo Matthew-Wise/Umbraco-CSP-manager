@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Services;
 
-using Models;
+using Umbraco.Community.CSPManager.Models;
 
 public interface ICspService
 {
@@ -10,11 +10,8 @@ public interface ICspService
 
 	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition);
 
-	Task<string> GenerateCspHeader(CspDefinition definition, HttpContextWrapper httpContext);
-
 	string GetCspScriptNonce(HttpContextWrapper context);
 
 	string GetCspStyleNonce(HttpContextWrapper context);
 
-	Task SetCspHeaders(HttpContextWrapper context);
 }
