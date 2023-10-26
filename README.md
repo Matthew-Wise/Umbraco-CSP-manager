@@ -6,12 +6,19 @@
 
 Enables you to manage CSP for both the front and back end, via CMS section.
 
-![Management CSP section](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/images/managment-screen.png "Csp Management screen")
-
 ## Installation
 
 ```
 dotnet add package Umbraco.Community.CSPManager
 ```
+
+## CSP Management
+![CSP Management section](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/managment-screen.png "Csp Management section")
+
+## Configuration
+![Configuration section](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/settings-screen.png "Configuration section")
+
+## Evaluation
+![CSP Evaluation section](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/evaluate-screen.png "Csp Evaluation section")
 
 You will also need to give access via the users section to the CSP Manager section.
