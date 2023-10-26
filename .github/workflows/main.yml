@@ -48,10 +48,16 @@ jobs:
         run: dotnet build $TESTPROJECT -c $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
 
       - name: Run tests
-        run: dotnet test $TESTPROJECT -c  $BUILD_CONFIG --no-build --verbosity normal --filter "Category!=LongRunning"
+        run: dotnet test $TESTPROJECT -c  $BUILD_CONFIG --no-build --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=test-results.trx"
 
-      - name: Variable Test        
-        run: echo "Test - $BUILD_VERSION"
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+            name: DotNET Tests
+            path: "**/test-results.trx"                            
+            reporter: dotnet-trx
+            fail-on-error: true
   
       - name: Publish
         if: github.event_name == 'release'
