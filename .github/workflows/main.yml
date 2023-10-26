@@ -51,9 +51,8 @@ jobs:
         run: dotnet test $TESTPROJECT -c  $BUILD_CONFIG --no-build --verbosity normal --filter "Category!=LongRunning"
 
       - name: Variable Test        
-        run: echo "Test - $BUILDNUMBER"
+        run: echo "Test - $BUILD_VERSION"
   
       - name: Publish
         if: github.event_name == 'release'
-        run: echo "Release number - $BUILDNUMBER"
-        #run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
+        run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
