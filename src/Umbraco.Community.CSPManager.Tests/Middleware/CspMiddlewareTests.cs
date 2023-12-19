@@ -114,9 +114,15 @@ public class CspMiddlewareTests
 		var response = await _host.GetTestClient().GetAsync(uri);
 		if (definition.Enabled)
 		{
+#if NET6_0 || NET7_0
+			await Verify(response.Headers)
+				.UseFileName(
+					$"{nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled)}_{TestContext.CurrentContext.Test.Name}.DotNet7_0");
+#else
 			await Verify(response.Headers)
 				.UseFileName(
 					$"{nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled)}_{TestContext.CurrentContext.Test.Name}");
+#endif
 		}
 		else
 		{

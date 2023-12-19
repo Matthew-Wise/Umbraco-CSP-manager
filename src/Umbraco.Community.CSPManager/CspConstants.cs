@@ -69,14 +69,15 @@ public static class CspConstants
 			Source = "dashboard.umbraco.com",
 			Directives = new List<string> { Directives.ImageSource }
 		},
+#if NET6_0 || NET7_0
 		new CspDefinitionSource
 		{
 			DefinitionId = DefaultBackofficeId,
 			Source = "www.gravatar.com",
 			Directives = new List<string> { Directives.ImageSource }
 		}
+#endif
 	};
-
 	public static class Directives
 	{
 		public const string BaseUri = "base-uri";
