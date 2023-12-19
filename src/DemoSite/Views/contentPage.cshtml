@@ -19,9 +19,11 @@
 
         <div class="col-md-9">
             <article>
-                @Html.GetGridHtml(Model, "bodyText", "bootstrap3-fluid")
+                @await Html.GetBlockGridHtmlAsync(Model, "bodyText")
             </article>
         </div>
     </div>
 
 </section>
+
+<link rel="stylesheet" href="@Url.Content("~/css/umbraco-starterkit-blockgrid.css")" />

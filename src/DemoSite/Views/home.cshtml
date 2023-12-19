@@ -21,9 +21,8 @@
 </section>
 
 <section class="section section">
-    @Html.GetGridHtml(Model, "bodyText", "bootstrap3-fluid")
+    @await Html.GetBlockGridHtmlAsync(Model, "bodyText")
 </section>
-
 
 <section class="section section--themed">
 

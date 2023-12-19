@@ -29,6 +29,9 @@ public class CspMiddlewareTests
 	private ICspService _cspService;
 
 	private IEventAggregator _eventAggregator;
+
+	private IRuntimeState _runtimeState;
+	private IRuntime _runtime;
 	private static Dictionary<string, string> InMemoryConfiguration => new();
 
 	private TestHelper TestHelper { get; } = new();
@@ -42,6 +45,9 @@ public class CspMiddlewareTests
 			Constants.Configuration.ConfigUnattended + ":" + nameof(UnattendedSettings.InstallUnattended)] = "true";
 		_cspService = Mock.Of<ICspService>();
 		_eventAggregator = Mock.Of<IEventAggregator>();
+		_runtimeState = Mock.Of<IRuntimeState>(x => x.Level == RuntimeLevel.Run);
+		_runtime = Mock.Of<IRuntime>(x => x.State == _runtimeState);
+
 		_host = new HostBuilder()
 			.ConfigureWebHost(webBuilder =>
 			{
@@ -51,13 +57,21 @@ public class CspMiddlewareTests
 					{
 						services.AddSingleton(_ => _cspService);
 						services.AddSingleton(_ => _eventAggregator);
-						services.AddSingleton(_ => Mock.Of<IRuntimeState>(x => x.Level == RuntimeLevel.Run));
+						services.AddSingleton(_ => _runtimeState);
+
 						services.AddSingleton(_ => TestHelper.GetHostingEnvironment());
 #if NET6_0
 						services.AddTransient(sp => new UmbracoRequestPaths(
 							sp.GetRequiredService<IOptions<GlobalSettings>>(),
 							sp.GetRequiredService<IHostingEnvironment>()));
+#elif NET7_0
+						services.AddTransient(sp => new UmbracoRequestPaths(
+							sp.GetRequiredService<IOptions<GlobalSettings>>(),
+							sp.GetRequiredService<IHostingEnvironment>(),
+							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
 #else
+						services.AddSingleton(_ => _runtime);
+
 						services.AddTransient(sp => new UmbracoRequestPaths(
 							sp.GetRequiredService<IOptions<GlobalSettings>>(),
 							sp.GetRequiredService<IHostingEnvironment>(),
