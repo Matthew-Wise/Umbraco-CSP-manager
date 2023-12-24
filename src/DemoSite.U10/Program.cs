@@ -1,4 +1,4 @@
-namespace DemoSite;
+namespace DemoSite.U10;
 
 public class Program
 {
