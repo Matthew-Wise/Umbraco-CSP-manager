@@ -2,14 +2,6 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Cms.Core;
-using Cms.Core.Configuration.Models;
-using Cms.Core.Events;
-using Cms.Core.Routing;
-using Cms.Core.Services;
-using Cms.Tests.Integration.Implementations;
-using CSPManager.Middleware;
-using CSPManager.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -17,9 +9,18 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Models;
-using Notifications;
-using IHostingEnvironment = Cms.Core.Hosting.IHostingEnvironment;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Configuration.Models;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Routing;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Tests.Integration.Implementations;
+using Umbraco.Community.CSPManager.Middleware;
+using Umbraco.Community.CSPManager.Services;
+using Umbraco.Community.CSPManager.Models;
+using Umbraco.Community.CSPManager.Notifications;
+
+using IHostingEnvironment = Umbraco.Cms.Core.Hosting.IHostingEnvironment;
 
 [TestFixture]
 public class CspMiddlewareTests
