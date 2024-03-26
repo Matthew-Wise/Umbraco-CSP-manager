@@ -191,6 +191,25 @@ public class CspServiceTests : UmbracoIntegrationTest
 				IsBackOffice = true,
 				Sources = additionalSource
 			}) { TestName = "Add a CSP Source to a Definition" };
+
+
+			var longSource = CspConstants.DefaultBackOfficeCsp.ToList();
+			longSource.Add(new CspDefinitionSource
+			{
+				DefinitionId = CspConstants.DefaultBackofficeId,
+				Directives = new() { CspConstants.Directives.BaseUri },
+				Source = new string('a', 300)
+			});
+
+
+			yield return new TestCaseData(new CspDefinition
+			{
+				Id = CspConstants.DefaultBackofficeId,
+				Enabled = true,
+				IsBackOffice = true,
+				Sources = additionalSource
+			})
+			{ TestName = "Add a CSP Long Source to a Definition" };
 		}
 	}
 }

@@ -1,6 +1,5 @@
 ﻿namespace Umbraco.Community.CSPManager.Migrations;
 
-using System.Data.SqlTypes;
 using Newtonsoft.Json;
 using NPoco;
 using Umbraco.Cms.Infrastructure.Migrations;
@@ -18,6 +17,12 @@ public class MaxSourceLengthMigration : MigrationBase
 
 	protected override void Migrate()
 	{
+		// SQLite text string is a variable length far greater than we are changing it to
+		// - https://docs.kony.com/konylibrary/visualizer/viz_api_dev_guide/content/sqllite.htm#:~:text=SQLite%20text%20and%20BLOB%20values,this%20directive%20is%20two%20gigabytes.
+		if (SqlSyntax.DbProvider.InvariantContains("SQLite"))
+		{
+			return;
+		}
 
 		if (TableExists(nameof(CspDefinitionSource)))
 		{
@@ -32,7 +37,7 @@ public class MaxSourceLengthMigration : MigrationBase
 
 			var getAllSources = Sql().SelectAll().From(tempName);
 
-			foreach (var row in  Database.Fetch<CspDefinitionSourceSchema>(getAllSources))
+			foreach (var row in Database.Fetch<CspDefinitionSourceSchema>(getAllSources))
 			{
 				dataCopy.Row(new
 				{
@@ -41,7 +46,7 @@ public class MaxSourceLengthMigration : MigrationBase
 					Directives = JsonConvert.SerializeObject(row.Directives)
 				});
 			}
-			
+
 			dataCopy.Do();
 
 			Delete.Table(tempName).Do();
