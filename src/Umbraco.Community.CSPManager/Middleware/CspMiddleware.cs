@@ -9,7 +9,7 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Extensions;
 using Umbraco.Community.CSPManager.Models;
-using CommunityToolkit.HighPerformance;
+using Umbraco.Community.CSPManager.Extensions;
 
 public class CspMiddleware
 {
@@ -50,8 +50,7 @@ public class CspMiddleware
 				return;
 			}
 
-			var httpContext = new HttpContextWrapper(context);
-			var csp = ConstructCspDictionary(definition, httpContext);
+			var csp = ConstructCspDictionary(definition, context);
 			var cspValue = string.Join(";", csp.Select(x => x.Key + " " + x.Value));
 
 			if (!string.IsNullOrEmpty(cspValue))
@@ -63,9 +62,8 @@ public class CspMiddleware
 		await _next(context);
 	}
 
-	private IDictionary<string, string> ConstructCspDictionary(CspDefinition definition, HttpContextWrapper httpContext)
+	private IDictionary<string, string> ConstructCspDictionary(CspDefinition definition, HttpContext httpContext)
 	{
-		var csp = new Dictionary<string, string>();
 		string? scriptNonce = null;
 		if (httpContext.GetItem<string>(CspConstants.CspManagerScriptNonceSet) == "set")
 		{
@@ -78,37 +76,26 @@ public class CspMiddleware
 			styleNonce = _cspService.GetCspStyleNonce(httpContext);
 		}
 
-
-		foreach (var item in CspConstants.AllDirectives.Enumerate())
-		{
-			var key = item.Value;
-			var sources = definition.Sources
-				.Where(x => x.Directives.Contains(key))
-				.Select(x => x.Source).ToHashSet();
-
-
-
-			if (!string.IsNullOrEmpty(scriptNonce) && key.Equals("script-src"))
-			{
-				sources.Add($"'nonce-{scriptNonce}'");
-			}
-
-			if (!string.IsNullOrEmpty(styleNonce) && key.Equals("style-src"))
-			{
-				sources.Add($"'nonce-{styleNonce}'");
-			}
-
-			if (sources.Count <= 0)
-			{
-				continue;
-			}
-
-			csp.TryAdd(item.Value, string.Join(" ", sources));
-		}
+		var csp = definition.Sources
+		.SelectMany(c => c.Directives.Select(d => new { Directive = d, c.Source }))
+		.GroupBy(x => x.Directive)
+		.ToDictionary(g => g.Key, g => string.Join(" ", g.Select(x => x.Source)));
 
 		if (!string.IsNullOrWhiteSpace(definition.ReportingDirective) && !string.IsNullOrWhiteSpace(definition.ReportUri))
 		{
 			csp.TryAdd(definition.ReportingDirective, definition.ReportUri);
+		}
+
+		if (!string.IsNullOrWhiteSpace(scriptNonce) && csp.TryGetValue(CspConstants.Directives.ScriptSource, out var scriptSrc))
+		{
+			scriptSrc += $" 'nonce-{scriptNonce}'";
+			csp[CspConstants.Directives.ScriptSource] = scriptSrc;
+		}
+
+		if (!string.IsNullOrWhiteSpace(styleNonce) && csp.TryGetValue(CspConstants.Directives.StyleSource, out var styleSrc))
+		{
+			styleSrc += $" 'nonce-{styleNonce}'";
+			csp[CspConstants.Directives.StyleSource] = styleSrc;
 		}
 
 		return csp;

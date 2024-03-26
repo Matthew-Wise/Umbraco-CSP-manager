@@ -1,10 +1,12 @@
 ﻿namespace Umbraco.Community.CSPManager.Services;
 
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Http;
 using NPoco.Expressions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Infrastructure.Scoping;
+using Umbraco.Community.CSPManager.Extensions;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Extensions;
@@ -73,7 +75,7 @@ public class CspService : ICspService
 		return definition;
 	}
 
-	public string GetCspScriptNonce(HttpContextWrapper context)
+	public string GetCspScriptNonce(HttpContext context)
 	{
 		var cspManagerContext = context.GetCspManagerContext();
 
@@ -89,12 +91,12 @@ public class CspService : ICspService
 
 		var nonce = GenerateCspNonceValue();
 
-		SetCspDirectiveNonce(cspManagerContext, nonce, CspConstants.CspDirectives.ScriptSrc);
+		cspManagerContext.ScriptNonce = nonce;
 
 		return nonce;
 	}
 
-	public string GetCspStyleNonce(HttpContextWrapper context)
+	public string GetCspStyleNonce(HttpContext context)
 	{
 		var cspManagerContext = context.GetCspManagerContext();
 
@@ -110,7 +112,7 @@ public class CspService : ICspService
 
 		var nonce = GenerateCspNonceValue();
 
-		SetCspDirectiveNonce(cspManagerContext, nonce, CspConstants.CspDirectives.StyleSrc);
+		cspManagerContext.StyleNonce = nonce;
 
 		return nonce;
 	}
@@ -135,19 +137,6 @@ public class CspService : ICspService
 		}
 
 		return definition;
-	}
-
-	private static void SetCspDirectiveNonce(CspManagerContext cspManagerContext, string nonce, CspConstants.CspDirectives directive)
-	{
-		switch (directive)
-		{
-			case CspConstants.CspDirectives.ScriptSrc:
-				cspManagerContext.ScriptNonce = nonce;
-				break;
-			case CspConstants.CspDirectives.StyleSrc:
-				cspManagerContext.StyleNonce = nonce;
-				break;
-		}
 	}
 
 	private static string GenerateCspNonceValue()

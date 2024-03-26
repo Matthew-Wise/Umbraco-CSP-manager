@@ -1,5 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager.Services;
 
+using Microsoft.AspNetCore.Http;
 using Umbraco.Community.CSPManager.Models;
 
 public interface ICspService
@@ -10,8 +11,7 @@ public interface ICspService
 
 	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition);
 
-	string GetCspScriptNonce(HttpContextWrapper context);
+	string GetCspScriptNonce(HttpContext context);
 
-	string GetCspStyleNonce(HttpContextWrapper context);
-
+	string GetCspStyleNonce(HttpContext context);
 }

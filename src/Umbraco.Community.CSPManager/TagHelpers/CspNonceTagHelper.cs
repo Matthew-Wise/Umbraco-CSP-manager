@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Logging;
 using Services;
+using Umbraco.Community.CSPManager.Extensions;
 
 [HtmlTargetElement(ScriptTag, Attributes = CspNonceAttributeName)]
 [HtmlTargetElement(StyleTag, Attributes = CspNonceAttributeName)]
@@ -45,7 +46,7 @@ public class CspNonceTagHelper : TagHelper
 			return;
 		}
 
-		var httpContext = new HttpContextWrapper(ViewContext.HttpContext);
+		var httpContext = ViewContext.HttpContext;
 		string nonce;
 		string contextMarkerKey;
 		var tag = output.TagName;
