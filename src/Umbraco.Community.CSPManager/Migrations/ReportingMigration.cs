@@ -13,22 +13,22 @@ public class ReportingMigration : MigrationBase
 
 	protected override void Migrate()
 	{
-		if (!ColumnExists(nameof(CspDefinition), nameof(SchameUpdates.ReportingDirective)))
+		if (!ColumnExists(nameof(CspDefinition), nameof(SchemaUpdates.ReportingDirective)))
 		{
-			Create.Column(nameof(SchameUpdates.ReportingDirective))
+			Create.Column(nameof(SchemaUpdates.ReportingDirective))
 			.OnTable(nameof(CspDefinition))
 			.AsString(500).Nullable().Do();
 		}
 
-		if (!ColumnExists(nameof(CspDefinition), nameof(SchameUpdates.ReportUri)))
+		if (!ColumnExists(nameof(CspDefinition), nameof(SchemaUpdates.ReportUri)))
 		{
-			Create.Column(nameof(SchameUpdates.ReportUri))
+			Create.Column(nameof(SchemaUpdates.ReportUri))
 			.OnTable(nameof(CspDefinition))
 			.AsString(500).Nullable().Do();
 		}
 	}
 
-	public class SchameUpdates
+	public class SchemaUpdates
 	{
 		public string? ReportingDirective { get; set; }
 

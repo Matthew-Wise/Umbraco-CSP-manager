@@ -40,7 +40,8 @@ public class CspServiceTests : UmbracoIntegrationTest
 	{
 		if (typeof(T) == typeof(IEventAggregator))
 		{
-			return (T)(EventAggregator = Mock.Of<IEventAggregator>());
+			EventAggregator = Mock.Of<IEventAggregator>();
+			return (T)EventAggregator;
 		}
 		
 		return base.GetRequiredService<T>();

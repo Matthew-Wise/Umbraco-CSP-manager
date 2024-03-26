@@ -52,11 +52,11 @@
             cspManagerResource.getCspDirectiveOptions()
                 .then(function (result) {
                     let newItems = [];
-                    for (let i = 0; i < result.length; i++) {
+                    for (const element of result) {
                         newItems.push({
-                            id: result[i],
+                            id: element,
                             sortOrder: 0,
-                            value: result[i],
+                            value: element,
                         });
                     }
 
