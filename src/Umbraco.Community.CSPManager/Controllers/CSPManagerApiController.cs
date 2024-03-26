@@ -30,7 +30,7 @@ public sealed class CSPManagerApiController : UmbracoAuthorizedJsonController
 	{
 		if (definition.Id == Guid.Empty)
 		{
-			throw new ArgumentOutOfRangeException(nameof(definition.Id), "Definition Id is blank");
+			throw new ArgumentOutOfRangeException(nameof(definition), "Definition Id is blank");
 		}
 
 		return await _cspService.SaveCspDefinitionAsync(definition);

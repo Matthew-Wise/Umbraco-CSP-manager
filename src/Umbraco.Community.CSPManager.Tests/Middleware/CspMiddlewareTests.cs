@@ -80,7 +80,7 @@ public class CspMiddlewareTests
 	}
 
 	[Test]
-	[TestCaseSource(nameof(CspMiddlewareOnlyRunsWithRuntimeRunCases))]
+	[TestCaseSource(typeof(MiddlewareTestCases), nameof(MiddlewareTestCases.CspMiddlewareOnlyRunsWithRuntimeRunCases))]
 	public async Task CspMiddleware_OnlyRunsWithRuntimeRun(RuntimeLevel runtimeLevel, Times verifyCalls)
 	{
 		Mock.Get(Services.GetRequiredService<IRuntimeState>())
@@ -93,7 +93,7 @@ public class CspMiddlewareTests
 	}
 
 	[Test]
-	[TestCaseSource(nameof(CspMiddlewareReturnsExpectedCspWhenEnabledCases))]
+	[TestCaseSource(typeof(MiddlewareTestCases), nameof(MiddlewareTestCases.CspMiddlewareReturnsExpectedCspWhenEnabledCases))]
 	public async Task CspMiddleware_ReturnsExpectedCspWhenEnabled(string uri, CspDefinition definition)
 	{
 		Mock.Get(_cspService).Setup(x => x.GetCachedCspDefinition(It.IsAny<bool>())).Returns(definition);
@@ -109,56 +109,6 @@ public class CspMiddlewareTests
 		else
 		{
 			response.Headers.Should().NotContainKey(CspConstants.HeaderName);
-		}
-	}
-
-	private static IEnumerable<TestCaseData> CspMiddlewareReturnsExpectedCspWhenEnabledCases
-	{
-		get
-		{
-			yield return new TestCaseData("/umbraco",
-				new CspDefinition
-				{
-					Id = CspConstants.DefaultBackofficeId,
-					Enabled = true,
-					IsBackOffice = true,
-					Sources = CspConstants.DefaultBackOfficeCsp
-				})
-			{ TestName = "Backoffice enabled" };
-
-			yield return new TestCaseData("/umbraco",
-				new CspDefinition
-				{
-					Id = CspConstants.DefaultBackofficeId,
-					Enabled = true,
-					IsBackOffice = true,
-					ReportOnly = true,
-					Sources = CspConstants.DefaultBackOfficeCsp
-				})
-			{ TestName = "Backoffice Report Only" };
-
-			yield return new TestCaseData("/umbraco",
-				new CspDefinition
-				{
-					Id = CspConstants.DefaultBackofficeId,
-					Enabled = false,
-					IsBackOffice = true,
-					Sources = CspConstants.DefaultBackOfficeCsp
-				})
-			{ TestName = "Backoffice disabled" };
-		}
-	}
-
-	public static IEnumerable<TestCaseData> CspMiddlewareOnlyRunsWithRuntimeRunCases
-	{
-		get
-		{
-			yield return new TestCaseData(RuntimeLevel.Run, Times.Once());
-			yield return new TestCaseData(RuntimeLevel.Install, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.Upgrade, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.Boot, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.BootFailed, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.Unknown, Times.Never());
 		}
 	}
 
