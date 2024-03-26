@@ -57,7 +57,7 @@
 					vm.definition = result;
 					vm.saving = "success";
 					notificationsService.success("Success", "CSP Manager updated");
-					getDefinition(vm.page.isBackOffice)
+					getDefinition()
 				}, function (error) {
 					vm.saving = "failed";
 					console.warn(error);

@@ -16,8 +16,10 @@ public class CspDefinition
 
 	public bool IsBackOffice { get; set; }
 
+	[Length(500)]
 	public string? ReportingDirective { get; set; }
 
+	[Length(500)]
 	public string? ReportUri { get; set; }
 
 	[ResultColumn]

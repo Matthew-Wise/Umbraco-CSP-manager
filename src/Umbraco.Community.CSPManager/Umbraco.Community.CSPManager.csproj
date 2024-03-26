@@ -15,7 +15,7 @@
     <PackageId>Umbraco.Community.CSPManager</PackageId>
     <Title>Umbraco.Community.CSPManager</Title>
     <Description>Enabled CSP management with in the Umbraco back office</Description>
-    <PackageTags>umbraco plugin package umbraco-marketplace Content-Security-Policy securitycsp csp</PackageTags>
+    <PackageTags>umbraco plugin package umbraco-marketplace Content-Security-Policy security CSP csp</PackageTags>
     <RootNamespace>Umbraco.Community.CSPManager</RootNamespace>
     <Authors>Matthew Wise</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

@@ -16,6 +16,7 @@ public class CspDefinitionSource
 	[PrimaryKeyColumn(
 		AutoIncrement = false,
 		OnColumns = $"{nameof(DefinitionId)}, {nameof(Source)}")]
+	[Length(4000)]
 	public string Source { get; init; } = string.Empty;
 
 	[SerializedColumn(Name = nameof(Directives))]
