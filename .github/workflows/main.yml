@@ -9,10 +9,11 @@ on:
   pull_request:
     branches:
       - main
-  permissions:
-    contents: read
-    actions: read
-    checks: write
+      
+permissions:
+  contents: read
+  actions: read
+  checks: write
 
 jobs:
   build:
