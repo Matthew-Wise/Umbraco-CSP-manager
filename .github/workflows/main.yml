@@ -14,8 +14,10 @@ jobs:
   build:
     env:
       BUILD_CONFIG: "Release"
+      LogFileName: "test-results.trx"
       PROJECT: "./src/Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj"
       TESTPROJECT: "./src/Umbraco.Community.CSPManager.Tests/Umbraco.Community.CSPManager.Tests.csproj"
+      TESTLOGPATH: "./src/Umbraco.Community.CSPManager.Tests/TestResults/$LogFileName"
       BUILD_VERSION: ${{ github.event.release.tag_name || '0.0.0' }}
 
     runs-on: ubuntu-latest
@@ -48,13 +50,13 @@ jobs:
         run: dotnet build $TESTPROJECT -c $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
 
       - name: Run tests
-        run: dotnet test $TESTPROJECT -c  $BUILD_CONFIG --no-build --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test $TESTPROJECT -c  $BUILD_CONFIG --no-build --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName"
         
       - uses: actions/upload-artifact@v3  # upload test results
         if: success() || failure()        # run this step even if previous step failed
         with:
           name: test-results
-          path: test-results.trx
+          path: $TESTLOGPATH
 
       - name: Publish
         if: github.event_name == 'release'
