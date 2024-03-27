@@ -10,12 +10,6 @@ on:
     branches:
       - main
 
-permissions:
-  id-token: write
-  contents: read
-  actions: read
-  checks: write
-
 jobs:
   build:
     env:
@@ -55,16 +49,12 @@ jobs:
 
       - name: Run tests
         run: dotnet test $TESTPROJECT -c  $BUILD_CONFIG --no-build --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=test-results.trx"
-
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: always()
+        - uses: actions/upload-artifact@v3  # upload test results
+        if: success() || failure()        # run this step even if previous step failed
         with:
-            name: DotNET Tests
-            path: "**/test-results.trx"                            
-            reporter: dotnet-trx
-            fail-on-error: true
-  
+          name: test-results
+          path: test-results.trx
+
       - name: Publish
         if: github.event_name == 'release'
         run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
