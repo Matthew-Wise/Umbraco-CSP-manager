@@ -1,5 +1,6 @@
 ﻿namespace Umbraco.Community.CSPManager;
 
+using Microsoft.AspNetCore.Http;
 using Umbraco.Community.CSPManager.Models;
 
 public static class CspConstants
@@ -149,4 +150,10 @@ public static class CspConstants
 	{
 		public const string BaseUrl = "cspManagerBaseUrl";
 	}
+
+	public const string ContextKey = "CspManagerContext";
+
+	public const string CspManagerScriptNonceSet = "CspManagerScriptNonceSet";
+
+	public const string CspManagerStyleNonceSet = "CspManagerStyleNonceSet";
 }
