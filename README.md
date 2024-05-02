@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/github/license/Matthew-Wise/Umbraco-CSP-manager)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/LICENSE)
 [![.NET](https://github.com/Matthew-Wise/Umbraco-CSP-manager/actions/workflows/main.yml/badge.svg?event=push)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/.github/workflows/main.yml)
 
-Enables you to manage CSP for both the front and back end, via CMS section.
+Enables you to manage Content Secuirty Policy (CSP) for both the front and back end, via CMS section.
 
 ## Installation
 
