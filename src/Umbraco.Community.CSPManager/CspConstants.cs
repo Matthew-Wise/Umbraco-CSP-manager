@@ -1,6 +1,5 @@
 ﻿namespace Umbraco.Community.CSPManager;
 
-using Microsoft.AspNetCore.Http;
 using Umbraco.Community.CSPManager.Models;
 
 public static class CspConstants
@@ -27,8 +26,7 @@ public static class CspConstants
 		{
 			DefinitionId = DefaultBackofficeId,
 			Source = "'self'",
-			Directives = new List<string>
-			{
+			Directives = new List<string> {
 				Directives.DefaultSource,
 				Directives.ScriptSource,
 				Directives.StyleSource,
@@ -69,13 +67,16 @@ public static class CspConstants
 			DefinitionId = DefaultBackofficeId,
 			Source = "dashboard.umbraco.com",
 			Directives = new List<string> { Directives.ImageSource }
-		},
-		new CspDefinitionSource
+		}
+#if NET8_0_OR_GREATER
+#else
+		, new CspDefinitionSource
 		{
 			DefinitionId = DefaultBackofficeId,
 			Source = "www.gravatar.com",
 			Directives = new List<string> { Directives.ImageSource }
 		}
+#endif
 	};
 
 	public static class Directives
