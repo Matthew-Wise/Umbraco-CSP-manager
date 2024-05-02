@@ -21,6 +21,15 @@ public sealed class CspManagerComposer : IComposer
 		builder.Services.AddTransient<ICspService, CspService>();
 		builder.Services.Configure<UmbracoPipelineOptions>(options =>
 		{
+#if NET8_0_OR_GREATER
+			options.AddFilter(new UmbracoPipelineFilter(
+				CspConstants.PackageAlias,
+				postPipeline: applicationBuilder =>
+				{
+					applicationBuilder.UseMiddleware<CspMiddleware>();
+				}));
+		});
+#else
 			options.AddFilter(new UmbracoPipelineFilter(
 				CspConstants.PackageAlias,
 				_ => { },
@@ -30,7 +39,7 @@ public sealed class CspManagerComposer : IComposer
 				},
 				_ => { }));
 		});
-
+#endif
 		builder.AddNotificationHandler<ServerVariablesParsingNotification, ServerVariablesHandler>();
 		builder.AddNotificationHandler<CspSavedNotification, CspSavedNotificationHandler>();
 	}

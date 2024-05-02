@@ -1,39 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
-  <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <IsPackable>true</IsPackable>
-    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <StaticWebAssetBasePath>App_Plugins/CspManager</StaticWebAssetBasePath>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<IsPackable>true</IsPackable>
+		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+		<StaticWebAssetBasePath>App_Plugins/CspManager</StaticWebAssetBasePath>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <Product>Umbraco.Community.CSPManager</Product>
-    <PackageId>Umbraco.Community.CSPManager</PackageId>
-    <Title>Umbraco.Community.CSPManager</Title>
-    <Description>Enabled CSP management with in the Umbraco back office</Description>
-    <PackageTags>umbraco plugin package umbraco-marketplace Content-Security-Policy security CSP csp</PackageTags>
-    <RootNamespace>Umbraco.Community.CSPManager</RootNamespace>
-    <Authors>Matthew Wise</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</PackageProjectUrl>
-    <PackageIcon>icon.png</PackageIcon>
-    <PackageReadmeFile>Readme.md</PackageReadmeFile>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <FileVersion>$(AssemblyVersion)</FileVersion>
-    <Version>$(AssemblyVersion)</Version>
-  </PropertyGroup>
+	<PropertyGroup>
+		<Product>Umbraco.Community.CSPManager</Product>
+		<PackageId>Umbraco.Community.CSPManager</PackageId>
+		<Title>Umbraco.Community.CSPManager</Title>
+		<Description>Enabled CSP management with in the Umbraco back office</Description>
+		<PackageTags>umbraco plugin package umbraco-marketplace Content-Security-Policy security CSP csp</PackageTags>
+		<RootNamespace>Umbraco.Community.CSPManager</RootNamespace>
+		<Authors>Matthew Wise</Authors>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageReadmeFile>Readme.md</PackageReadmeFile>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<FileVersion>$(AssemblyVersion)</FileVersion>
+		<Version>$(AssemblyVersion)</Version>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.0.*" />
-  </ItemGroup>
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
 		<PackageReference Include="Umbraco.Cms.Core" Version="10.*" />
@@ -45,19 +44,24 @@
 		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="11.*" />
 	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\..\Readme.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\..\images\icon.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+		<PackageReference Include="Umbraco.Cms.Core" Version="(13.*,14]" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="(13.*,14]" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <SupportedPlatform Include="browser" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\Readme.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\images\icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<SupportedPlatform Include="browser" />
+	</ItemGroup>
 
 </Project>

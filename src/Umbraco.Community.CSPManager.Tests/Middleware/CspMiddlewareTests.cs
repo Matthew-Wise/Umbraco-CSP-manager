@@ -21,6 +21,7 @@ using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 
 using IHostingEnvironment = Umbraco.Cms.Core.Hosting.IHostingEnvironment;
+using Umbraco.Cms.Core.Configuration;
 
 [TestFixture]
 public class CspMiddlewareTests
@@ -43,6 +44,9 @@ public class CspMiddlewareTests
 			Constants.Configuration.ConfigUnattended + ":" + nameof(UnattendedSettings.InstallUnattended)] = "true";
 		_cspService = Mock.Of<ICspService>();
 		_eventAggregator = Mock.Of<IEventAggregator>();
+		var runtimeState = Mock.Of<IRuntimeState>(x => x.Level == RuntimeLevel.Run);
+		var runtime = Mock.Of<IRuntime>(x => x.State == runtimeState);
+
 		_host = new HostBuilder()
 			.ConfigureWebHost(webBuilder =>
 			{
@@ -52,8 +56,10 @@ public class CspMiddlewareTests
 					{
 						services.AddSingleton(_ => _cspService);
 						services.AddSingleton(_ => _eventAggregator);
-						services.AddSingleton(_ => Mock.Of<IRuntimeState>(x => x.Level == RuntimeLevel.Run));
+						services.AddSingleton(_ => runtimeState);
+						services.AddSingleton(_ => runtime);
 						services.AddSingleton(_ => TestHelper.GetHostingEnvironment());
+						services.AddSingleton<IUmbracoVersion, UmbracoVersion>();
 #if NET6_0
 						services.AddTransient(sp => new UmbracoRequestPaths(
 							sp.GetRequiredService<IOptions<GlobalSettings>>(),
@@ -98,13 +104,15 @@ public class CspMiddlewareTests
 	{
 		Mock.Get(_cspService).Setup(x => x.GetCachedCspDefinition(It.IsAny<bool>())).Returns(definition);
 
+		var version = _host.Services.GetRequiredService<IUmbracoVersion>();
+		var versionPostFix = version.Version.Major >= 13 ? $"-{version.Version.Major}" : null;
 		var response = await _host.GetTestClient().GetAsync(uri);
 		if (definition.Enabled)
 		{
 			await Verify(response.Headers)
 				.UseDirectory(nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled))
 				.UseFileName(
-					$"{TestContext.CurrentContext.Test.Name}");
+					$"{TestContext.CurrentContext.Test.Name}{versionPostFix}");
 		}
 		else
 		{

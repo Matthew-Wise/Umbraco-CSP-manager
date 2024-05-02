@@ -55,14 +55,14 @@ public class CspMiddleware
 
 			if (!string.IsNullOrEmpty(cspValue))
 			{
-				context.Response.Headers.Add(definition.ReportOnly ? CspConstants.ReportOnlyHeaderName : CspConstants.HeaderName, cspValue);
+				context.Response.Headers.Append(definition.ReportOnly ? CspConstants.ReportOnlyHeaderName : CspConstants.HeaderName, cspValue);
 			}
 		});	
 
 		await _next(context);
 	}
 
-	private IDictionary<string, string> ConstructCspDictionary(CspDefinition definition, HttpContext httpContext)
+	private Dictionary<string, string> ConstructCspDictionary(CspDefinition definition, HttpContext httpContext)
 	{
 		string? scriptNonce = null;
 		if (httpContext.GetItem<string>(CspConstants.CspManagerScriptNonceSet) == "set")
