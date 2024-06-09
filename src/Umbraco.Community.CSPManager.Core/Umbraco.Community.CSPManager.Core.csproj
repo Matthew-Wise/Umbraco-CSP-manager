@@ -9,5 +9,9 @@
 	<ItemGroup>
 		<PackageReference Include="Umbraco.Cms.Api.Management" Version="14.0.0" />
 	</ItemGroup>
-
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Umbraco.Community.CSPManager.Core.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
 </Project>

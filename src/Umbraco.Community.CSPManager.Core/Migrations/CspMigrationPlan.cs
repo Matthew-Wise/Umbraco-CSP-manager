@@ -1,7 +1,6 @@
-﻿namespace Umbraco.Community.CSPManager.Migrations;
+﻿namespace Umbraco.Community.CSPManager.Core.Migrations;
 
 using Umbraco.Cms.Core.Packaging;
-using Umbraco.Community.CSPManager.Core.Migrations;
 
 public sealed class CspMigrationPlan : PackageMigrationPlan
 {

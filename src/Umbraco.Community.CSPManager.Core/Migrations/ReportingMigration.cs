@@ -1,4 +1,4 @@
-﻿namespace Umbraco.Community.CSPManager.Migrations;
+﻿namespace Umbraco.Community.CSPManager.Core.Migrations;
 
 using Umbraco.Cms.Infrastructure.Migrations;
 using Umbraco.Community.CSPManager.Core.Models;

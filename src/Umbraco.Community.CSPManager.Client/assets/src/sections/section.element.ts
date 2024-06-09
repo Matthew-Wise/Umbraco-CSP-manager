@@ -1,5 +1,4 @@
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
-import { UmbSectionElement } from '@umbraco-cms/backoffice/extension-registry';
 import { LitElement, html, customElement, property } from '@umbraco-cms/backoffice/external/lit';
 import { cspConstants } from '../constants';
 

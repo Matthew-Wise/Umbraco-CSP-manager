@@ -1,4 +1,4 @@
-﻿namespace Umbraco.Community.CSPManager.Migrations;
+﻿namespace Umbraco.Community.CSPManager.Core.Migrations;
 
 using Newtonsoft.Json;
 using NPoco;
