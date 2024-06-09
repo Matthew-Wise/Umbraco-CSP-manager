@@ -1,0 +1,11 @@
+{
+    "name": "Umbraco.Community.CSPManager",
+    "private": "true",
+    "version": "0.0.0",
+    "type": "commonjs",
+    "description": "proxy package.json, so NPM Taskrunner extension in visual studio can find the commands",
+    "scripts": {
+        "build": "cd ./Umbraco.Community.CSPManager.Client/Assets/ && npm run build",
+        "watch": "cd ./Umbraco.Community.CSPManager.Client/Assets/ && npm run watch"
+    }
+}

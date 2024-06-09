@@ -1,8 +1,13 @@
-# Remove the line below if you want to inherit .editorconfig settings from higher directories
+﻿# Remove the line below if you want to inherit .editorconfig settings from higher directories
 root = true
 
 # C# files
 [*.cs]
+
+# IDE0001: Simplify Names
+dotnet_diagnostic.IDE0001.severity = none
+# IDE0290: Use primary constructor
+dotnet_diagnostic.IDE0290.severity = none
 
 #### Core EditorConfig Options ####
 

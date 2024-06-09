@@ -1,15 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<IsPackable>true</IsPackable>
-		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-		<StaticWebAssetBasePath>App_Plugins/CspManager</StaticWebAssetBasePath>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	</PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Umbraco.Community.CSPManager.Core\Umbraco.Community.CSPManager.Core.csproj" />
+    <ProjectReference Include="..\Umbraco.Community.CSPManager.Client\Umbraco.Community.CSPManager.Client.csproj" />
+  </ItemGroup>
 
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
 	<PropertyGroup>
 		<Product>Umbraco.Community.CSPManager</Product>
 		<PackageId>Umbraco.Community.CSPManager</PackageId>
@@ -31,25 +31,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-		<PackageReference Include="Umbraco.Cms.Core" Version="10.*" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="10.*" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
-		<PackageReference Include="Umbraco.Cms.Core" Version="11.*" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="11.*" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
-		<PackageReference Include="Umbraco.Cms.Core" Version="(13.*,14]" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="(13.*,14]" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Include="..\..\Readme.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
@@ -58,10 +39,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+		<None Include="..\.editorconfig" Link=".editorconfig" />
 	</ItemGroup>
-
-	<ItemGroup>
-		<SupportedPlatform Include="browser" />
-	</ItemGroup>
-
 </Project>
