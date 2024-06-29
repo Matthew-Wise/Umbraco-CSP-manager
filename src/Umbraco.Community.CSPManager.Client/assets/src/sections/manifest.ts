@@ -6,7 +6,6 @@ const sections: Array<ManifestSection> = [
 		type: 'section',
 		alias: cspConstants.section.alias,
 		name: cspConstants.name,
-		element: () => import('./section.element.js'),
 		weight: 10,
 		meta: {
 			label: cspConstants.name,

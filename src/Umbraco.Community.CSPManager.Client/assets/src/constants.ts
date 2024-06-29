@@ -7,7 +7,6 @@ const _constants = {
 	},
 	workspace: {
 		alias: 'csp.workspace',
-		rootElement: '',
 	},
 };
 

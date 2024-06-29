@@ -7,14 +7,18 @@
 		"dev": "vite",
 		"build": "tsc && vite build",
 		"preview": "vite preview",
-		"watch": "vite build --watch"
+		"watch": "vite build --watch",
+		"openapi-ts": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 openapi-ts"
 	},
 	"dependencies": {
+		"@hey-api/client-fetch": "^0.1.4",
 		"lit": "^3.1.0"
 	},
 	"devDependencies": {
+		"@hey-api/openapi-ts": "^0.47.0",
 		"@umbraco-cms/backoffice": "^14.0.0",
-		"prettier": "3.3.0",
+		"cross-env": "^7.0.3",
+		"prettier": "^3.3.0",
 		"typescript": "^5.2.2",
 		"vite": "^5.2.8"
 	}

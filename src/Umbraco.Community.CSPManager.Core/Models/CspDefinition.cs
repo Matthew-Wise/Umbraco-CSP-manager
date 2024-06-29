@@ -2,6 +2,7 @@
 
 using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 using NPoco;
+using System.Collections.Generic;
 
 [TableName((nameof(CspDefinition)))]
 [PrimaryKey(nameof(Id), AutoIncrement = false)]

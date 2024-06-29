@@ -9,6 +9,9 @@ dotnet_diagnostic.IDE0001.severity = none
 # IDE0290: Use primary constructor
 dotnet_diagnostic.IDE0290.severity = none
 
+#A Route attribute should be added to the controller 
+dotnet_diagnostic.6934.severity = none
+
 #### Core EditorConfig Options ####
 
 # Indentation and spacing

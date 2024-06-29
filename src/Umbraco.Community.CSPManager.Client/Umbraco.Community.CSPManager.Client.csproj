@@ -7,4 +7,16 @@
     <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Api.Management" Version="14.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Umbraco.Community.CSPManager.Core\Umbraco.Community.CSPManager.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="assets\src\api\" />
+  </ItemGroup>
+
 </Project>
