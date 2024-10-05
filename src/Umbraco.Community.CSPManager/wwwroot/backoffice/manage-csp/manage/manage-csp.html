@@ -9,7 +9,9 @@
 
 			<div ng-repeat="(sourceIndex, source) in vm.definition.Sources" class="mb2">
 				<button type="button" class="csp-accordion-btn" ng-class="{'active': vm.expanded.includes(sourceIndex) ? true : false}" ng-click="vm.expandAccordion($event, sourceIndex)">
-					Source: {{source.Source}}
+					<span>Source: {{source.Source}}<br/>
+						<span class="csp-subtitle"><b>Directives:</b> <span ng-repeat="(dIndex, directive) in source.Directives">{{directive}}{{$last ? '' : ', '}}</span></span>
+					</span>
 					<span class="ml-auto">
 						<uui-icon-registry-essential>
 							<uui-action-bar>
