@@ -24,6 +24,24 @@
                 value: "report-uri",
                 label: "report-uri"
             }];
+        vm.cspStatus = [
+            {
+                value: false,
+                label: "Disabled"
+            },
+            {
+                value: true,
+                label: "Enabled"
+            }];
+        vm.enforcementTypes = [
+            {
+                value: false,
+                label: "Enforced"
+            },
+            {
+                value: true,
+                label: "Report only"
+            }];
         vm.tabs = [{
             id: 0,
             alias: "Sources",
@@ -44,6 +62,12 @@
 
             changedTab.active = true;
             vm.tab = changedTab.alias;
+        };
+        vm.changeEnabled = (selectedVal) => {
+            vm.definition.Enabled = selectedVal;
+        };
+        vm.changeEnforcement = (selectedVal) => {
+            vm.definition.ReportOnly = selectedVal;
         };
 
         vm.tab = vm.tabs[0].alias

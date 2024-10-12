@@ -80,11 +80,13 @@
 							<small class="control-description">Enables/Disables the CSP header</small>
 						</div>
 						<div class="controls">
-							<umb-checkbox name="definitionEnabled" input-id="cspEnable"
-										  value="{{vm.definition.Enabled}}"
-										  model="vm.definition.Enabled"
-										  text="{{vm.definition.Enabled ? 'CSP enabled' : 'CSP disabled'}}">
-							</umb-checkbox>
+							<uui-radio-group name="cspEnabled">
+								<uui-radio value="{{status.value}}"
+										   ng-on-change="vm.changeEnabled(status.value)"
+										   ng-checked="status.value == vm.definition.Enabled"
+										   ng-repeat="(index, status) in vm.cspStatus"
+										   label="{{status.label}}"></uui-radio>
+							</uui-radio-group>
 						</div>
 					</div>
 				</div>
@@ -95,11 +97,14 @@
 							<small class="control-description">Changes the CSP header to report only mode</small>
 						</div>
 						<div class="controls">
-							<umb-checkbox name="definitionReportOnly" input-id="cspReportOnly"
-										  value="{{vm.definition.ReportOnly}}"
-										  model="vm.definition.ReportOnly"
-										  text="{{vm.definition.ReportOnly ? 'Report only mode' : 'Enforcement mode'}}">
-							</umb-checkbox>
+
+							<uui-radio-group name="enforcementType">
+								<uui-radio value="{{enforcementType.value}}"
+										   ng-on-change="vm.changeEnforcement(enforcementType.value)"
+										   ng-checked="enforcementType.value == vm.definition.ReportOnly"
+										   ng-repeat="(index, enforcementType) in vm.enforcementTypes"
+										   label="{{enforcementType.label}}"></uui-radio>
+							</uui-radio-group>
 						</div>
 					</div>
 				</div>
