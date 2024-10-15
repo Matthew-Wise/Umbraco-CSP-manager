@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "csp_evaluator": "^1.1.1"
+    "csp_evaluator": "^1.1.2"
   },
   "devDependencies": {
     "browserify": "^17.0.0",
