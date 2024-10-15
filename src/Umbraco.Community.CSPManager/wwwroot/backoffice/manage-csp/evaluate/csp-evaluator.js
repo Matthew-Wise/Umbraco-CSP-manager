@@ -147,7 +147,6 @@ exports.URLS = [
     '//graph.facebook.com/1/',
     '//fellowes.ugc.bazaarvoice.com/data/reviews.json',
     '//widgets.pinterest.com/v3/pidgets/boards/ciciwin/hedgehog-squirrel-crafts/pins/',
-    '//www.linkedin.com/countserv/count/share',
     '//se.wikipedia.org/w/api.php',
     '//cse.google.com/api/007627024705277327428/cse/r3vs7b0fcli/queries/js',
     '//relap.io/api/v2/similar_pages_jsonp.js',
@@ -163,7 +162,7 @@ exports.URLS = [
     '//autocomplete.travelpayouts.com/avia',
     '//www.googleapis.com/freebase/v1/topic/m/0344_',
     '//mts1.googleapis.com/mapslt/ft',
-    '//api.twitter.com/1/statuses/oembed.json',
+    '//publish.twitter.com/oembed',
     '//fast.wistia.com/embed/medias/o75jtw7654.json',
     '//partner.googleadservices.com/gampad/ads',
     '//pass.yandex.ru/services',
@@ -326,26 +325,42 @@ const csp = __importStar(require("../csp"));
 const csp_1 = require("../csp");
 const finding_1 = require("../finding");
 const utils = __importStar(require("../utils"));
-exports.DIRECTIVES_CAUSING_XSS = [csp_1.Directive.SCRIPT_SRC, csp_1.Directive.OBJECT_SRC, csp_1.Directive.BASE_URI];
+exports.DIRECTIVES_CAUSING_XSS = [
+    csp_1.Directive.SCRIPT_SRC, csp_1.Directive.SCRIPT_SRC_ATTR, csp_1.Directive.SCRIPT_SRC_ELEM,
+    csp_1.Directive.OBJECT_SRC, csp_1.Directive.BASE_URI
+];
 exports.URL_SCHEMES_CAUSING_XSS = ['data:', 'http:', 'https:'];
 function checkScriptUnsafeInline(effectiveCsp) {
-    const directiveName = effectiveCsp.getEffectiveDirective(csp_1.Directive.SCRIPT_SRC);
-    const values = effectiveCsp.directives[directiveName] || [];
-    if (values.includes(csp_1.Keyword.UNSAFE_INLINE)) {
-        return [new finding_1.Finding(finding_1.Type.SCRIPT_UNSAFE_INLINE, `'unsafe-inline' allows the execution of unsafe in-page scripts ` +
-                'and event handlers.', finding_1.Severity.HIGH, directiveName, csp_1.Keyword.UNSAFE_INLINE)];
+    const violations = [];
+    const directivesToCheck = effectiveCsp.getEffectiveDirectives([
+        csp_1.Directive.SCRIPT_SRC, csp_1.Directive.SCRIPT_SRC_ATTR, csp_1.Directive.SCRIPT_SRC_ELEM
+    ]);
+    for (const directive of directivesToCheck) {
+        const values = effectiveCsp.directives[directive] || [];
+        if (values.includes(csp_1.Keyword.UNSAFE_INLINE)) {
+            violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_UNSAFE_INLINE, `'unsafe-inline' allows the execution of unsafe in-page scripts ` +
+                'and event handlers.', finding_1.Severity.HIGH, directive, csp_1.Keyword.UNSAFE_INLINE));
+        }
+        if (values.includes(csp_1.Keyword.UNSAFE_HASHES)) {
+            violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_UNSAFE_HASHES, `'unsafe-hashes', while safer than 'unsafe-inline', allows the execution of unsafe in-page scripts and event handlers as long as their hashes appear in the CSP. Please refactor them to no longer use inline scripts if possible.`, finding_1.Severity.MEDIUM_MAYBE, directive, csp_1.Keyword.UNSAFE_HASHES));
+        }
     }
-    return [];
+    return violations;
 }
 exports.checkScriptUnsafeInline = checkScriptUnsafeInline;
 function checkScriptUnsafeEval(parsedCsp) {
-    const directiveName = parsedCsp.getEffectiveDirective(csp_1.Directive.SCRIPT_SRC);
-    const values = parsedCsp.directives[directiveName] || [];
-    if (values.includes(csp_1.Keyword.UNSAFE_EVAL)) {
-        return [new finding_1.Finding(finding_1.Type.SCRIPT_UNSAFE_EVAL, `'unsafe-eval' allows the execution of code injected into DOM APIs ` +
-                'such as eval().', finding_1.Severity.MEDIUM_MAYBE, directiveName, csp_1.Keyword.UNSAFE_EVAL)];
+    const violations = [];
+    const directivesToCheck = parsedCsp.getEffectiveDirectives([
+        csp_1.Directive.SCRIPT_SRC, csp_1.Directive.SCRIPT_SRC_ATTR, csp_1.Directive.SCRIPT_SRC_ELEM
+    ]);
+    for (const directive of directivesToCheck) {
+        const values = parsedCsp.directives[directive] || [];
+        if (values.includes(csp_1.Keyword.UNSAFE_EVAL)) {
+            violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_UNSAFE_EVAL, `'unsafe-eval' allows the execution of code injected into DOM APIs ` +
+                'such as eval().', finding_1.Severity.MEDIUM_MAYBE, directive, csp_1.Keyword.UNSAFE_EVAL));
+        }
     }
-    return [];
+    return violations;
 }
 exports.checkScriptUnsafeEval = checkScriptUnsafeEval;
 function checkPlainUrlSchemes(parsedCsp) {
@@ -429,53 +444,56 @@ function checkMissingDirectives(parsedCsp) {
 exports.checkMissingDirectives = checkMissingDirectives;
 function checkScriptAllowlistBypass(parsedCsp) {
     const violations = [];
-    const effectiveScriptSrcDirective = parsedCsp.getEffectiveDirective(csp_1.Directive.SCRIPT_SRC);
-    const scriptSrcValues = parsedCsp.directives[effectiveScriptSrcDirective] || [];
-    if (scriptSrcValues.includes(csp_1.Keyword.NONE)) {
-        return violations;
-    }
-    for (const value of scriptSrcValues) {
-        if (value === csp_1.Keyword.SELF) {
-            violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_ALLOWLIST_BYPASS, `'self' can be problematic if you host JSONP, AngularJS or user ` +
-                'uploaded files.', finding_1.Severity.MEDIUM_MAYBE, effectiveScriptSrcDirective, value));
-            continue;
+    parsedCsp
+        .getEffectiveDirectives([csp_1.Directive.SCRIPT_SRC, csp_1.Directive.SCRIPT_SRC_ELEM])
+        .forEach(effectiveScriptSrcDirective => {
+        const scriptSrcValues = parsedCsp.directives[effectiveScriptSrcDirective] || [];
+        if (scriptSrcValues.includes(csp_1.Keyword.NONE)) {
+            return;
         }
-        if (value.startsWith('\'')) {
-            continue;
-        }
-        if (csp.isUrlScheme(value) || value.indexOf('.') === -1) {
-            continue;
-        }
-        const url = '//' + utils.getSchemeFreeUrl(value);
-        const angularBypass = utils.matchWildcardUrls(url, angular.URLS);
-        let jsonpBypass = utils.matchWildcardUrls(url, jsonp.URLS);
-        if (jsonpBypass) {
-            const evalRequired = jsonp.NEEDS_EVAL.includes(jsonpBypass.hostname);
-            const evalPresent = scriptSrcValues.includes(csp_1.Keyword.UNSAFE_EVAL);
-            if (evalRequired && !evalPresent) {
-                jsonpBypass = null;
+        for (const value of scriptSrcValues) {
+            if (value === csp_1.Keyword.SELF) {
+                violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_ALLOWLIST_BYPASS, `'self' can be problematic if you host JSONP, AngularJS or user ` +
+                    'uploaded files.', finding_1.Severity.MEDIUM_MAYBE, effectiveScriptSrcDirective, value));
+                continue;
             }
-        }
-        if (jsonpBypass || angularBypass) {
-            let bypassDomain = '';
-            let bypassTxt = '';
+            if (value.startsWith('\'')) {
+                continue;
+            }
+            if (csp.isUrlScheme(value) || value.indexOf('.') === -1) {
+                continue;
+            }
+            const url = '//' + utils.getSchemeFreeUrl(value);
+            const angularBypass = utils.matchWildcardUrls(url, angular.URLS);
+            let jsonpBypass = utils.matchWildcardUrls(url, jsonp.URLS);
             if (jsonpBypass) {
-                bypassDomain = jsonpBypass.hostname;
-                bypassTxt = ' JSONP endpoints';
+                const evalRequired = jsonp.NEEDS_EVAL.includes(jsonpBypass.hostname);
+                const evalPresent = scriptSrcValues.includes(csp_1.Keyword.UNSAFE_EVAL);
+                if (evalRequired && !evalPresent) {
+                    jsonpBypass = null;
+                }
             }
-            if (angularBypass) {
-                bypassDomain = angularBypass.hostname;
-                bypassTxt += (bypassTxt.trim() === '') ? '' : ' and';
-                bypassTxt += ' Angular libraries';
+            if (jsonpBypass || angularBypass) {
+                let bypassDomain = '';
+                let bypassTxt = '';
+                if (jsonpBypass) {
+                    bypassDomain = jsonpBypass.hostname;
+                    bypassTxt = ' JSONP endpoints';
+                }
+                if (angularBypass) {
+                    bypassDomain = angularBypass.hostname;
+                    bypassTxt += (bypassTxt.trim() === '') ? '' : ' and';
+                    bypassTxt += ' Angular libraries';
+                }
+                violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_ALLOWLIST_BYPASS, bypassDomain + ' is known to host' + bypassTxt +
+                    ' which allow to bypass this CSP.', finding_1.Severity.HIGH, effectiveScriptSrcDirective, value));
             }
-            violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_ALLOWLIST_BYPASS, bypassDomain + ' is known to host' + bypassTxt +
-                ' which allow to bypass this CSP.', finding_1.Severity.HIGH, effectiveScriptSrcDirective, value));
+            else {
+                violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_ALLOWLIST_BYPASS, `No bypass found; make sure that this URL doesn't serve JSONP ` +
+                    'replies or Angular libraries.', finding_1.Severity.MEDIUM_MAYBE, effectiveScriptSrcDirective, value));
+            }
         }
-        else {
-            violations.push(new finding_1.Finding(finding_1.Type.SCRIPT_ALLOWLIST_BYPASS, `No bypass found; make sure that this URL doesn't serve JSONP ` +
-                'replies or Angular libraries.', finding_1.Severity.MEDIUM_MAYBE, effectiveScriptSrcDirective, value));
-        }
-    }
+    });
     return violations;
 }
 exports.checkScriptAllowlistBypass = checkScriptAllowlistBypass;
@@ -695,17 +713,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CspError = exports.isHash = exports.HASH_PATTERN = exports.STRICT_HASH_PATTERN = exports.isNonce = exports.NONCE_PATTERN = exports.STRICT_NONCE_PATTERN = exports.isUrlScheme = exports.isKeyword = exports.isDirective = exports.Version = exports.FETCH_DIRECTIVES = exports.Directive = exports.TrustedTypesSink = exports.Keyword = exports.Csp = void 0;
 const finding_1 = require("./finding");
 class Csp {
-    constructor() {
+    constructor(directives = {}) {
         this.directives = {};
-    }
-    clone() {
-        const clone = new Csp();
-        for (const [directive, directiveValues] of Object.entries(this.directives)) {
+        for (const [directive, directiveValues] of Object.entries(directives)) {
             if (directiveValues) {
-                clone.directives[directive] = [...directiveValues];
+                this.directives[directive] = [...directiveValues];
             }
         }
-        return clone;
+    }
+    clone() {
+        return new Csp(this.directives);
     }
     convertToString() {
         let cspString = '';
@@ -724,53 +741,72 @@ class Csp {
     getEffectiveCsp(cspVersion, optFindings) {
         const findings = optFindings || [];
         const effectiveCsp = this.clone();
-        const directive = effectiveCsp.getEffectiveDirective(Directive.SCRIPT_SRC);
-        const values = this.directives[directive] || [];
-        const effectiveCspValues = effectiveCsp.directives[directive];
-        if (effectiveCspValues &&
-            (effectiveCsp.policyHasScriptNonces() ||
-                effectiveCsp.policyHasScriptHashes())) {
-            if (cspVersion >= Version.CSP2) {
-                if (values.includes(Keyword.UNSAFE_INLINE)) {
-                    arrayRemove(effectiveCspValues, Keyword.UNSAFE_INLINE);
-                    findings.push(new finding_1.Finding(finding_1.Type.IGNORED, 'unsafe-inline is ignored if a nonce or a hash is present. ' +
-                        '(CSP2 and above)', finding_1.Severity.NONE, directive, Keyword.UNSAFE_INLINE));
+        [Directive.SCRIPT_SRC, Directive.SCRIPT_SRC_ATTR, Directive.SCRIPT_SRC_ELEM]
+            .forEach(directiveToNormalize => {
+            const directive = effectiveCsp.getEffectiveDirective(directiveToNormalize);
+            const values = this.directives[directive] || [];
+            const effectiveCspValues = effectiveCsp.directives[directive];
+            if (effectiveCspValues &&
+                (effectiveCsp.policyHasScriptNonces(directive) ||
+                    effectiveCsp.policyHasScriptHashes(directive))) {
+                if (cspVersion >= Version.CSP2) {
+                    if (values.includes(Keyword.UNSAFE_INLINE)) {
+                        arrayRemove(effectiveCspValues, Keyword.UNSAFE_INLINE);
+                        findings.push(new finding_1.Finding(finding_1.Type.IGNORED, 'unsafe-inline is ignored if a nonce or a hash is present. ' +
+                            '(CSP2 and above)', finding_1.Severity.NONE, directive, Keyword.UNSAFE_INLINE));
+                    }
                 }
-            }
-            else {
-                for (const value of values) {
-                    if (value.startsWith('\'nonce-') || value.startsWith('\'sha')) {
-                        arrayRemove(effectiveCspValues, value);
+                else {
+                    for (const value of values) {
+                        if (value.startsWith('\'nonce-') || value.startsWith('\'sha')) {
+                            arrayRemove(effectiveCspValues, value);
+                        }
                     }
                 }
             }
-        }
-        if (effectiveCspValues && this.policyHasStrictDynamic()) {
-            if (cspVersion >= Version.CSP3) {
-                for (const value of values) {
-                    if (!value.startsWith('\'') || value === Keyword.SELF ||
-                        value === Keyword.UNSAFE_INLINE) {
-                        arrayRemove(effectiveCspValues, value);
-                        findings.push(new finding_1.Finding(finding_1.Type.IGNORED, 'Because of strict-dynamic this entry is ignored in CSP3 and above', finding_1.Severity.NONE, directive, value));
+            if (effectiveCspValues && this.policyHasStrictDynamic(directive)) {
+                if (cspVersion >= Version.CSP3) {
+                    for (const value of values) {
+                        if (!value.startsWith('\'') || value === Keyword.SELF ||
+                            value === Keyword.UNSAFE_INLINE) {
+                            arrayRemove(effectiveCspValues, value);
+                            findings.push(new finding_1.Finding(finding_1.Type.IGNORED, 'Because of strict-dynamic this entry is ignored in CSP3 and above', finding_1.Severity.NONE, directive, value));
+                        }
                     }
                 }
+                else {
+                    arrayRemove(effectiveCspValues, Keyword.STRICT_DYNAMIC);
+                }
             }
-            else {
-                arrayRemove(effectiveCspValues, Keyword.STRICT_DYNAMIC);
-            }
-        }
+        });
         if (cspVersion < Version.CSP3) {
             delete effectiveCsp.directives[Directive.REPORT_TO];
             delete effectiveCsp.directives[Directive.WORKER_SRC];
             delete effectiveCsp.directives[Directive.MANIFEST_SRC];
             delete effectiveCsp.directives[Directive.TRUSTED_TYPES];
             delete effectiveCsp.directives[Directive.REQUIRE_TRUSTED_TYPES_FOR];
+            delete effectiveCsp.directives[Directive.SCRIPT_SRC_ATTR];
+            delete effectiveCsp.directives[Directive.SCRIPT_SRC_ELEM];
+            delete effectiveCsp.directives[Directive.STYLE_SRC_ATTR];
+            delete effectiveCsp.directives[Directive.STYLE_SRC_ELEM];
         }
         return effectiveCsp;
     }
     getEffectiveDirective(directive) {
-        if (!(directive in this.directives) &&
-            exports.FETCH_DIRECTIVES.includes(directive)) {
+        if (directive in this.directives) {
+            return directive;
+        }
+        if ((directive === Directive.SCRIPT_SRC_ATTR ||
+            directive === Directive.SCRIPT_SRC_ELEM) &&
+            Directive.SCRIPT_SRC in this.directives) {
+            return Directive.SCRIPT_SRC;
+        }
+        if ((directive === Directive.STYLE_SRC_ATTR ||
+            directive === Directive.STYLE_SRC_ELEM) &&
+            Directive.STYLE_SRC in this.directives) {
+            return Directive.STYLE_SRC;
+        }
+        if (exports.FETCH_DIRECTIVES.includes(directive)) {
             return Directive.DEFAULT_SRC;
         }
         return directive;
@@ -779,18 +815,18 @@ class Csp {
         const effectiveDirectives = new Set(directives.map((val) => this.getEffectiveDirective(val)));
         return [...effectiveDirectives];
     }
-    policyHasScriptNonces() {
-        const directiveName = this.getEffectiveDirective(Directive.SCRIPT_SRC);
+    policyHasScriptNonces(directive) {
+        const directiveName = this.getEffectiveDirective(directive || Directive.SCRIPT_SRC);
         const values = this.directives[directiveName] || [];
         return values.some((val) => isNonce(val));
     }
-    policyHasScriptHashes() {
-        const directiveName = this.getEffectiveDirective(Directive.SCRIPT_SRC);
+    policyHasScriptHashes(directive) {
+        const directiveName = this.getEffectiveDirective(directive || Directive.SCRIPT_SRC);
         const values = this.directives[directiveName] || [];
         return values.some((val) => isHash(val));
     }
-    policyHasStrictDynamic() {
-        const directiveName = this.getEffectiveDirective(Directive.SCRIPT_SRC);
+    policyHasStrictDynamic(directive) {
+        const directiveName = this.getEffectiveDirective(directive || Directive.SCRIPT_SRC);
         const values = this.directives[directiveName] || [];
         return values.includes(Keyword.STRICT_DYNAMIC);
     }
@@ -934,10 +970,11 @@ const securityChecks = __importStar(require("./checks/security_checks"));
 const strictcspChecks = __importStar(require("./checks/strictcsp_checks"));
 const csp = __importStar(require("./csp"));
 class CspEvaluator {
-    constructor(parsedCsp, cspVersion) {
+    constructor(parsedCsp, cspVersion, findings) {
         this.findings = [];
         this.version = cspVersion || csp.Version.CSP3;
         this.csp = parsedCsp;
+        this.findings = findings || [];
     }
     evaluate(parsedCspChecks, effectiveCspChecks) {
         this.findings = [];
@@ -1031,6 +1068,13 @@ var Type;
     Type[Type["IP_SOURCE"] = 308] = "IP_SOURCE";
     Type[Type["DEPRECATED_DIRECTIVE"] = 309] = "DEPRECATED_DIRECTIVE";
     Type[Type["SRC_HTTP"] = 310] = "SRC_HTTP";
+    Type[Type["SRC_NO_PROTOCOL"] = 311] = "SRC_NO_PROTOCOL";
+    Type[Type["EXPERIMENTAL"] = 312] = "EXPERIMENTAL";
+    Type[Type["WILDCARD_URL"] = 313] = "WILDCARD_URL";
+    Type[Type["X_FRAME_OPTIONS_OBSOLETED"] = 314] = "X_FRAME_OPTIONS_OBSOLETED";
+    Type[Type["STYLE_UNSAFE_INLINE"] = 315] = "STYLE_UNSAFE_INLINE";
+    Type[Type["STATIC_NONCE"] = 316] = "STATIC_NONCE";
+    Type[Type["SCRIPT_UNSAFE_HASHES"] = 317] = "SCRIPT_UNSAFE_HASHES";
     Type[Type["STRICT_DYNAMIC"] = 400] = "STRICT_DYNAMIC";
     Type[Type["STRICT_DYNAMIC_NOT_STANDALONE"] = 401] = "STRICT_DYNAMIC_NOT_STANDALONE";
     Type[Type["NONCE_HASH"] = 402] = "NONCE_HASH";
