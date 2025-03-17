@@ -34,10 +34,10 @@ jobs:
             8.x
 
       - name: Restore package dependencies
-        run: nuget restore $PROJECT
+        run: dotnet restore $PROJECT
 
       - name: Restore test dependencies
-        run: nuget restore $TESTPROJECT
+        run: dotnet restore $TESTPROJECT
 
       - name: Build package
         run: dotnet build $PROJECT -c $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
@@ -56,4 +56,6 @@ jobs:
 
       - name: Publish
         if: github.event_name == 'release'
-        run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
+        run: dotnet nuget push **\*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
+        env:
+            NUGET_AUTH_TOKEN:${{secrets.NUGET_API_KEY}}
