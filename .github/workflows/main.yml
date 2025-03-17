@@ -58,4 +58,4 @@ jobs:
         if: github.event_name == 'release'
         run: dotnet nuget push **\*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
         env:
-            NUGET_AUTH_TOKEN:${{secrets.NUGET_API_KEY}}
+            NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
