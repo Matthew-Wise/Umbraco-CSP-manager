@@ -7,9 +7,12 @@
 	.csp-evaluate uui-icon {
 		vertical-align:middle;
 	}
-	.csp-evaluate .findings p {
-		margin: 0 0 10px 25px;
-	}
+    .csp-evaluate .findings p {
+        margin: 0 0 10px 25px;
+    }
+    .csp-evaluate .findings a {
+        text-decoration: underline;
+    }
 </style>
 <div ng-controller="cspManagerEvaluateController as vm" class="csp-evaluate">
 	<uui-box headline="Evaluate" class="form-horizontal">
@@ -26,7 +29,7 @@
 
 					<p ng-repeat="issue in finding.issues" >						
 						<uui-icon name="{{vm.icon(issue.severity)}}" ng-class="vm.issueColor(issue.severity)"></uui-icon>
-						{{issue.description}}
+						<span ng-bind-html="issue.description"></span>
 					</p>
 			</div>
 		</uui-icon-registry-essential>
