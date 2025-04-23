@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Product>Umbraco.Community.CSPManager</Product>
+		<PackageId>Umbraco.Community.CSPManager</PackageId>
+		<Title>Umbraco.Community.CSPManager</Title>
+		<Description>Enabled CSP management with in the Umbraco back office</Description>
+		<PackageTags>umbraco plugin package umbraco-marketplace Content-Security-Policy security CSP csp Content Security Policy</PackageTags>
+		<RootNamespace>Umbraco.Community.CSPManager</RootNamespace>
+		<Authors>Matt Wise</Authors>
+		<Copyright>$([System.DateTime]::UtcNow.ToString(`yyyy`)) © Matt Wise</Copyright>
+		<PackageProjectUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</RepositoryUrl>
+		<PackageReadmeFile>README_nuget.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageIcon>icon.png</PackageIcon>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="*" />
+		<PackageReference Include="Umbraco.Cms.Web.Common" Version="*" />
+		<PackageReference Include="Umbraco.Cms.Api.Common" Version="*" />
+		<PackageReference Include="Umbraco.Cms.Api.Management" Version="*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Dont include the client folder as part of packaging nuget build -->
+		<Content Remove="Client\**" />
+
+		<!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
+		<None Include="Client\public\umbraco-package.json" Pack="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\docs\README_nuget.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\images\icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+{
+  "id": "Umbraco.Community.CSPManager",
+  "name": "Umbraco.Community.CSPManager",
+  "version": "0.0.0",
+  "allowPackageTelemetry": true,
+  "extensions": [
+    {
+      "name": "Umbraco Community CSPManager Bundle",
+      "alias": "Umbraco.Community.CSPManager.Bundle",
+      "type": "bundle",
+      "js": "/App_Plugins/UmbracoCommunityCSPManager/umbraco-community-csp-manager.js"
+    }
+  ]
+}

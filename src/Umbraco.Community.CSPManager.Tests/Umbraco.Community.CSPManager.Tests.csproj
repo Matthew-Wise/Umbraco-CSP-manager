@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+		<PreserveCompilationContext>true</PreserveCompilationContext>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="coverlet.collector" Version="6.0.4">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+		<PackageReference Include="Microsoft.TestPlatform" Version="17.13.0" />
+		<PackageReference Include="NUnit" Version="3.14.0" />
+		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+		<PackageReference Include="NUnit.Analyzers" Version="3.10.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Umbraco.Cms.Tests.Integration" Version="15.3.1">
+		</PackageReference>
+		<PackageReference Include="Verify.NUnit" Version="22.5.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Umbraco.Community.CSPManager\Umbraco.Community.CSPManager.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="appsettings.Tests.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Moq" />
+		<Using Include="NUnit.Framework" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="appsettings.Tests.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+<Target Name="CopyUmbracoDepsFile" AfterTargets="Build">
+  <ItemGroup>
+    <DepsFile Include="$(UserProfile)\.nuget\packages\umbraco.cms.tests.integration\15.3.1\**\Umbraco.Tests.Integration.deps.json" />
+  </ItemGroup>
+  <Copy SourceFiles="@(DepsFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+</Target>
+
+
+</Project>

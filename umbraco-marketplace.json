@@ -1,0 +1,35 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "AuthorDetails": {
+    "Name": "Matt Wise",
+    "ImageUrl": "https://github.com/Matthew-Wise.png",
+    "Contributors": [
+      {
+        "Name": "Digipex",
+        "Url": "https://github.com/Digipex"
+      },
+      {
+        "Name": "Jacob Spencer",
+        "Url": "https://github.com/jaymarvels"
+      }
+    ]
+  },
+  "Category": "Developer Tools",
+  "LicenseTypes": ["Free"],
+  "IssueTrackerUrl": "https://github.com/Matthew-Wise/Umbraco-CSP-manager/issues",
+  "PackageType": "Package",
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/managment-screen.png",
+      "Caption": "Managment dashboard for CSP"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/settings-screen.png",
+      "Caption": "Configuration section"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/evaluate-screen.png",
+      "Caption": "Csp Evaluation section"
+    }
+  ]
+}
