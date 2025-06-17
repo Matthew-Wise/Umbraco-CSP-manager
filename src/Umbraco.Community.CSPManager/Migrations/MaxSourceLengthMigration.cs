@@ -6,7 +6,7 @@ using Umbraco.Community.CSPManager.Models;
 using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Migrations;
-public class MaxSourceLengthMigration : MigrationBase
+public class MaxSourceLengthMigration : AsyncMigrationBase
 {
 	public const string MigrationKey = "csp-manager-max-source-length";
 
@@ -14,13 +14,13 @@ public class MaxSourceLengthMigration : MigrationBase
 	{
 	}
 
-	protected override void Migrate()
+	protected override Task MigrateAsync()
 	{
 		// SQLite text string is a variable length far greater than we are changing it to
 		// - https://docs.kony.com/konylibrary/visualizer/viz_api_dev_guide/content/sqllite.htm#:~:text=SQLite%20text%20and%20BLOB%20values,this%20directive%20is%20two%20gigabytes.
 		if (Database.DatabaseType == DatabaseType.SQLite)
 		{
-			return;
+			return Task.CompletedTask;
 		}
 
 		if (TableExists(nameof(CspDefinitionSource)))
@@ -51,10 +51,11 @@ public class MaxSourceLengthMigration : MigrationBase
 			Delete.Table(tempName).Do();
 		}
 
+		return Task.CompletedTask;
 	}
 
 	[TableName((nameof(CspDefinitionSource)))]
-	[PrimaryKey(new[] { nameof(DefinitionId), nameof(Source) })]
+	[PrimaryKey([nameof(DefinitionId), nameof(Source)])]
 	public sealed class CspDefinitionSourceSchema
 	{
 		[PrimaryKeyColumn(

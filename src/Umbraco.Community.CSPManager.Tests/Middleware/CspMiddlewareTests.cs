@@ -62,8 +62,7 @@ public class CspMiddlewareTests
 						services.AddSingleton(_ => TestHelper.GetHostingEnvironment());
 						services.AddSingleton<IUmbracoVersion, UmbracoVersion>();
 						services.AddTransient(sp => new UmbracoRequestPaths(
-							sp.GetRequiredService<IOptions<GlobalSettings>>(),
-							sp.GetRequiredService<IHostingEnvironment>(),
+							TestHelper.GetHostingEnvironment(),
 							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
 					})
 					.Configure(app =>

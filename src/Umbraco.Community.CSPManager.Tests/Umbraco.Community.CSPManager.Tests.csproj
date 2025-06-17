@@ -15,15 +15,15 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-		<PackageReference Include="Microsoft.TestPlatform" Version="17.13.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageReference Include="Microsoft.TestPlatform" Version="17.14.1" />
 		<PackageReference Include="NUnit" Version="3.14.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="NUnit.Analyzers" Version="3.10.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Umbraco.Cms.Tests.Integration" Version="15.3.1">
+		<PackageReference Include="Umbraco.Cms.Tests.Integration" Version="16.0.0">
 		</PackageReference>
 		<PackageReference Include="Verify.NUnit" Version="22.5.0" />
 	</ItemGroup>

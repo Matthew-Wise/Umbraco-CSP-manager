@@ -3,7 +3,7 @@ using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager.Migrations;
 
-public class ReportingMigration : MigrationBase
+public class ReportingMigration : AsyncMigrationBase
 {
 	public const string MigrationKey = "csp-manager-add-reporting";
 
@@ -11,7 +11,7 @@ public class ReportingMigration : MigrationBase
 	{
 	}
 
-	protected override void Migrate()
+	protected override Task MigrateAsync()
 	{
 		if (!ColumnExists(nameof(CspDefinition), nameof(SchemaUpdates.ReportingDirective)))
 		{
@@ -26,6 +26,8 @@ public class ReportingMigration : MigrationBase
 			.OnTable(nameof(CspDefinition))
 			.AsString(500).Nullable().Do();
 		}
+
+		return Task.CompletedTask; 
 	}
 
 	public class SchemaUpdates

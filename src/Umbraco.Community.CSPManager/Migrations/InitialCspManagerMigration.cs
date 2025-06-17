@@ -5,7 +5,7 @@ using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager.Migrations;
 
-public sealed class InitialCspManagerMigration : MigrationBase
+public sealed class InitialCspManagerMigration : AsyncMigrationBase
 {
 	public const string MigrationKey = "csp-manager-init";
 
@@ -13,12 +13,12 @@ public sealed class InitialCspManagerMigration : MigrationBase
 	{
 	}
 
-	protected override void Migrate()
+	protected override async Task MigrateAsync()
 	{
 		if (!TableExists(nameof(CspDefinition)))
 		{
 			Create.Table<CspDefinitionSchema>().Do();
-			Context.Database.Insert(nameof(CspDefinition), nameof(CspDefinition.Id), false, new
+			await Context.Database.InsertAsync<CspDefinition>(new()
 			{
 				Id = Constants.DefaultBackofficeId,
 				IsBackOffice = true,
@@ -30,14 +30,16 @@ public sealed class InitialCspManagerMigration : MigrationBase
 		if (!TableExists(nameof(CspDefinitionSource)))
 		{
 			Create.Table<CspDefinitionSourceSchema>().Do();
-			foreach (var source in Constants.DefaultBackOfficeCsp)
-			{
-				Context.Database.Insert(nameof(CspDefinitionSource), $"{nameof(CspDefinitionSource.DefinitionId)},{nameof(CspDefinitionSource.Source)}", false, source);
-			}
+
+			await Context.Database.InsertBulkAsync<CspDefinitionSource>(
+				Constants.DefaultBackOfficeCsp.Select(source =>
+				{
+					source.DefinitionId = Constants.DefaultBackofficeId;
+					return source;
+				}));
 		}
 	}
 
-#pragma warning disable S1144 // Unused private types or members should be removed
 	[TableName((nameof(CspDefinition)))]
 	[PrimaryKey(nameof(Id), AutoIncrement = false)]
 	private sealed class CspDefinitionSchema
@@ -59,7 +61,7 @@ public sealed class InitialCspManagerMigration : MigrationBase
 	}
 
 	[TableName((nameof(CspDefinitionSource)))]
-	[PrimaryKey(new[] { nameof(DefinitionId), nameof(Source) })]
+	[PrimaryKey([nameof(DefinitionId), nameof(Source)])]
 	private sealed class CspDefinitionSourceSchema
 	{
 		[PrimaryKeyColumn(
@@ -77,6 +79,4 @@ public sealed class InitialCspManagerMigration : MigrationBase
 		[SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
 		public List<string> Directives { get; set; } = [];
 	}
-
-#pragma warning restore S1144 // Unused private types or members should be removed
 }

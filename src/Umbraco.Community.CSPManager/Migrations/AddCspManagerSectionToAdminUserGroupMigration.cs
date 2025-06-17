@@ -4,7 +4,7 @@ using UmbConstants = Umbraco.Cms.Core.Constants;
 
 namespace Umbraco.Community.CSPManager.Migrations;
 
-public class AddCspManagerSectionToAdminUserGroupMigration : MigrationBase
+public class AddCspManagerSectionToAdminUserGroupMigration : AsyncMigrationBase
 {
 	public const string MigrationKey = "csp-manager-add-section";
 
@@ -17,15 +17,15 @@ public class AddCspManagerSectionToAdminUserGroupMigration : MigrationBase
 		_userGroupService = userGroupService;
 	}
 
-	protected override void Migrate()
+	protected override  async Task MigrateAsync()
 	{
-		var result = _userGroupService.GetAsync(UmbConstants.Security.AdminGroupAlias).Result;
+		var result = await _userGroupService.GetAsync(UmbConstants.Security.AdminGroupAlias);
 		if (result == null || result.AllowedSections.Contains<string>(Constants.PluginAlias))
 		{
 			return;
 		}
 
 		result.AddAllowedSection("workflow");
-		_userGroupService.UpdateAsync(result, UmbConstants.Security.SuperUserKey);
+		await _userGroupService.UpdateAsync(result, UmbConstants.Security.SuperUserKey);
 	}
 }
