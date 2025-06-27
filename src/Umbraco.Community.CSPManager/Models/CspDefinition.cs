@@ -17,8 +17,10 @@ public class CspDefinition
 	public bool IsBackOffice { get; set; }
 
 	[Length(500)]
+	[NullSetting(NullSetting = NullSettings.Null)]
 	public string? ReportingDirective { get; set; }
 
+	[NullSetting(NullSetting = NullSettings.Null)]
 	[Length(500)]
 	public string? ReportUri { get; set; }
 
