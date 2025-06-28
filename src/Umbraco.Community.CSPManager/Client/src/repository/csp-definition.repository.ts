@@ -12,16 +12,12 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
    * Get CSP definition by type (front-end or back-office)
    */
   async get(isBackOffice: boolean) {
-    console.log('CSP Manager Repository: Getting CSP definition for isBackOffice:', isBackOffice);
-    
     const { data, error } = await tryExecuteAndNotify(
       this,
       Definitions.getDefinitions({
         query: { isBackOffice }
       })
     );
-
-    console.log('CSP Manager Repository: API response:', { data, error });
 
     if (data) {
       return { data };

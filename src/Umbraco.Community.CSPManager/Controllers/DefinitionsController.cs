@@ -13,9 +13,11 @@ namespace Umbraco.Community.CSPManager.Controllers;
 public class DefinitionsController(ICspService cspService) : ManagementApiControllerBase
 {
 	[HttpGet("Definitions")]
+	[ProducesResponseType(typeof(CspDefinition), 200)]
 	public CspDefinition GetDefinition(bool isBackOffice = false) => cspService.GetCspDefinition(isBackOffice);
 
 	[HttpPost("Definitions/save")]
+	[ProducesResponseType(typeof(CspDefinition), 200)]
 	public async Task<CspDefinition> SaveDefinition(CspDefinition definition)
 	{
 		if (definition.Id == Guid.Empty)
