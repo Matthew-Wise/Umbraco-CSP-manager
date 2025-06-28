@@ -51,13 +51,4 @@
 			<PackagePath>\</PackagePath>
 		</None>
 	</ItemGroup>
-
-	<!-- Copy App_Plugins files after build for development -->
-	<Target Name="CopyAppPluginsFiles" AfterTargets="Build">
-		<ItemGroup>
-			<AppPluginsFiles Include="App_Plugins\**\*.*" />
-		</ItemGroup>
-		<Copy SourceFiles="@(AppPluginsFiles)" DestinationFiles="@(AppPluginsFiles->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" />
-	</Target>
-
 </Project>
