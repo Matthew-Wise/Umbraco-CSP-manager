@@ -1,20 +1,30 @@
 {
-  "name": "umbraco-community-csp-manager",
-  "private": true,
-  "version": "16.0.0",
-  "type": "module",
-  "scripts": {
-    "watch": "vite build --watch",
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "generate-client": "NODE_TLS_REJECT_UNAUTHORIZED=0 openapi-ts"
-  },
-  "devDependencies": {
-    "@hey-api/openapi-ts": "^0.77.0",
-    "@umbraco-cms/backoffice": "^16.0.0",
-    "lit": "^3.3.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.0"
-  }
+	"name": "umbraco-community-csp-manager",
+	"private": true,
+	"version": "16.0.0",
+	"type": "module",
+	"scripts": {
+		"watch": "vite build --watch",
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"preview": "vite preview",
+		"generate-client": "NODE_TLS_REJECT_UNAUTHORIZED=0 openapi-ts",
+		"test": "playwright test",
+		"test:ui": "playwright test --ui",
+		"test:headed": "playwright test --headed",
+		"test:debug": "playwright test --debug",
+		"test:report": "playwright show-report",
+		"test:install": "playwright install"
+	},
+	"devDependencies": {
+		"@hey-api/openapi-ts": "^0.77.0",
+		"@umbraco-cms/backoffice": "^16.0.0",
+		"@umbraco/playwright-testhelpers": "^16.0.34",
+		"dotenv": "^16.3.1",
+		"@playwright/test": "^1.40.0",
+		"@types/node": "^20.0.0",
+		"lit": "^3.3.0",
+		"typescript": "~5.8.3",
+		"vite": "^7.0.0"
+	}
 }
