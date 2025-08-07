@@ -53,6 +53,15 @@ public sealed class InitialCspManagerMigration : AsyncMigrationBase
 
 		public bool IsBackOffice { get; set; }
 
+
+		[Length(500)]
+    	[NullSetting(NullSetting = NullSettings.Null)]
+		public string? ReportingDirective { get; set; }
+
+		[Length(500)]
+    	[NullSetting(NullSetting = NullSettings.Null)]
+		public string? ReportUri { get; set; }
+
 		[ResultColumn]
 		[Reference(ReferenceType.Many,
 			ColumnName = nameof(Id),

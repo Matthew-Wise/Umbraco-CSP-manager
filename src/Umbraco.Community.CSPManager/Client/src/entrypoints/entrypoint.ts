@@ -1,14 +1,15 @@
-import { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
+import { type UmbEntryPointOnInit, type UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 import { client } from '../api';
 
 // load up the manifests here
 export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
-
-  console.log('Hello from my extension 🎉');
   // Will use only to add in Open API config with generated TS OpenAPI HTTPS Client
   // Do the OAuth token handshake stuff
   _host.consumeContext(UMB_AUTH_CONTEXT, async (authContext) => {
+    if (!authContext) {
+      return;
+    }
 
     // Get the token info from Umbraco
     const config = authContext.getOpenApiConfiguration();
@@ -26,9 +27,9 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
       request.headers.set('Authorization', `Bearer ${token}`);
       return request;
     });
+
   });
 };
 
 export const onUnload: UmbEntryPointOnUnload = (_host, _extensionRegistry) => {
-  console.log('Goodbye from my extension 👋');
 };

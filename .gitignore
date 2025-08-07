@@ -357,3 +357,5 @@ src/.idea
 
 # Local app settings
 appsettings.*.Local.json
+src/**/App_Plugins/UmbracoCommunityCSPManager/
+.DS_Store

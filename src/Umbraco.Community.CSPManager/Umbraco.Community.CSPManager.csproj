@@ -3,7 +3,9 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
 		<StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+		<EnableDefaultContentItems>true</EnableDefaultContentItems>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -26,18 +28,17 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="*" />
-		<PackageReference Include="Umbraco.Cms.Web.Common" Version="*" />
-		<PackageReference Include="Umbraco.Cms.Api.Common" Version="*" />
-		<PackageReference Include="Umbraco.Cms.Api.Management" Version="*" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="16.0.0" />
+		<PackageReference Include="Umbraco.Cms.Api.Management" Version="16.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Dont include the client folder as part of packaging nuget build -->
+		<!-- Don't include the client folder as part of packaging nuget build -->
 		<Content Remove="Client\**" />
 
 		<!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
 		<None Include="Client\public\umbraco-package.json" Pack="false" />
+
 	</ItemGroup>
 
 	<ItemGroup>
@@ -50,5 +51,4 @@
 			<PackagePath>\</PackagePath>
 		</None>
 	</ItemGroup>
-
 </Project>

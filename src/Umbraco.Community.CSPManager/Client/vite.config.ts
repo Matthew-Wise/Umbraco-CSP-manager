@@ -13,5 +13,6 @@ export default defineConfig({
     rollupOptions: {
       external: [/^@umbraco/],
     },
-  }
+  },
+    base: "/App_Plugins/UmbracoCommunityCSPManager/", // the base path of the app in the browser (used for assets)
 });

@@ -2,9 +2,9 @@ using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager;
 
-public static class Constants
+public sealed class Constants
 {
-	public const string ApiName = "umbracocommunitycspmanager";
+	public const string ApiName = "csp";
 
 	public const string PackageAlias = "Umbraco.Community.CSPManager";
 
