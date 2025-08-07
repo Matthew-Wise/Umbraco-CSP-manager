@@ -11,6 +11,7 @@ using Umbraco.Community.CSPManager.Notifications.Handlers;
 using Umbraco.Community.CSPManager.Services;
 
 namespace Umbraco.Community.CSPManager.Composers;
+
 public sealed class Composer : IComposer
 {
 	public void Compose(IUmbracoBuilder builder)

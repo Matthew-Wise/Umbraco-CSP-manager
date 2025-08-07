@@ -2,7 +2,7 @@ using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager;
 
-public sealed class Constants
+public static class Constants
 {
 	public const string ApiName = "csp";
 

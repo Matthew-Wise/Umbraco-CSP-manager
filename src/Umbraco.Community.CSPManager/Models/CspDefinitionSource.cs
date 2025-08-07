@@ -5,7 +5,7 @@ using NPoco;
 namespace Umbraco.Community.CSPManager.Models;
 
 [TableName((nameof(CspDefinitionSource)))]
-[PrimaryKey(new[] { nameof(DefinitionId), nameof(Source) })]
+[PrimaryKey([nameof(DefinitionId), nameof(Source)])]
 public class CspDefinitionSource
 {
 	[PrimaryKeyColumn(

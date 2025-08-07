@@ -18,8 +18,6 @@ using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Services;
 
 using UmbConstants = Umbraco.Cms.Core.Constants;
-using IHostingEnvironment = Umbraco.Cms.Core.Hosting.IHostingEnvironment;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace Umbraco.Community.CSPManager.Tests.Middleware;
 
@@ -115,7 +113,6 @@ public class CspMiddlewareTests
 	public void TearDownAsync()
 	{
 		_host.StopAsync();
-		_host?.Dispose();
-
+		_host.Dispose();
 	}
 }

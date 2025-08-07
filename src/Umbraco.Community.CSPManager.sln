@@ -5,6 +5,7 @@ VisualStudioVersion = 17.4.33020.496
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D5FD2694-E480-48CD-9FE1-4C10D39A2A73}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		..\.github\CONTRIBUTING.md = ..\.github\CONTRIBUTING.md
 		..\.github\README.md = ..\.github\README.md
 		..\docs\README_nuget.md = ..\docs\README_nuget.md

@@ -39,7 +39,10 @@ public class CspMiddleware
 
 		context.Response.OnStarting(async () =>
 		{
-			var definition = _cspService.GetCachedCspDefinition(context.Request.IsBackOfficeRequest());
+			var isBackOfficeRequest = context.Request.IsBackOfficeRequest() ||
+			context.Request.Path.StartsWithSegments("/umbraco");
+
+			var definition = _cspService.GetCachedCspDefinition(isBackOfficeRequest);
 
 			await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
 

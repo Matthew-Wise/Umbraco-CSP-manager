@@ -58,11 +58,13 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
           }
         });
       } else {
-        this.#notificationContext?.peek('danger', {
+        this.#notificationContext?.peek("danger", {
           data: {
-            headline: 'Save Failed',
-            message: result.error || 'An error occurred while saving the CSP configuration.'
-          }
+            headline: "Save Failed",
+            message:
+              result.error?.message ||
+              "An error occurred while saving the CSP configuration.",
+          },
         });
       }
     } catch (error) {

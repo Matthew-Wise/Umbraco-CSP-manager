@@ -10,8 +10,15 @@ namespace Umbraco.Community.CSPManager.Controllers;
 [ApiVersion("1.0")]
 [MapToApi(Constants.ApiName)]
 [ApiExplorerSettings(GroupName = "Definitions")]
-public class DefinitionsController(ICspService cspService) : ManagementApiControllerBase
+public class DefinitionsController : ManagementApiControllerBase
 {
+	private readonly ICspService cspService;
+
+	public DefinitionsController(ICspService cspService)
+	{
+		this.cspService = cspService;
+	}
+
 	[HttpGet("Definitions")]
 	[ProducesResponseType(typeof(CspDefinition), 200)]
 	public CspDefinition GetDefinition(bool isBackOffice = false) => cspService.GetCspDefinition(isBackOffice);

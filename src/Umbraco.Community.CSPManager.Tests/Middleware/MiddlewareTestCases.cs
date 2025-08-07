@@ -1,5 +1,4 @@
-﻿using Moq;
-using Umbraco.Cms.Core;
+﻿using Umbraco.Cms.Core;
 using Umbraco.Community.CSPManager.Models;
 using CspConstants = Umbraco.Community.CSPManager.Constants;
 
