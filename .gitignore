@@ -359,4 +359,3 @@ src/.idea
 appsettings.*.Local.json
 src/**/App_Plugins/UmbracoCommunityCSPManager/
 .DS_Store
-/src/Umbraco.Community.CSPManager/Client/playwright-report
