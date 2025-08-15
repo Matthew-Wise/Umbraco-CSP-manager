@@ -1,118 +1,84 @@
+import { CspConstants, type PolicyType } from '@/constants';
+
+const createWorkspaceManifests = (policyType: PolicyType): Array<UmbExtensionManifest> => [
+	{
+		type: 'workspace',
+		alias: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+		name: `CSP Manager ${policyType.label} Workspace`,
+		js: () => import('./csp-management-workspace.element.js'),
+		meta: {
+			entityType: policyType.value,
+		},
+	},
+	{
+		type: 'workspaceContext',
+		alias: `${CspConstants.workspace.alias}Context.${policyType.aliasPart}`,
+		name: `CSP Manager ${policyType.label} Workspace Context`,
+		js: () => import('./context/workspace.context.js'),
+		conditions: [
+			{
+				alias: CspConstants.umbraco.conditions.workspaceAlias,
+				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+			},
+		],
+	},
+	{
+		type: 'workspaceView',
+		alias: `${CspConstants.workspace.alias}View.${policyType.aliasPart}.Default`,
+		name: `CSP ${policyType.label} Sources View`,
+		js: () => import('./views/default/default.element.js'),
+		weight: CspConstants.weights.medium,
+		meta: {
+			label: 'Sources',
+			pathname: 'sources',
+			icon: CspConstants.icons.sources,
+		},
+		conditions: [
+			{
+				alias: CspConstants.umbraco.conditions.workspaceAlias,
+				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+			},
+		],
+	},
+	{
+		type: 'workspaceView',
+		alias: `${CspConstants.workspace.alias}View.${policyType.aliasPart}.Settings`,
+		name: `CSP ${policyType.label} Settings View`,
+		js: () => import('./views/settings/settings.element.js'),
+		weight: CspConstants.weights.high,
+		meta: {
+			label: 'Settings',
+			pathname: 'settings',
+			icon: CspConstants.icons.settings,
+		},
+		conditions: [
+			{
+				alias: CspConstants.umbraco.conditions.workspaceAlias,
+				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+			},
+		],
+	},
+	{
+		type: 'workspaceView',
+		alias: `${CspConstants.workspace.alias}View.${policyType.aliasPart}.Evaluate`,
+		name: `CSP ${policyType.label} Evaluate View`,
+		js: () => import('./views/evaluate/evaluate.element.js'),
+		weight: 50,
+		meta: {
+			label: 'Evaluate',
+			pathname: 'evaluate',
+			icon: CspConstants.icons.evaluate,
+		},
+		conditions: [
+			{
+				alias: CspConstants.umbraco.conditions.workspaceAlias,
+				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+			},
+		],
+	},
+];
+
 export const manifests: Array<UmbExtensionManifest> = [
-  {
-    type: "workspace",
-    alias: "Umbraco.Community.CSPManager.Workspace.Frontend",
-    name: "CSP Manager Frontend Workspace",
-    js: () => import("./csp-management-workspace.element.js"),
-    meta: {
-      entityType: "frontend",
-    },
-  },
-  {
-    type: "workspace",
-    alias: "Umbraco.Community.CSPManager.Workspace.Backoffice",
-    name: "CSP Manager Backoffice Workspace",
-    js: () => import("./csp-management-workspace.element.js"),
-    meta: {
-      entityType: "backoffice",
-    },
-  },
-  {
-    type: "workspaceContext",
-    alias: "Umbraco.Community.CSPManager.WorkspaceContext.Frontend",
-    name: "CSP Manager Frontend Workspace Context",
-    js: () => import("./context/workspace.context.js"),
-    conditions: [
-      {
-        alias: "Umb.Condition.WorkspaceAlias",
-        match: "Umbraco.Community.CSPManager.Workspace.Frontend",
-      },
-    ],
-  },
-  {
-    type: "workspaceContext",
-    alias: "Umbraco.Community.CSPManager.WorkspaceContext.Backoffice",
-    name: "CSP Manager Backoffice Workspace Context",
-    js: () => import("./context/workspace.context.js"),
-    conditions: [
-      {
-        alias: "Umb.Condition.WorkspaceAlias",
-        match: "Umbraco.Community.CSPManager.Workspace.Backoffice",
-      },
-    ],
-  },
-  // Frontend Workspace Views (appear as tabs)
-  {
-    type: "workspaceView",
-    alias: "Umbraco.Community.CSPManager.WorkspaceView.Frontend.Default",
-    name: "CSP Frontend Sources View",
-    js: () => import("./views/default/default.element.js"),
-    weight: 200,
-    meta: {
-      label: "Sources",
-      pathname: "sources",
-      icon: "icon-list",
-    },
-    conditions: [
-      {
-        alias: "Umb.Condition.WorkspaceAlias",
-        match: "Umbraco.Community.CSPManager.Workspace.Frontend",
-      },
-    ],
-  },
-  {
-    type: "workspaceView",
-    alias: "Umbraco.Community.CSPManager.WorkspaceView.Frontend.Settings",
-    name: "CSP Frontend Settings View",
-    js: () => import("./views/settings/settings.element.js"),
-    weight: 100,
-    meta: {
-      label: "Settings",
-      pathname: "settings",
-      icon: "icon-settings",
-    },
-    conditions: [
-      {
-        alias: "Umb.Condition.WorkspaceAlias",
-        match: "Umbraco.Community.CSPManager.Workspace.Frontend",
-      },
-    ],
-  },
-  // Backoffice Workspace Views (appear as tabs)
-  {
-    type: "workspaceView",
-    alias: "Umbraco.Community.CSPManager.WorkspaceView.Backoffice.Default",
-    name: "CSP Backoffice Sources View",
-    js: () => import("./views/default/default.element.js"),
-    weight: 200,
-    meta: {
-      label: "Sources",
-      pathname: "sources",
-      icon: "icon-list",
-    },
-    conditions: [
-      {
-        alias: "Umb.Condition.WorkspaceAlias",
-        match: "Umbraco.Community.CSPManager.Workspace.Backoffice",
-      },
-    ],
-  },
-  {
-    type: "workspaceView",
-    alias: "Umbraco.Community.CSPManager.WorkspaceView.Backoffice.Settings",
-    name: "CSP Backoffice Settings View",
-    js: () => import("./views/settings/settings.element.js"),
-    weight: 100,
-    meta: {
-      label: "Settings",
-      pathname: "settings",
-      icon: "icon-settings",
-    },
-    conditions: [
-      {
-        alias: "Umb.Condition.WorkspaceAlias",
-        match: "Umbraco.Community.CSPManager.Workspace.Backoffice",
-      },
-    ],
-  },
+	...createWorkspaceManifests(CspConstants.policyTypes.frontend),
+	...createWorkspaceManifests(CspConstants.policyTypes.backoffice),
 ];

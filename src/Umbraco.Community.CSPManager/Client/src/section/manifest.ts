@@ -1,78 +1,73 @@
-import { CspConstants } from "../constants.js";
+import { CspConstants, type PolicyType } from '@/constants';
+
+const createMenuItemManifest = (policyType: PolicyType, weight: number): UmbExtensionManifest => ({
+	type: 'menuItem',
+	alias: `${CspConstants.alias}.MenuItems.${policyType.aliasPart}`,
+	name: `CSP ${policyType.label} Menu Item`,
+	weight,
+	meta: {
+		label: policyType.label,
+		icon: policyType.icon,
+		entityType: policyType.value,
+		menus: [CspConstants.menu.alias],
+	},
+});
+
+const menuItemsConfig = [
+	{ policyType: CspConstants.policyTypes.frontend, weight: CspConstants.weights.high },
+	{ policyType: CspConstants.policyTypes.backoffice, weight: CspConstants.weights.medium },
+];
 
 export const manifests: Array<UmbExtensionManifest> = [
 	{
-		type: "section",
-		alias: "Umbraco.Community.CSPManager.Section",
-		name: "CSP Management Section",
-		weight: 100,
+		type: 'section',
+		alias: CspConstants.section.alias,
+		name: 'CSP Management Section',
+		weight: CspConstants.weights.high,
 		meta: {
-			label: CspConstants.sectionLabel,
-			pathname: "csp-manager",
+			label: CspConstants.section.label,
+			pathname: 'csp-manager',
 		},
 	},
 	{
-		type: "sectionSidebarApp",
-		kind: "menu",
-		alias: "Umbraco.Community.CSPManager.Management",
-		name: "CSP Manager Section Sidebar App",
-		weight: 100,
+		type: 'sectionSidebarApp',
+		kind: 'menu',
+		alias: `${CspConstants.alias}.Management`,
+		name: 'CSP Manager Section Sidebar App',
+		weight: CspConstants.weights.high,
 		meta: {
-			label: "CSP Manager",
-			menu: "Umbraco.Community.CSPManager.Menu",
+			label: 'CSP Manager',
+			menu: CspConstants.menu.alias,
 		},
 		conditions: [
 			{
-				alias: "Umb.Condition.SectionAlias",
-				match: "Umbraco.Community.CSPManager.Section",
+				alias: CspConstants.umbraco.conditions.sectionAlias,
+				match: CspConstants.section.alias,
 			},
 		],
 	},
 	{
-		type: "menu",
-		alias: "Umbraco.Community.CSPManager.Menu",
-		name: "CSP Manager Menu",
+		type: 'menu',
+		alias: CspConstants.menu.alias,
+		name: 'CSP Manager Menu',
 	},
 	{
-		type: "sectionView",
-		alias: "Umbraco.Community.CSPManager.SectionView.Dashboard",
-		name: "CSP Manager Section Dashboard",
-		js: () => import("./section-dashboard.element.js"),
-		weight: 100,
+		type: 'sectionView',
+		alias: `${CspConstants.section.alias}View.Dashboard`,
+		name: 'CSP Manager Section Dashboard',
+		js: () => import('./section-dashboard.element.js'),
+		weight: CspConstants.weights.high,
 		meta: {
-			label: "Dashboard",
-			pathname: "dashboard",
-			icon: "icon-home",
+			label: 'Dashboard',
+			pathname: 'dashboard',
+			icon: CspConstants.icons.dashboard,
 		},
 		conditions: [
 			{
-				alias: "Umb.Condition.SectionAlias",
-				match: "Umbraco.Community.CSPManager.Section",
+				alias: CspConstants.umbraco.conditions.sectionAlias,
+				match: CspConstants.section.alias,
 			},
 		],
 	},
-	{
-		type: "menuItem",
-		alias: "Umbraco.Community.CSPManager.MenuItems.Backoffice",
-		name: "CSP Backoffice Menu Item",
-		weight: 200,
-		meta: {
-			label: "Back Office",
-			icon: "icon-umbraco",
-			entityType: "backoffice",
-			menus: ["Umbraco.Community.CSPManager.Menu"],
-		},
-	},
-	{
-		type: "menuItem",
-		alias: "Umbraco.Community.CSPManager.MenuItems.Frontend",
-		name: "CSP Frontend Menu Item",
-		weight: 100,
-		meta: {
-			label: "Front end",
-			icon: "icon-globe",
-			entityType: "frontend",
-			menus: ["Umbraco.Community.CSPManager.Menu"],
-		},
-	},
+	...menuItemsConfig.map(({ policyType, weight }) => createMenuItemManifest(policyType, weight)),
 ];
