@@ -50,7 +50,7 @@
 	</ItemGroup>
 <Target Name="CopyUmbracoDepsFile" AfterTargets="Build">
   <ItemGroup>
-    <DepsFile Include="$(UserProfile)\.nuget\packages\umbraco.cms.tests.integration\15.3.1\**\Umbraco.Tests.Integration.deps.json" />
+    <DepsFile Include="$(UserProfile)\.nuget\packages\umbraco.cms.tests.integration\16.0.0\**\Umbraco.Tests.Integration.deps.json" />
   </ItemGroup>
   <Copy SourceFiles="@(DepsFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
 </Target>

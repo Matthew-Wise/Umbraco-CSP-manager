@@ -140,14 +140,17 @@ public static class Constants
 		Directives.WorkerSource
 	};
 
-	public static class ServerVariables
+	public static class TagHelper
 	{
-		public const string BaseUrl = "cspManagerBaseUrl";
+
+		public const string ScriptTag = "script";
+
+		public const string StyleTag = "style";
+
+		public const string ContextKey = "CspManagerContext";
+
+		public const string CspManagerScriptNonceSet = "CspManagerScriptNonceSet";
+
+		public const string CspManagerStyleNonceSet = "CspManagerStyleNonceSet";
 	}
-
-	public const string ContextKey = "CspManagerContext";
-
-	public const string CspManagerScriptNonceSet = "CspManagerScriptNonceSet";
-
-	public const string CspManagerStyleNonceSet = "CspManagerStyleNonceSet";
 }

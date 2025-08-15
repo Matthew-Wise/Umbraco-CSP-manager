@@ -1,0 +1,28 @@
+﻿@inherits UmbracoViewPage<IPublishedContent>
+@{
+    var addNonce = false;
+    if (Model is ICspSettings cspSettings)
+    {
+        addNonce = cspSettings.ApplyNonce;
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>@Model.Name</title>
+</head>
+<body>
+    <header>
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+    <footer>
+
+    </footer>
+    <script csp-manager-add-nonce="@addNonce" csp-manager-add-nonce-data-attribute="@addNonce">
+        console.log("Layout script");
+    </script>
+    @await RenderSectionAsync("EndScripts", false)
+</body>
+</html>

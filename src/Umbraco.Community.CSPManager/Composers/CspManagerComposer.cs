@@ -1,8 +1,11 @@
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.Community.CSPManager.Configuration;
 using Umbraco.Community.CSPManager.Middleware;
@@ -18,7 +21,8 @@ public sealed class Composer : IComposer
 	{
 		builder.Services.ConfigureOptions<ConfigCspApiSwaggerGenOptions>();
 
-		builder.Services.AddTransient<ICspService, CspService>();
+		builder.Services.AddTransient<ICspService, CspService>(sp => 
+			new CspService(sp.GetRequiredService<IEventAggregator>(), sp.GetRequiredService<IScopeProvider>(), sp.GetRequiredService<AppCaches>().RuntimeCache));
 
 		builder.Services.Configure<UmbracoPipelineOptions>(options =>
 		{

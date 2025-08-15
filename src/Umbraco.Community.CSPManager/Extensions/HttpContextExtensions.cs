@@ -5,19 +5,17 @@ namespace Umbraco.Community.CSPManager.Extensions;
 
 internal static class HttpContextExtensions
 {
-	public static CspManagerContext? GetCspManagerContext(this HttpContext context)
+	public static CspManagerContext? GetOrCreateCspManagerContext(this HttpContext context)
 	{
-		if (!context.Items.ContainsKey(Constants.ContextKey))
+		if (!context.Items.TryGetValue(Constants.TagHelper.ContextKey, out var cspContext))
 		{
-			context.Items[Constants.ContextKey] = new CspManagerContext();
+			cspContext = new CspManagerContext();
+			context.Items[Constants.TagHelper.ContextKey] = cspContext;
 		}
-
-		return context.Items[Constants.ContextKey] as CspManagerContext;
+		
+		return cspContext as CspManagerContext;
 	}
 
-	public static void SetItem<T>(this HttpContext context, string key, T value) where T : class 
-		=> context.Items[key] = value;
-
-	public static T? GetItem<T>(this HttpContext context, string key) where T : class 
+	public static T? GetItem<T>(this HttpContext context, string key) where T : struct 
 		=> context.Items.TryGetValue(key, out var value) && value is T item ? item : null;
 }

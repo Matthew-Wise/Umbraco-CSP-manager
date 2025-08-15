@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Api.Common.Attributes;
+using Umbraco.Cms.Api.Common.Builders;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Services;
@@ -12,26 +13,31 @@ namespace Umbraco.Community.CSPManager.Controllers;
 [ApiExplorerSettings(GroupName = "Definitions")]
 public class DefinitionsController : ManagementApiControllerBase
 {
-	private readonly ICspService cspService;
+	private readonly ICspService _cspService;
 
 	public DefinitionsController(ICspService cspService)
 	{
-		this.cspService = cspService;
+		_cspService = cspService;
 	}
 
 	[HttpGet("Definitions")]
 	[ProducesResponseType(typeof(CspDefinition), 200)]
-	public CspDefinition GetDefinition(bool isBackOffice = false) => cspService.GetCspDefinition(isBackOffice);
+	public ActionResult<CspDefinition> GetDefinition(bool isBackOffice = false) => _cspService.GetCspDefinition(isBackOffice);
 
 	[HttpPost("Definitions/save")]
 	[ProducesResponseType(typeof(CspDefinition), 200)]
-	public async Task<CspDefinition> SaveDefinition(CspDefinition definition)
+	[ProducesResponseType(typeof(ProblemDetails), 400)]
+	public async Task<IActionResult> SaveDefinition(CspDefinition definition)
 	{
 		if (definition.Id == Guid.Empty)
 		{
-			throw new ArgumentOutOfRangeException(nameof(definition), "Definition Id is blank");
+			return BadRequest(new ProblemDetailsBuilder()
+				.WithTitle("Invalid Definition")
+				.WithDetail("Definition Id is blank")
+				.Build());
 		}
 
-		return await cspService.SaveCspDefinitionAsync(definition);
+		var savedDefinition = await _cspService.SaveCspDefinitionAsync(definition);
+		return Ok(savedDefinition);
 	}
 }

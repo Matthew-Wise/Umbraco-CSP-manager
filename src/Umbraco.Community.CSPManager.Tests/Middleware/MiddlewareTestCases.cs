@@ -47,12 +47,12 @@ internal static class MiddlewareTestCases
 	{
 		get
 		{
-			yield return new TestCaseData(RuntimeLevel.Run, Times.Once());
-			yield return new TestCaseData(RuntimeLevel.Install, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.Upgrade, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.Boot, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.BootFailed, Times.Never());
-			yield return new TestCaseData(RuntimeLevel.Unknown, Times.Never());
+			yield return new TestCaseData(RuntimeLevel.Run, Times.Once()).SetName("RunTimeLevel Run Middleware runs Once");
+			yield return new TestCaseData(RuntimeLevel.Install, Times.Never()).SetName("RunTimeLevel Install Middleware runs Never");
+			yield return new TestCaseData(RuntimeLevel.Upgrade, Times.Never()).SetName("RunTimeLevel Upgrade Middleware runs Never");
+			yield return new TestCaseData(RuntimeLevel.Boot, Times.Never()).SetName("RunTimeLevel Boot Middleware runs Never");
+			yield return new TestCaseData(RuntimeLevel.BootFailed, Times.Never()).SetName("RunTimeLevel BootFailed Middleware runs Never");
+			yield return new TestCaseData(RuntimeLevel.Unknown, Times.Never()).SetName("RunTimeLevel Unknown Middleware runs Never");
 		}
 	}
 }

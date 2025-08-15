@@ -10,7 +10,7 @@ public interface ICspService
 
 	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition);
 
-	string GetCspScriptNonce(HttpContext context);
+	string GetOrCreateCspScriptNonce(HttpContext context);
 
-	string GetCspStyleNonce(HttpContext context);
+	string GetOrCreateCspStyleNonce(HttpContext context);
 }

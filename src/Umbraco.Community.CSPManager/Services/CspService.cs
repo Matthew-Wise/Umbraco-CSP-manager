@@ -19,11 +19,11 @@ internal sealed class CspService : ICspService
 	public CspService(
 		IEventAggregator eventAggregator,
 		IScopeProvider scopeProvider,
-		AppCaches appCaches)
+		IAppPolicyCache runtimeCache)
 	{
 		_eventAggregator = eventAggregator;
 		_scopeProvider = scopeProvider;
-		_runtimeCache = appCaches.RuntimeCache;
+		_runtimeCache = runtimeCache;
 	}
 	public CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest)
 	{
@@ -47,9 +47,9 @@ internal sealed class CspService : ICspService
 		return definition;
 	}
 
-	public string GetCspScriptNonce(HttpContext context)
+	public string GetOrCreateCspScriptNonce(HttpContext context)
 	{
-		var cspManagerContext = context.GetCspManagerContext();
+		var cspManagerContext = context.GetOrCreateCspManagerContext();
 
 		if (cspManagerContext == null)
 		{
@@ -68,9 +68,9 @@ internal sealed class CspService : ICspService
 		return nonce;
 	}
 
-	public string GetCspStyleNonce(HttpContext context)
+	public string GetOrCreateCspStyleNonce(HttpContext context)
 	{
-		var cspManagerContext = context.GetCspManagerContext();
+		var cspManagerContext = context.GetOrCreateCspManagerContext();
 
 		if (cspManagerContext == null)
 		{
@@ -106,7 +106,7 @@ internal sealed class CspService : ICspService
 	{
 		await scope.Database.SaveAsync(definition);
 
-		definition.Sources = definition.Sources.Where(s => !string.IsNullOrWhiteSpace(s.Source)).ToList();
+		definition.Sources = [.. definition.Sources.Where(s => !string.IsNullOrWhiteSpace(s.Source))];
 
 		var sourceValues = definition.Sources.Select(s => s.Source).ToList();
 		var cmdDelete = scope.Database.DeleteManyAsync<CspDefinitionSource>()

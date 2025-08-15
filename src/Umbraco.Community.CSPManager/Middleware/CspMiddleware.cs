@@ -66,18 +66,6 @@ public class CspMiddleware
 
 	private Dictionary<string, string> ConstructCspDictionary(CspDefinition definition, HttpContext httpContext)
 	{
-		string? scriptNonce = null;
-		if (httpContext.GetItem<string>(Constants.CspManagerScriptNonceSet) == "set")
-		{
-			scriptNonce = _cspService.GetCspScriptNonce(httpContext);
-		}
-
-		string? styleNonce = null;
-		if (httpContext.GetItem<string>(Constants.CspManagerStyleNonceSet) == "set")
-		{
-			styleNonce = _cspService.GetCspStyleNonce(httpContext);
-		}
-
 		var csp = definition.Sources
 		.SelectMany(c => c.Directives.Select(d => new { Directive = d, c.Source }))
 		.GroupBy(x => x.Directive)
@@ -88,10 +76,22 @@ public class CspMiddleware
 			csp.TryAdd(definition.ReportingDirective, definition.ReportUri);
 		}
 
+		string? scriptNonce = null;
+		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerScriptNonceSet) == true)
+		{
+			scriptNonce = _cspService.GetOrCreateCspScriptNonce(httpContext);
+		}
+
 		if (!string.IsNullOrWhiteSpace(scriptNonce) && csp.TryGetValue(Constants.Directives.ScriptSource, out var scriptSrc))
 		{
 			scriptSrc += $" 'nonce-{scriptNonce}'";
 			csp[Constants.Directives.ScriptSource] = scriptSrc;
+		}
+
+		string? styleNonce = null;
+		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerStyleNonceSet) == true)
+		{
+			styleNonce = _cspService.GetOrCreateCspStyleNonce(httpContext);
 		}
 
 		if (!string.IsNullOrWhiteSpace(styleNonce) && csp.TryGetValue(Constants.Directives.StyleSource, out var styleSrc))

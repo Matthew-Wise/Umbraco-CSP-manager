@@ -1,0 +1,19 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentPage>
+@{
+
+    Layout = "_Layout.cshtml";
+
+    var addNonce = Model.ApplyNonce;
+}
+
+
+<script csp-manager-add-nonce="@addNonce" csp-manager-add-nonce-data-attribute="@addNonce">
+    console.log("ContentPage script");
+</script>
+@section EndScripts
+{
+    <script csp-manager-add-nonce="@addNonce" csp-manager-add-nonce-data-attribute="@addNonce">
+        console.log("EndScripts Section script");
+    </script>
+}
