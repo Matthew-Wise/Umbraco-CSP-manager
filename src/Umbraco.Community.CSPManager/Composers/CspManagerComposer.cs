@@ -20,6 +20,7 @@ public sealed class Composer : IComposer
 	public void Compose(IUmbracoBuilder builder)
 	{
 		builder.Services.ConfigureOptions<ConfigCspApiSwaggerGenOptions>();
+		builder.Services.Configure<CspManagerOptions>(builder.Config.GetSection(Constants.OptionsName));
 
 		builder.Services.AddTransient<ICspService, CspService>(sp => 
 			new CspService(sp.GetRequiredService<IEventAggregator>(), sp.GetRequiredService<IScopeProvider>(), sp.GetRequiredService<AppCaches>().RuntimeCache));
