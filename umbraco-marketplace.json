@@ -9,6 +9,10 @@
         "Url": "https://github.com/Digipex"
       },
       {
+        "Name": "Robert Foster",
+        "Url": "https://github.com/robertjf"
+      },
+      {
         "Name": "Jacob Spencer",
         "Url": "https://github.com/jaymarvels"
       }
@@ -20,7 +24,7 @@
   "PackageType": "Package",
   "Screenshots": [
     {
-      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/managment-screen.png",
+      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/management-screen.png",
       "Caption": "Managment dashboard for CSP"
     },
     {

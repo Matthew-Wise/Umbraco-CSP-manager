@@ -1,8 +1,8 @@
-import { LitElement, css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
-import { UmbElementMixin } from "@umbraco-cms/backoffice/element-api";
-import { UMB_NOTIFICATION_CONTEXT } from "@umbraco-cms/backoffice/notification";
-import type { UmbNotificationContext } from "@umbraco-cms/backoffice/notification";
-import { UmbCspManagerWorkspaceContext, type WorkspaceState } from "./context/workspace.context.js";
+import { LitElement, css, html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
+import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
+import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import type { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
+import { UmbCspManagerWorkspaceContext, type WorkspaceState } from './context/workspace.context.js';
 import { CspConstants, type PolicyType } from '@/constants';
 
 @customElement('umb-csp-management-workspace')
@@ -54,7 +54,7 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 				this.#notificationContext?.peek('positive', {
 					data: {
 						headline: 'Changes Saved',
-						message: `CSP ${this._policyType} configuration has been saved successfully.`,
+						message: `CSP ${this._policyType.label} configuration has been saved successfully.`,
 					},
 				});
 			} else {
@@ -109,7 +109,7 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 export default UmbCspManagementWorkspaceElement;
 
 declare global {
-  interface HTMLElementTagNameMap {
-    'umb-csp-management-workspace': UmbCspManagementWorkspaceElement;
-  }
+	interface HTMLElementTagNameMap {
+		'umb-csp-management-workspace': UmbCspManagementWorkspaceElement;
+	}
 }

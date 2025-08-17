@@ -1,12 +1,13 @@
-﻿using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Services;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
-using Umbraco.Extensions;
-using Umbraco.Community.CSPManager.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Community.CSPManager.Extensions;
+using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Services;
+using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Middleware;
 
@@ -16,17 +17,24 @@ public class CspMiddleware
 	private readonly IRuntimeState _runtimeState;
 	private readonly ICspService _cspService;
 	private readonly IEventAggregator _eventAggregator;
+	private CspManagerOptions _cspOptions;
 
 	public CspMiddleware(
 		RequestDelegate next,
 		IRuntimeState runtimeState,
 		ICspService cspService,
-		IEventAggregator eventAggregator)
+		IEventAggregator eventAggregator,
+		IOptionsMonitor<CspManagerOptions> cspOptions)
 	{
 		_next = next;
 		_runtimeState = runtimeState;
 		_cspService = cspService;
 		_eventAggregator = eventAggregator;
+
+		cspOptions.OnChange(config => {
+			_cspOptions = config;
+		});
+		_cspOptions = cspOptions.CurrentValue;
 	}
 
 	public async Task InvokeAsync(HttpContext context)
@@ -42,8 +50,12 @@ public class CspMiddleware
 			var isBackOfficeRequest = context.Request.IsBackOfficeRequest() ||
 			context.Request.Path.StartsWithSegments("/umbraco");
 
-			var definition = _cspService.GetCachedCspDefinition(isBackOfficeRequest);
+			if(isBackOfficeRequest && _cspOptions.DisableBackOfficeHeader)
+			{
+				return;
+			}
 
+			var definition = _cspService.GetCachedCspDefinition(isBackOfficeRequest);
 			await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
 
 			if (definition is not { Enabled: true })

@@ -255,7 +255,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 										<div class="source-content" ?hidden=${!this._expandedSources.has(index)}>
 											<div class="source-fields">
 												<uui-form-layout-item>
-													<uui-label slot="label">Source URL</uui-label>
+													<uui-label slot="label">Source</uui-label>
 													<span slot="description">The URL or pattern for this CSP source</span>
 													<uui-input
 														.value=${source.source || ''}

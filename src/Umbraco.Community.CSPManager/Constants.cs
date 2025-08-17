@@ -10,6 +10,8 @@ public static class Constants
 
 	public const string PluginAlias = "CspManager";
 
+	public const string OptionsName = "CspManager";
+
 	public static readonly Guid DefaultBackofficeId = new("9cbfa28c-2b19-40f4-9f8e-bbc52bd8e780");
 
 	public static readonly Guid DefaultFrontEndId = new("fac780be-53af-41dc-b51d-1aa647100221");
