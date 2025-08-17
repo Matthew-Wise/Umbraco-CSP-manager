@@ -6,7 +6,7 @@ import type { UmbWorkspaceContext } from "@umbraco-cms/backoffice/workspace";
 import { UmbObjectState } from "@umbraco-cms/backoffice/observable-api";
 import type { CspDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
-import type { UmbApiError, UmbCancelError, UmbError } from '@umbraco-cms/backoffice/resources';
+import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
 import { CspConstants, type PolicyType } from '@/constants';
 
 export interface WorkspaceState {
@@ -109,11 +109,31 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 		}
 	}
 
-	updateDefinition(definition: CspDefinition) {
-		this.#state.update({
-			definition,
-			hasChanges: true,
+	private _validateDefinition(definition: CspDefinition): UmbError | undefined {
+		const set = new Set<string>(definition.sources.map((s) => s.source));
+		let duplicates: string[] = [];
+		set.forEach((name) => {
+			const matches = definition.sources.filter((s) => s.source === name);
+			if (matches.length > 1) {
+				duplicates.push(name);
+			}
 		});
+
+		if (duplicates.length > 0) {
+			return new UmbError('Duplicate source names found', { cause: duplicates });
+		}
+	}
+
+	updateDefinition(definition: CspDefinition) {
+		const error = this._validateDefinition(definition);
+		if (error) {
+			this.#state.update({ definition, hasChanges: true, error });
+		} else {
+			this.#state.update({
+				definition,
+				hasChanges: true,
+			});
+		}
 	}
 
 	async save(): Promise<{
