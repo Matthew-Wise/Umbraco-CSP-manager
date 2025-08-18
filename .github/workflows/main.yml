@@ -32,7 +32,7 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Build & Pack
-        run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION --output ${{env.out_folder}}
+        run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION --output ${{env.OUT_FOLDER}}
 
       - name: Run tests
         run: dotnet test $TESTPROJECT -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName"
