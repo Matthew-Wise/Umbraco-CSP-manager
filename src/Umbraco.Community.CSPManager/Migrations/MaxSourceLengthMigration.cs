@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Diagnostics.CodeAnalysis;
+using Newtonsoft.Json;
 using NPoco;
 using Umbraco.Cms.Infrastructure.Migrations;
 using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
@@ -54,6 +55,8 @@ public class MaxSourceLengthMigration : AsyncMigrationBase
 		return Task.CompletedTask;
 	}
 
+
+	[ExcludeFromCodeCoverage(Justification = "Migration model so not accessed directly.")]
 	[TableName((nameof(CspDefinitionSource)))]
 	[PrimaryKey([nameof(DefinitionId), nameof(Source)])]
 	public sealed class CspDefinitionSourceSchema

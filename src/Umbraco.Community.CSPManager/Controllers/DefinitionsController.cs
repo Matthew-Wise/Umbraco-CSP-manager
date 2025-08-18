@@ -1,17 +1,14 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
-using Umbraco.Cms.Api.Common.Attributes;
-using Umbraco.Cms.Api.Common.Builders;
-using Umbraco.Cms.Api.Management.Controllers;
-using Umbraco.Community.CSPManager.Models;
+using Umbraco.Community.CSPManager.Models.Api;
 using Umbraco.Community.CSPManager.Services;
 
 namespace Umbraco.Community.CSPManager.Controllers;
 
+
 [ApiVersion("1.0")]
-[MapToApi(Constants.ApiName)]
 [ApiExplorerSettings(GroupName = "Definitions")]
-public class DefinitionsController : ManagementApiControllerBase
+public class DefinitionsController : CspManagerControllerBase
 {
 	private readonly ICspService _cspService;
 
@@ -21,23 +18,23 @@ public class DefinitionsController : ManagementApiControllerBase
 	}
 
 	[HttpGet("Definitions")]
-	[ProducesResponseType(typeof(CspDefinition), 200)]
-	public ActionResult<CspDefinition> GetDefinition(bool isBackOffice = false) => _cspService.GetCspDefinition(isBackOffice);
+	[MapToApiVersion("1.0")]
+	[ProducesResponseType(typeof(CspApiDefinition), 200)]
+	public ActionResult<CspApiDefinition> GetDefinition(bool isBackOffice = false)
+		=> CspApiDefinition.FromCspDefiniton(_cspService.GetCspDefinition(isBackOffice));
 
 	[HttpPost("Definitions/save")]
-	[ProducesResponseType(typeof(CspDefinition), 200)]
+	[MapToApiVersion("1.0")]
+	[ProducesResponseType(typeof(CspApiDefinition), 200)]
 	[ProducesResponseType(typeof(ProblemDetails), 400)]
-	public async Task<IActionResult> SaveDefinition(CspDefinition definition)
+	public async Task<IActionResult> SaveDefinition([FromBody] CspApiDefinition definition)
 	{
-		if (definition.Id == Guid.Empty)
+		if (!ModelState.IsValid)
 		{
-			return BadRequest(new ProblemDetailsBuilder()
-				.WithTitle("Invalid Definition")
-				.WithDetail("Definition Id is blank")
-				.Build());
+			return BadRequest(new ValidationProblemDetails(ModelState));
 		}
 
-		var savedDefinition = await _cspService.SaveCspDefinitionAsync(definition);
+		var savedDefinition = await _cspService.SaveCspDefinitionAsync(definition.ToCspDefiniton());
 		return Ok(savedDefinition);
 	}
 }

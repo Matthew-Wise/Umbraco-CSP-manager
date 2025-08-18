@@ -10,9 +10,9 @@ A comprehensive Content Security Policy (CSP) management package for Umbraco CMS
 
 ## Features
 
-- 🛡️ **Frontend & Backend CSP Management** - Configure different CSP policies for your website frontend and Umbraco backoffice
+- 🛡️ **Frontend & Backend CSP Management** - Configure different Content Security Policies for your website frontend and Umbraco backoffice
 - 🎛️ **Intuitive Backoffice Interface** - Easy-to-use management screens within the Umbraco backoffice
-- 🔍 **CSP Evaluation Tools** - Test and validate your CSP policies before deployment
+- 🔍 **CSP Evaluation Tools** - Test and validate your Content Security Policies before deployment
 - 🏷️ **Nonce Support** - Built-in tag helpers for script and style nonces
 - ⚙️ **Flexible Configuration** - Customize CSP directives to match your website's requirements
 - 📊 **Real-time Testing** - Evaluate CSP effectiveness with built-in testing tools
@@ -42,7 +42,7 @@ dotnet add package Umbraco.Community.CSPManager
 1. **Install the package** using the command above
 2. **Build and run** your Umbraco application
 3. **Navigate to the CSP Management section** in the Umbraco backoffice
-4. **Configure your CSP policies** for frontend and/or backend
+4. **Configure your Content Security Policies** for frontend and/or backend
 5. **Test your configuration** using the evaluation tools
 
 
@@ -125,7 +125,7 @@ The CSP Manager provides notification events that allow you to extend functional
 
 #### CspWritingNotification
 
-Triggered when building a CSP definition for an HTTP request. Use this to dynamically modify CSP policies based on request context.
+Triggered when building a CSP definition for an HTTP request. Use this to dynamically modify Content Security Policies based on request context.
 
 ```csharp
 using Umbraco.Cms.Core.Events;

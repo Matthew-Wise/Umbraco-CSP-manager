@@ -1,15 +1,16 @@
-import { css, customElement, html, state } from '@umbraco-cms/backoffice/external/lit';
+import { css, customElement, html, state, when } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
 import type { UmbModalManagerContext } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
-import type { CspDefinitionSource } from '@/api';
+import type { CspApiDefinitionSource } from '@/api';
 import {
 	UmbCspManagerWorkspaceContext,
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
 	type WorkspaceState,
 } from '../../context/workspace.context.js';
+import type { UUIInputElement } from '@umbraco-cms/backoffice/external/uui';
 
 @customElement('umb-csp-default-view')
 export class UmbCspDefaultViewElement extends UmbLitElement {
@@ -26,7 +27,13 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	};
 
 	@state()
+	private _invalidSources: Array<string> = [];
+
+	@state()
 	private _expandedSources = new Set<number>();
+
+	@state()
+	private _focusSourceIndex?: number;
 
 	constructor() {
 		super();
@@ -38,6 +45,9 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 
 			this.observe(context.state, (state) => {
 				this._workspaceState = state;
+				if (state.error) {
+					this._invalidSources = state.error.cause as string[];
+				}
 			});
 		});
 
@@ -60,9 +70,19 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		} else {
 			this._expandedSources.add(index);
 		}
-
 		// Trigger reactive update
 		this._expandedSources = new Set(this._expandedSources);
+		this._focusSourceIndex = index;
+	}
+
+	override updated(changedProperties: Map<string | number | symbol, unknown>) {
+		super.updated(changedProperties);
+		if (changedProperties.has('_focusSourceIndex') && this._focusSourceIndex !== undefined) {
+			const input = this.shadowRoot?.querySelector<UUIInputElement>(`#source-input-${this._focusSourceIndex}`);
+			if (input) {
+				input.focus();
+			}
+		}
 	}
 
 	private _toggleDirective(sourceIndex: number, directive: string) {
@@ -87,6 +107,10 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
+	private _hasError(source: CspApiDefinitionSource): boolean {
+		return this._invalidSources.includes(source.source);
+	}
+
 	private _updateSourceName(sourceIndex: number, newName: string) {
 		if (!this._workspaceState.definition) return;
 
@@ -104,12 +128,12 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
-	private _handleCopySource(source: CspDefinitionSource, sourceIndex: number) {
+	private _handleCopySource(source: CspApiDefinitionSource, sourceIndex: number) {
 		if (!this._workspaceState.definition) {
 			return;
 		}
 
-		const newSource: CspDefinitionSource = {
+		const newSource: CspApiDefinitionSource = {
 			definitionId: this._workspaceState.definition.id,
 			source: `${source.source}_copy`,
 			directives: [...source.directives],
@@ -135,7 +159,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		});
 	}
 
-	private async _handleDeleteSource(source: CspDefinitionSource) {
+	private async _handleDeleteSource(source: CspApiDefinitionSource) {
 		if (!this._workspaceState.definition || !this.#modalManager) return;
 
 		const modalContext = this.#modalManager.open(this, 'Umb.Modal.Confirm', {
@@ -175,16 +199,18 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 			return;
 		}
 
-		const newSource: CspDefinitionSource = {
+		const newSource: CspApiDefinitionSource = {
 			definitionId: this._workspaceState.definition.id,
-			source: 'new-source',
-			directives: ['script-src', 'style-src'],
+			source: '',
+			directives: [],
 		};
 
 		const updatedDefinition = {
 			...this._workspaceState.definition,
 			sources: [...this._workspaceState.definition.sources, newSource],
 		};
+
+		this._toggleSourceExpansion(updatedDefinition.sources.length - 1);
 
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
@@ -217,7 +243,10 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 									<div class="source-item">
 										<div class="source-header" @click=${() => this._toggleSourceExpansion(index)}>
 											<div class="source-header-content">
-												<h4>${source.source || '(empty source)'}</h4>
+												<h4>
+													${when(this._hasError(source), () => html`<uui-icon name="icon-alert"></uui-icon>`)}
+													${source.source || '(empty source)'}
+												</h4>
 												<span class="source-summary"
 													>${source.directives.length} directive${source.directives.length !== 1 ? 's' : ''}</span
 												>
@@ -254,13 +283,19 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 
 										<div class="source-content" ?hidden=${!this._expandedSources.has(index)}>
 											<div class="source-fields">
-												<uui-form-layout-item>
-													<uui-label slot="label">Source</uui-label>
-													<span slot="description">The URL or pattern for this CSP source</span>
+												<uui-form-layout-item class="source-name-item">
+													<uui-label slot="label" for="#source-input-${index}">Source</uui-label>
+													<span slot="description"
+														>The URL or pattern for this CSP source. e.g., 'self', https://example.com,
+														*.example.com</span
+													>
 													<uui-input
+														id="source-input-${index}"
 														.value=${source.source || ''}
 														@input=${(e: Event) => this._updateSourceName(index, (e.target as HTMLInputElement).value)}
-														placeholder="e.g., 'self', https://example.com, *.example.com">
+														.error=${this._hasError(source)}
+														error-message="Duplicate source name"
+														placeholder="">
 													</uui-input>
 												</uui-form-layout-item>
 
@@ -346,6 +381,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 				margin: 0;
 				font-size: 1rem;
 				font-weight: 600;
+				--uui-icon-color: var(--uui-color-danger);
 			}
 
 			.source-summary {

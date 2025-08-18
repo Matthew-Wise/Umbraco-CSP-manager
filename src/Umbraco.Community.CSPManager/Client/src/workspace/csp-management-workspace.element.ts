@@ -87,7 +87,7 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 						label="Save"
 						look="primary"
 						color="positive"
-						.disabled=${this._saving || !this._workspaceState.hasChanges}
+						.disabled=${this._saving || !this._workspaceState.hasChanges || this._workspaceState.error !== undefined}
 						@click=${this._handleSave}>
 						${this._saving ? 'Saving...' : 'Save'}
 					</uui-button>
