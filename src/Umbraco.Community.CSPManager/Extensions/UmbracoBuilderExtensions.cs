@@ -43,7 +43,7 @@ public static class UmbracoBuilderExtensions
 
 		builder.AddNotificationHandler<CspSavedNotification, CspSavedNotificationHandler>();
 
-		builder.Services.AddSingleton<IAuthorizationHandler, CspMaangerAllowedApplicationHandler>();
+		builder.Services.AddSingleton<IAuthorizationHandler, CspManagerAllowedApplicationHandler>();
 		builder.Services.AddAuthorizationBuilder().AddPolicy(Constants.AuthorizationPolicies.SectionAccess,
 			policy =>
 			{

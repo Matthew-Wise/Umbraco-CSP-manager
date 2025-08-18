@@ -26,7 +26,7 @@ public abstract class CspManagementApiTest<T> : ManagementApiTest<T>
 
 	protected IShortStringHelper ShortStringHelper;
 
-	private IUserGroup? CspUserGroup;
+	private IUserGroup CspUserGroup;
 
 	protected override void CustomTestSetup(IUmbracoBuilder builder)
 	{
