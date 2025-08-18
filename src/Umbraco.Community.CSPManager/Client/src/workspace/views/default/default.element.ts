@@ -4,13 +4,13 @@ import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
 import type { UmbModalManagerContext } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
-import type { CspDefinitionSource } from '@/api';
+import type { CspApiDefinitionSource } from '@/api';
 import {
 	UmbCspManagerWorkspaceContext,
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
 	type WorkspaceState,
 } from '../../context/workspace.context.js';
-import { UUIInputElement } from '@umbraco-cms/backoffice/external/uui';
+import type { UUIInputElement } from '@umbraco-cms/backoffice/external/uui';
 
 @customElement('umb-csp-default-view')
 export class UmbCspDefaultViewElement extends UmbLitElement {
@@ -78,7 +78,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	override updated(changedProperties: Map<string | number | symbol, unknown>) {
 		super.updated(changedProperties);
 		if (changedProperties.has('_focusSourceIndex') && this._focusSourceIndex !== undefined) {
-			const input = this.shadowRoot?.querySelector(`#source-input-${this._focusSourceIndex}`) as UUIInputElement;
+			const input = this.shadowRoot?.querySelector<UUIInputElement>(`#source-input-${this._focusSourceIndex}`);
 			if (input) {
 				input.focus();
 			}
@@ -107,7 +107,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
-	private _hasError(source: CspDefinitionSource): boolean {
+	private _hasError(source: CspApiDefinitionSource): boolean {
 		return this._invalidSources.includes(source.source);
 	}
 
@@ -128,12 +128,12 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
-	private _handleCopySource(source: CspDefinitionSource, sourceIndex: number) {
+	private _handleCopySource(source: CspApiDefinitionSource, sourceIndex: number) {
 		if (!this._workspaceState.definition) {
 			return;
 		}
 
-		const newSource: CspDefinitionSource = {
+		const newSource: CspApiDefinitionSource = {
 			definitionId: this._workspaceState.definition.id,
 			source: `${source.source}_copy`,
 			directives: [...source.directives],
@@ -159,7 +159,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		});
 	}
 
-	private async _handleDeleteSource(source: CspDefinitionSource) {
+	private async _handleDeleteSource(source: CspApiDefinitionSource) {
 		if (!this._workspaceState.definition || !this.#modalManager) return;
 
 		const modalContext = this.#modalManager.open(this, 'Umb.Modal.Confirm', {
@@ -199,7 +199,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 			return;
 		}
 
-		const newSource: CspDefinitionSource = {
+		const newSource: CspApiDefinitionSource = {
 			definitionId: this._workspaceState.definition.id,
 			source: '',
 			directives: [],

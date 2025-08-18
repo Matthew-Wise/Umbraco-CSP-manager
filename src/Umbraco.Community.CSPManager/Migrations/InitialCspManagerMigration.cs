@@ -1,4 +1,5 @@
-﻿using NPoco;
+﻿using System.Diagnostics.CodeAnalysis;
+using NPoco;
 using Umbraco.Cms.Infrastructure.Migrations;
 using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 using Umbraco.Community.CSPManager.Models;
@@ -40,6 +41,7 @@ public sealed class InitialCspManagerMigration : AsyncMigrationBase
 		}
 	}
 
+	[ExcludeFromCodeCoverage(Justification ="Migration model so not accessed directly.")]
 	[TableName((nameof(CspDefinition)))]
 	[PrimaryKey(nameof(Id), AutoIncrement = false)]
 	private sealed class CspDefinitionSchema
@@ -69,6 +71,7 @@ public sealed class InitialCspManagerMigration : AsyncMigrationBase
 		public List<CspDefinitionSource> Sources { get; set; } = [];
 	}
 
+	[ExcludeFromCodeCoverage(Justification = "Migration model so not accessed directly.")]
 	[TableName((nameof(CspDefinitionSource)))]
 	[PrimaryKey([nameof(DefinitionId), nameof(Source)])]
 	private sealed class CspDefinitionSourceSchema

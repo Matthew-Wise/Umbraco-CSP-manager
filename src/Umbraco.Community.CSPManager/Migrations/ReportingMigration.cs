@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Infrastructure.Migrations;
+﻿using System.Diagnostics.CodeAnalysis;
+using Umbraco.Cms.Infrastructure.Migrations;
 using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager.Migrations;
@@ -30,7 +31,9 @@ public class ReportingMigration : AsyncMigrationBase
 		return Task.CompletedTask; 
 	}
 
-	public class SchemaUpdates
+
+	[ExcludeFromCodeCoverage(Justification = "Migration model so not accessed directly.")]
+	public sealed class SchemaUpdates
 	{
 		public string? ReportingDirective { get; set; }
 

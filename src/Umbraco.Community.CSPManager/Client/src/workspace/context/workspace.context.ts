@@ -4,13 +4,13 @@ import { UmbControllerBase } from "@umbraco-cms/backoffice/class-api";
 import { UMB_WORKSPACE_CONTEXT } from "@umbraco-cms/backoffice/workspace";
 import type { UmbWorkspaceContext } from "@umbraco-cms/backoffice/workspace";
 import { UmbObjectState } from "@umbraco-cms/backoffice/observable-api";
-import type { CspDefinition } from '@/api';
+import type { CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
 import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
 import { CspConstants, type PolicyType } from '@/constants';
 
 export interface WorkspaceState {
-	definition: CspDefinition | null;
+	definition: CspApiDefinition | null;
 	availableDirectives: string[];
 	loading: boolean;
 	hasChanges: boolean;
@@ -109,7 +109,7 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 		}
 	}
 
-	private _validateDefinition(definition: CspDefinition): UmbError | undefined {
+	private _validateDefinition(definition: CspApiDefinition): UmbError | undefined {
 		const set = new Set<string>(definition.sources.map((s) => s.source));
 		let duplicates: string[] = [];
 		set.forEach((name) => {
@@ -124,7 +124,7 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 		}
 	}
 
-	updateDefinition(definition: CspDefinition) {
+	updateDefinition(definition: CspApiDefinition) {
 		const error = this._validateDefinition(definition);
 		if (error) {
 			this.#state.update({ definition, hasChanges: true, error });
@@ -158,7 +158,7 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 		return { success: true };
 	}
 
-	getDefinition(): CspDefinition | null {
+	getDefinition(): CspApiDefinition | null {
 		return this.#state.getValue().definition;
 	}
 

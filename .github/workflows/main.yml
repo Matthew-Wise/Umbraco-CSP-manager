@@ -18,6 +18,7 @@ jobs:
       TESTPROJECT: "./src/Umbraco.Community.CSPManager.Tests/Umbraco.Community.CSPManager.Tests.csproj"
       TESTLOGPATH: "./src/Umbraco.Community.CSPManager.Tests/TestResults/"
       BUILD_VERSION: ${{ github.event.release.tag_name || '0.0.0' }}
+      OUT_FOLDER: ./build-out/
 
     runs-on: ubuntu-latest
 
@@ -31,7 +32,7 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Build & Pack
-        run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION
+        run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION --output ${{env.out_folder}}
 
       - name: Run tests
         run: dotnet test $TESTPROJECT -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName"
@@ -41,6 +42,12 @@ jobs:
         with:
           name: test-results
           path: "${{env.TESTLOGPATH}}${{env.LogFileName}}"
+
+      - name: Upload nuget file as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nuget Build Output
+          path: ${{env.OUT_FOLDER}}
 
       - name: Publish
         if: github.event_name == 'release'

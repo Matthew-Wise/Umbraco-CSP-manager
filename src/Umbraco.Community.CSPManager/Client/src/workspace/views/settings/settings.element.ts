@@ -1,6 +1,6 @@
 import { LitElement, css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
 import { UmbElementMixin } from "@umbraco-cms/backoffice/element-api";
-import type { CspDefinition } from '@/api';
+import type { CspApiDefinition } from '@/api';
 import {
 	UmbCspManagerWorkspaceContext,
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
@@ -42,7 +42,7 @@ export class UmbCspSettingsViewElement extends UmbElementMixin(LitElement) {
 		super.connectedCallback();
 	}
 
-	private _updateDefinitionSetting(field: keyof CspDefinition, value: any) {
+	private _updateDefinitionSetting(field: keyof CspApiDefinition, value: any) {
 		if (!this._workspaceState.definition) return;
 
 		const updatedDefinition = {

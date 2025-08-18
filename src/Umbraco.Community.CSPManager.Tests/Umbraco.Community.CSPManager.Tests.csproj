@@ -47,6 +47,12 @@
 		<None Update="appsettings.Tests.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Update="Controllers\DefinitonsController\SaveDefinitionsTests.SaveDefinition_ReturnsBadRequest_WithDuplicateSourceNames.verified.txt">
+		  <DependentUpon>SaveDefinitionsTests.cs</DependentUpon>
+		</None>
+		<None Update="Controllers\DefinitonsController\SaveDefinitionsTests.SaveDefinition_ReturnsBadRequest_WhenIdIsEmpty.verified.txt">
+		  <DependentUpon>SaveDefinitionsTests.cs</DependentUpon>
+		</None>
 	</ItemGroup>
 <Target Name="CopyUmbracoDepsFile" AfterTargets="Build">
   <ItemGroup>

@@ -20,12 +20,12 @@ public class AddCspManagerSectionToAdminUserGroupMigration : AsyncMigrationBase
 	protected override  async Task MigrateAsync()
 	{
 		var result = await _userGroupService.GetAsync(UmbConstants.Security.AdminGroupAlias);
-		if (result == null || result.AllowedSections.Contains<string>("Umbraco.Community.CSPManager.Section"))
+		if (result == null || result.AllowedSections.Contains<string>(Constants.SectionAlias))
 		{
 			return;
 		}
 
-		result.AddAllowedSection("Umbraco.Community.CSPManager.Section");
+		result.AddAllowedSection(Constants.SectionAlias);
 		await _userGroupService.UpdateAsync(result, UmbConstants.Security.SuperUserKey);
 	}
 }

@@ -1,14 +1,11 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
-using Umbraco.Cms.Api.Common.Attributes;
-using Umbraco.Cms.Api.Management.Controllers;
 
 namespace Umbraco.Community.CSPManager.Controllers;
 
 [ApiVersion("1.0")]
-[MapToApi(Constants.ApiName)]
 [ApiExplorerSettings(GroupName = "Directives")]
-public class DirectivesController() : ManagementApiControllerBase
+public class DirectivesController : CspManagerControllerBase
 {
 	[HttpGet("Directives")]
     [ProducesResponseType(typeof(ICollection<string>), 200)]
