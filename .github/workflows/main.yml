@@ -62,14 +62,16 @@ jobs:
           name: test-results
           path: "${{env.TESTLOGPATH}}${{env.LogFileName}}"
 
+      - name: Publish
+        if: github.event_name == 'release'
+        run: dotnet nuget push ${{env.OUT_FOLDER}}*.nupkg -k ${{env.NUGET_AUTH_TOKEN}}-s https://api.nuget.org/v3/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
+
+          
       - name: Upload nuget file as build artifact
         uses: actions/upload-artifact@v4
         with:
           name: Nuget Build Output
           path: ${{env.OUT_FOLDER}}
 
-      - name: Publish
-        if: github.event_name == 'release'
-        run: dotnet nuget push ${{env.OUT_FOLDER}}*.nupkg -k ${{env.NUGET_AUTH_TOKEN}}-s https://api.nuget.org/v3/index.json
-        env:
-          NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
