@@ -64,11 +64,11 @@ jobs:
 
       - name: Publish
         if: github.event_name == 'release'
-        run: dotnet nuget push ${{env.OUT_FOLDER}}*.nupkg -k ${{env.NUGET_AUTH_TOKEN}}-s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push ${{env.OUT_FOLDER}}*.nupkg -k ${{env.NUGET_AUTH_TOKEN}} -s https://api.nuget.org/v3/index.json
         env:
           NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
 
-          
+
       - name: Upload nuget file as build artifact
         uses: actions/upload-artifact@v4
         with:
