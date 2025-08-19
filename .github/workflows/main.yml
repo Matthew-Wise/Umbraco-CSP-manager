@@ -1,4 +1,7 @@
 name: Build
+permissions:
+  contents: read
+  pull-requests: write
 
 on:
   release:
@@ -14,6 +17,7 @@ jobs:
   build:
     env:
       LogFileName: "test-results.trx"
+      ClientPROJECT: "./src/Umbraco.Community.CSPManager/Client"
       PROJECT: "./src/Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj"
       TESTPROJECT: "./src/Umbraco.Community.CSPManager.Tests/Umbraco.Community.CSPManager.Tests.csproj"
       TESTLOGPATH: "./src/Umbraco.Community.CSPManager.Tests/TestResults/"
@@ -30,12 +34,27 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
+          
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '${{env.ClientPROJECT}}/package.json'
+          cache: 'npm'
+          cache-dependency-path: '${{env.ClientPROJECT}}/package-lock.json'
+
+      - name: Install Node dependencies
+        run: npm ci
+        working-directory: ${{env.ClientPROJECT}}
+
+      - name: Build Client
+        run: npm run build
+        working-directory: ${{env.ClientPROJECT}}
 
       - name: Build & Pack
         run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION --output ${{env.OUT_FOLDER}}
 
       - name: Run tests
-        run: dotnet test $TESTPROJECT -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName"
+        run: dotnet test ${{env.TESTPROJECT}} -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName"
 
       - uses: actions/upload-artifact@v4 # upload test results
         if: success() || failure() # run this step even if previous step failed
@@ -51,6 +70,6 @@ jobs:
 
       - name: Publish
         if: github.event_name == 'release'
-        run: dotnet nuget push **\*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push **\*.nupkg -k ${{env.NUGET_AUTH_TOKEN}}-s https://api.nuget.org/v3/index.json
         env:
           NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
