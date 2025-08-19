@@ -1,4 +1,6 @@
-# For most projects, this workflow file will not need changing; you simply need
+#--- Had to change Build mode to 'manual' for C# ---
+
+#For most projects, this workflow file will not need changing; you simply need
 # to commit it to your repository.
 #
 # You may wish to alter this file to override the set of languages analyzed,
@@ -46,7 +48,7 @@ jobs:
           - language: actions
             build-mode: none
           - language: csharp
-            build-mode: none
+            build-mode: manual
           - language: javascript-typescript
             build-mode: none
         # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
@@ -66,6 +68,16 @@ jobs:
       # or others). This is typically only required for manual builds.
       # - name: Setup runtime (example)
       #   uses: actions/setup-example@v1
+      - name: dotnet 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: './src/Umbraco.Community.CSPManager/Client/package.json'
+          cache: 'npm'
+          cache-dependency-path: './src/Umbraco.Community.CSPManager/Client/package-lock.json'
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
@@ -87,14 +99,16 @@ jobs:
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
       - if: matrix.build-mode == 'manual'
-        shell: bash
-        run: |
-          echo 'If you are using a "manual" build mode for one or more of the' \
-            'languages you are analyzing, replace this with the commands to build' \
-            'your code, for example:'
-          echo '  make bootstrap'
-          echo '  make release'
-          exit 1
+        run: npm ci
+        working-directory: './src/Umbraco.Community.CSPManager/Client'
+
+      - if: matrix.build-mode == 'manual'
+        run: npm run build
+        working-directory: './src/Umbraco.Community.CSPManager/Client'
+
+      - if: matrix.build-mode == 'manual'
+        run: dotnet build Umbraco.Community.CSPManager.sln -c Release
+        working-directory: ./src/
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
