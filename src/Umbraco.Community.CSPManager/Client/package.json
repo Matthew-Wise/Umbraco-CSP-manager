@@ -16,6 +16,10 @@
 		"test:report": "playwright show-report",
 		"test:install": "playwright install"
 	},
+	"engines": {
+		"node": ">=22",
+		"npm": ">=10.9"
+	},
 	"devDependencies": {
 		"@hey-api/openapi-ts": "^0.77.0",
 		"@playwright/test": "^1.40.0",
