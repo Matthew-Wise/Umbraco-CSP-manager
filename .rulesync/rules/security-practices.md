@@ -31,41 +31,6 @@ public static CspDefinition CreateSecureDefault(bool isBackOffice)
 }
 ```
 
-### Input Validation
-Validate all CSP directives and sources:
-
-```csharp
-public class CspDirectiveValidator
-{
-    private static readonly HashSet<string> ValidDirectives = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "default-src", "script-src", "style-src", "img-src", "font-src",
-        "connect-src", "media-src", "object-src", "frame-src", "worker-src",
-        "frame-ancestors", "form-action", "upgrade-insecure-requests"
-    };
-
-    private static readonly Regex SourcePattern = new(@"^('self'|'unsafe-inline'|'unsafe-eval'|'none'|'strict-dynamic'|'nonce-[\w\-]+|'sha\d+-[\w+/=]+|https?://[\w\-\.]+(:\d+)?(/.*)?|\*\.[\w\-\.]+|\*)$");
-
-    public ValidationResult ValidateDirective(string directive, string source)
-    {
-        if (!ValidDirectives.Contains(directive))
-            return ValidationResult.Error($"Invalid CSP directive: {directive}");
-
-        if (!SourcePattern.IsMatch(source))
-            return ValidationResult.Error($"Invalid CSP source format: {source}");
-
-        // Block dangerous patterns
-        if (source.Contains("javascript:"))
-            return ValidationResult.Error("JavaScript protocol not allowed in CSP sources");
-
-        if (source.Contains("'unsafe-eval'") && directive == "script-src")
-            return ValidationResult.Warning("'unsafe-eval' weakens XSS protection");
-
-        return ValidationResult.Success();
-    }
-}
-```
-
 ## Nonce Security
 
 ### Cryptographically Secure Generation
@@ -93,28 +58,6 @@ public class SecureNonceGenerator : IDisposable
 - Never persist nonces to database or cache  
 - Clear nonces from memory after response
 - Use minimum 128 bits of entropy
-
-```csharp
-public string GetOrCreateScriptNonce(HttpContext context)
-{
-    const string key = "csp-script-nonce";
-    
-    if (context.Items.TryGetValue(key, out var existingNonce))
-        return (string)existingNonce;
-
-    var nonce = _nonceGenerator.GenerateNonce();
-    context.Items[key] = nonce;
-    
-    // Cleanup after response
-    context.Response.OnCompleted(() =>
-    {
-        context.Items.Remove(key);
-        return Task.CompletedTask;
-    });
-
-    return nonce;
-}
-```
 
 ## Authorization & Access Control
 

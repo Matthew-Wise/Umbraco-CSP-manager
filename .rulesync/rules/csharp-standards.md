@@ -67,22 +67,9 @@ public class CspDefinition
 ## Security Best Practices
 
 ### Input Validation
-- Validate all CSP directives against known standards
+- Validate all Controller inputs.
 - Sanitize user-provided sources
 - Use parameterized queries for database access
-
-```csharp
-public ValidationResult ValidateDirective(string directive, string source)
-{
-    if (!ValidDirectives.Contains(directive))
-        return ValidationResult.Error($"Invalid CSP directive: {directive}");
-    
-    if (source.Contains("javascript:"))
-        return ValidationResult.Error("JavaScript protocol not allowed");
-    
-    return ValidationResult.Success();
-}
-```
 
 ### Nonce Generation
 ```csharp
@@ -116,6 +103,8 @@ public class CspServiceException : Exception
 ```
 
 ### API Error Responses
+- All API's should use ProblemDetails when returning negative response.
+
 ```csharp
 [HttpPost("definitions")]
 public async Task<IActionResult> SaveDefinition([FromBody] CspApiDefinition definition)

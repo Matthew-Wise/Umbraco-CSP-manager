@@ -10,10 +10,7 @@ globs: ["src/**/Client/**/*.ts", "!src/**/Client/node_modules/**/*"]
 
 ### Formatting
 
-- Use 2 spaces for indentation
-- Use semicolons and double quotes
-- Use trailing commas in multiline objects
-- Follow the src/.editorconfig rules
+- Follow the .editorconfig rules
 
 ```typescript
 const definition: CspDefinition = {
