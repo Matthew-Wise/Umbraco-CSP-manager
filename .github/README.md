@@ -185,6 +185,15 @@ If you encounter issues not covered here:
 
 Contributions are welcome! Please read our [Contributing Guidelines](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/CONTRIBUTING.md) and feel free to submit issues and pull requests.
 
+### Centralized AI Documentation & Rules with rulesync
+
+--- Currently a work in progress, feedback is welcome! ---
+
+This project uses [rulesync](https://github.com/dyoshikawa/rulesync) to help centralize documentation, coding standards, and configuration for AI tooling and contributors.
+
+- [Installation](https://github.com/dyoshikawa/rulesync?tab=readme-ov-file#installation)
+- [Importing documentation](https://github.com/dyoshikawa/rulesync?tab=readme-ov-file#existing-project)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/LICENSE) file for details.
