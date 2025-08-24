@@ -187,6 +187,8 @@ Contributions are welcome! Please read our [Contributing Guidelines](https://git
 
 ### Centralized AI Documentation & Rules with rulesync
 
+--- Currently a work in progress, feedback is welcome! ---
+
 This project uses [rulesync](https://github.com/dyoshikawa/rulesync) to help centralize documentation, coding standards, and configuration for AI tooling and contributors.
 
 - [Installation](https://github.com/dyoshikawa/rulesync?tab=readme-ov-file#installation)
