@@ -45,9 +45,7 @@ dotnet add package Umbraco.Community.CSPManager
 4. **Configure your Content Security Policies** for frontend and/or backend
 5. **Test your configuration** using the evaluation tools
 
-
-
-## Policy  Management
+## Policy Management
 
 ![Policy section](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/management-screen.png "Csp Management section")
 
@@ -93,10 +91,12 @@ The nonce values shown are for demo purposes only.
 
 <!-- Output (nonce values are auto-generated): -->
 <script nonce="scriptRAnd0m">
-    doWhatever();
+  doWhatever();
 </script>
 <style nonce="styleRAnd0m">
-    .alert { color: red; }
+  .alert {
+    color: red;
+  }
 </style>
 ```
 
@@ -110,10 +110,12 @@ If you need to access the nonce within a data attribute you can use `csp-manager
 
 <!-- Output (nonce values are auto-generated): -->
 <script data-nonce="scriptRAnd0m">
-    doWhatever();
+  doWhatever();
 </script>
 <style data-nonce="styleRAnd0m">
-    .alert { color: red; }
+  .alert {
+    color: red;
+  }
 </style>
 ```
 
@@ -156,9 +158,9 @@ public class CustomCspSavedHandler : INotificationHandler<CspSavedNotification>
     {
         // Log CSP changes
         var csp = notification.CspDefinition;
-        Logger.Information("CSP policy updated for {Area}", 
+        Logger.Information("CSP policy updated for {Area}",
             csp.IsBackOffice ? "BackOffice" : "Frontend");
-        
+
         // Integrate with external monitoring
         // NotifySecurityTeam(csp);
     }
@@ -177,6 +179,7 @@ services.AddNotificationHandler<CspSavedNotification, CustomCspSavedHandler>();
 ### Getting Help
 
 If you encounter issues not covered here:
+
 1. Check the [GitHub Issues](https://github.com/Matthew-Wise/Umbraco-CSP-manager/issues) page
 2. Review the full documentation (link below)
 3. Create a new issue with detailed information about your problem
@@ -185,14 +188,24 @@ If you encounter issues not covered here:
 
 Contributions are welcome! Please read our [Contributing Guidelines](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/CONTRIBUTING.md) and feel free to submit issues and pull requests.
 
-### Centralized AI Documentation & Rules with rulesync
+## Contributing with AI Tools
 
---- Currently a work in progress, feedback is welcome! ---
+This project is optimized for development with AI coding assistants. We provide instruction files for popular AI tools to help maintain consistency with our established patterns and testing standards.
 
-This project uses [rulesync](https://github.com/dyoshikawa/rulesync) to help centralize documentation, coding standards, and configuration for AI tooling and contributors.
+### Using rulesync
 
-- [Installation](https://github.com/dyoshikawa/rulesync?tab=readme-ov-file#installation)
-- [Importing documentation](https://github.com/dyoshikawa/rulesync?tab=readme-ov-file#existing-project)
+The project includes rulesync configuration files that can automatically generate instruction files for 19+ AI development tools. Generate configuration files for your preferred AI tools:
+
+```bash
+# Generate only for Claude Code
+npx rulesync generate --claudecode
+
+# Generate only for Cursor
+npx rulesync generate --cursor
+
+# Generate only for Vs Code Copilot
+npx rulesync generate --copilot
+```
 
 ## License
 

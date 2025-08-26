@@ -1,9 +1,9 @@
-import { UmbContextToken } from "@umbraco-cms/backoffice/context-api";
-import type { UmbControllerHost } from "@umbraco-cms/backoffice/controller-api";
-import { UmbControllerBase } from "@umbraco-cms/backoffice/class-api";
-import { UMB_WORKSPACE_CONTEXT } from "@umbraco-cms/backoffice/workspace";
-import type { UmbWorkspaceContext } from "@umbraco-cms/backoffice/workspace";
-import { UmbObjectState } from "@umbraco-cms/backoffice/observable-api";
+import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
+import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
+import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
+import { UMB_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/workspace';
+import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
+import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import type { CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
 import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
@@ -82,7 +82,7 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 	}
 
 	async loadDefinition() {
-		this.#state.update({ loading: true });
+		this.#state.update({ loading: true, error: undefined });
 		const isBackOffice = this.getIsBackOffice();
 		const { data, error } = await this.#cspDefinitionContext.load(isBackOffice);
 
@@ -93,9 +93,10 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 				definition: data,
 				loading: false,
 				hasChanges: false,
+				error: undefined,
 			});
 		} else {
-			this.#state.update({ loading: false });
+			this.#state.update({ loading: false, error: undefined });
 		}
 	}
 
@@ -105,7 +106,7 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 		if (error) {
 			this.#state.update({ error });
 		} else if (data) {
-			this.#state.update({ availableDirectives: data });
+			this.#state.update({ availableDirectives: data, error: undefined });
 		}
 	}
 
@@ -132,6 +133,7 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 			this.#state.update({
 				definition,
 				hasChanges: true,
+				error: undefined,
 			});
 		}
 	}
@@ -152,7 +154,7 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 			return { success: false, error };
 		}
 
-		this.#state.update({ hasChanges: false });
+		this.#state.update({ hasChanges: false, error: undefined });
 		await this.loadDefinition();
 
 		return { success: true };
@@ -175,10 +177,9 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 	}
 }
 
-export const UMB_CSP_MANAGER_WORKSPACE_CONTEXT =
-  new UmbContextToken<UmbCspManagerWorkspaceContext>(
-    "UmbCspManagerWorkspaceContext"
-  );
+export const UMB_CSP_MANAGER_WORKSPACE_CONTEXT = new UmbContextToken<UmbCspManagerWorkspaceContext>(
+	'UmbCspManagerWorkspaceContext'
+);
 
 export { UmbCspManagerWorkspaceContext as api };
 export default UmbCspManagerWorkspaceContext;
