@@ -65,9 +65,9 @@ public class CspMiddleware
 			}
 
 			var csp = ConstructCspDictionary(definition, context);
-			var cspValue = string.Join(";", csp.Select(x => x.Key + " " + x.Value));
+			var cspValue = string.Join(";", csp.Select(kvp => $"{kvp.Key} {kvp.Value}"));
 
-			if (!string.IsNullOrEmpty(cspValue))
+			if (!string.IsNullOrWhiteSpace(cspValue))
 			{
 				context.Response.Headers.Append(definition.ReportOnly ? Constants.ReportOnlyHeaderName : Constants.HeaderName, cspValue);
 			}
@@ -81,7 +81,7 @@ public class CspMiddleware
 		var csp = definition.Sources
 		.SelectMany(c => c.Directives.Select(d => new { Directive = d, c.Source }))
 		.GroupBy(x => x.Directive)
-		.ToDictionary(g => g.Key, g => string.Join(" ", g.Select(x => x.Source)));
+		.ToDictionary(g => g.Key, g => string.Join(" ", new HashSet<string>(g.Select(x => x.Source))));
 
 		if (!string.IsNullOrWhiteSpace(definition.ReportingDirective) && !string.IsNullOrWhiteSpace(definition.ReportUri))
 		{
@@ -92,26 +92,24 @@ public class CspMiddleware
 		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerScriptNonceSet) == true)
 		{
 			scriptNonce = _cspService.GetOrCreateCspScriptNonce(httpContext);
-		}
-
-		if (!string.IsNullOrWhiteSpace(scriptNonce) && csp.TryGetValue(Constants.Directives.ScriptSource, out var scriptSrc))
-		{
-			scriptSrc += $" 'nonce-{scriptNonce}'";
-			csp[Constants.Directives.ScriptSource] = scriptSrc;
-		}
+			AddNonceToDirective(csp, Constants.Directives.ScriptSource, scriptNonce);
+		}		
 
 		string? styleNonce = null;
 		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerStyleNonceSet) == true)
 		{
 			styleNonce = _cspService.GetOrCreateCspStyleNonce(httpContext);
-		}
-
-		if (!string.IsNullOrWhiteSpace(styleNonce) && csp.TryGetValue(Constants.Directives.StyleSource, out var styleSrc))
-		{
-			styleSrc += $" 'nonce-{styleNonce}'";
-			csp[Constants.Directives.StyleSource] = styleSrc;
+			AddNonceToDirective(csp, Constants.Directives.StyleSource, styleNonce);
 		}
 
 		return csp;
+	}
+
+	private static void AddNonceToDirective(Dictionary<string, string> csp, string directive, string nonce)
+	{
+		if (!string.IsNullOrWhiteSpace(nonce) && csp.TryGetValue(directive, out var existingValue))
+		{
+			csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+		}
 	}
 }

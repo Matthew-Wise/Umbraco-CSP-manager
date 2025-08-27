@@ -137,9 +137,8 @@ internal sealed class CspService : ICspService
 
 	private static string GenerateCspNonceValue()
 	{
-		using var rng = RandomNumberGenerator.Create();
-		var nonceBytes = new byte[18];
-		rng.GetBytes(nonceBytes);
+		Span<byte> nonceBytes = stackalloc byte[16]; // 16 bytes = 128 bits
+		RandomNumberGenerator.Fill(nonceBytes);
 		return Convert.ToBase64String(nonceBytes);
 	}
 }

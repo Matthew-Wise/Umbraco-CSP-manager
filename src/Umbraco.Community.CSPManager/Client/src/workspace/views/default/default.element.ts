@@ -47,6 +47,8 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 				this._workspaceState = state;
 				if (state.error) {
 					this._invalidSources = state.error.cause as string[];
+				} else {
+					this._invalidSources = [];
 				}
 			});
 		});
