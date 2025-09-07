@@ -110,8 +110,6 @@ public static class Constants
 
 		public const string RequireTrustedTypes = "require-trusted-types-for";
 
-		//TODO: public const string Sandbox = "sandbox";
-
 		public const string ScriptSourceAttribute = "script-src-attr";
 
 		public const string ScriptSourceElement = "script-src-elem";
@@ -124,7 +122,7 @@ public static class Constants
 
 		public const string StyleSource = "style-src";
 
-		 public const string TrustedTypes = "trusted-types";
+		public const string TrustedTypes = "trusted-types";
 
 		public const string UpgradeInsecureRequests = "upgrade-insecure-requests";
 
@@ -138,7 +136,6 @@ public static class Constants
 		Directives.ImageSource, Directives.ManifestSource, Directives.MediaSource, Directives.NavigateTo,
 		Directives.ObjectSource, Directives.PreFetchSource,
 		Directives.RequireTrustedTypes,
-		// Directives.Sandbox,
 		Directives.ScriptSourceAttribute, Directives.ScriptSourceElement, Directives.ScriptSource,
 		Directives.StyleSourceAttribute, Directives.StyleSourceElement, Directives.StyleSource,
 		Directives.TrustedTypes,
