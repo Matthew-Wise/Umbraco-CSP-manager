@@ -7,6 +7,7 @@ export type CspApiDefinition = {
     isBackOffice: boolean;
     reportingDirective?: string | null;
     reportUri?: string | null;
+    upgradeInsecureRequests: boolean;
     sources: Array<CspApiDefinitionSource>;
 };
 

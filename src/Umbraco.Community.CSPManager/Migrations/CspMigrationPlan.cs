@@ -14,5 +14,6 @@ public sealed class CspMigrationPlan : PackageMigrationPlan
 		To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey);
 		To<ReportingMigration>(ReportingMigration.MigrationKey);
 		To<MaxSourceLengthMigration>(MaxSourceLengthMigration.MigrationKey);
+		To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey);
 	}
 }

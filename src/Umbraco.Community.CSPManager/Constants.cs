@@ -108,9 +108,7 @@ public static class Constants
 
 		public const string PreFetchSource = "prefetch-src";
 
-		//TODO: public const string RequireTrustedTypes = "require-trusted-types-for";
-
-		//TODO: public const string Sandbox = "sandbox";
+		public const string RequireTrustedTypes = "require-trusted-types-for";
 
 		public const string ScriptSourceAttribute = "script-src-attr";
 
@@ -124,9 +122,9 @@ public static class Constants
 
 		public const string StyleSource = "style-src";
 
-		//TODO: public const string TrustedTypes = "trusted-types";
+		public const string TrustedTypes = "trusted-types";
 
-		//TODO: public const string UpgradeInsecureRequests = "upgrade-insecure-requests";
+		public const string UpgradeInsecureRequests = "upgrade-insecure-requests";
 
 		public const string WorkerSource = "worker-src";
 	}
@@ -137,12 +135,11 @@ public static class Constants
 		Directives.FontSource, Directives.FormAction, Directives.FrameAncestors, Directives.FrameSource,
 		Directives.ImageSource, Directives.ManifestSource, Directives.MediaSource, Directives.NavigateTo,
 		Directives.ObjectSource, Directives.PreFetchSource,
-		// Directives.RequireTrustedTypes,
-		// Directives.Sandbox,
+		Directives.RequireTrustedTypes,
 		Directives.ScriptSourceAttribute, Directives.ScriptSourceElement, Directives.ScriptSource,
 		Directives.StyleSourceAttribute, Directives.StyleSourceElement, Directives.StyleSource,
-		// Directives.TrustedTypes,
-		// Directives.UpgradeInsecureRequests,
+		Directives.TrustedTypes,
+		Directives.UpgradeInsecureRequests,
 		Directives.WorkerSource
 	};
 

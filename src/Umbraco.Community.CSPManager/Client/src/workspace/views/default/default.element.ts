@@ -197,9 +197,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	}
 
 	private _handleAddSource() {
-		if (!this._workspaceState.definition) {
-			return;
-		}
+		if (!this._workspaceState.definition) return;
 
 		const newSource: CspApiDefinitionSource = {
 			definitionId: this._workspaceState.definition.id,
@@ -217,6 +215,17 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
+	private _updateUpgradeInsecureRequests(value: any) {
+		if (!this._workspaceState.definition) return;
+
+		const updatedDefinition = {
+			...this._workspaceState.definition,
+			upgradeInsecureRequests: value,
+		};
+
+		this.#workspaceContext?.updateDefinition(updatedDefinition);
+	}
+
 	override render() {
 		if (this._workspaceState.loading) {
 			return html`<uui-loader></uui-loader>`;
@@ -227,12 +236,27 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		}
 
 		return html`
+			<uui-box headline="Directives">
+				<uui-form-layout-item>
+					<uui-label slot="label">Upgrade Insecure Requests</uui-label>
+					<span slot="description">
+						Automatically Converts urls from http to https for links, images, javascript, css, etc.
+					</span>
+					<div class="setting-control">
+						<uui-toggle
+							.checked=${this._workspaceState.definition.upgradeInsecureRequests}
+							.disabled=${!this._workspaceState.definition.enabled}
+							@change=${(e: Event) => this._updateUpgradeInsecureRequests((e.target as any).checked)}>
+							${this._workspaceState.definition.upgradeInsecureRequests ? 'Enabled' : 'Disabled'}
+						</uui-toggle>
+					</div>
+				</uui-form-layout-item>
+			</uui-box>
 			<uui-box headline="Sources">
 				<p>
 					Manage CSP sources and their directives. Each source defines what content can be loaded and which CSP
 					directives apply to it.
 				</p>
-
 				${this._workspaceState.definition.sources.length === 0
 					? html`
 							<div class="empty-state">
@@ -343,6 +367,9 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 			:host {
 				display: block;
 				padding: var(--uui-size-layout-1);
+			}
+			uui-box {
+				margin-bottom: var(--uui-size-layout-1);
 			}
 
 			.empty-state {

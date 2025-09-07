@@ -47,7 +47,18 @@ dotnet add package Umbraco.Community.CSPManager
 
 ## Policy Management
 
+The CSP Manager provides an intuitive interface for managing Content Security Policy directives. The UI groups configuration by source first, then allows you to select which directives apply to each source.
+
+This approach allows for flexible CSP configuration where the same source can be applied to multiple directives, or different sources can be used for the same directive.
+
 ![Policy section](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/management-screen.png "Csp Management section")
+
+### Special Sources
+To add `'strict-dynamic'` to your CSP:
+1. Navigate to the Policy Management section
+2. Add a new source entry with the value `'strict-dynamic'`
+3. Select the directive(s) you want to apply it to (typically `script-src`)
+4. Save your configuration
 
 ## Policy Settings
 

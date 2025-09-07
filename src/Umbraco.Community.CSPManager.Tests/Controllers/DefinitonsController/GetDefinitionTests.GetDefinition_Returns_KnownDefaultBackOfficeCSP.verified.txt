@@ -5,6 +5,7 @@
   isBackOffice: true,
   reportingDirective: null,
   reportUri: null,
+  upgradeInsecureRequests: false,
   sources: [
     {
       definitionId: Guid_1,
