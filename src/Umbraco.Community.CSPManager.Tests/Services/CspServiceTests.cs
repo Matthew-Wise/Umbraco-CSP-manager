@@ -30,7 +30,10 @@ public class CspServiceTests : UmbracoIntegrationTest
 	{
 		var upgrader = new Upgrader(new CspMigrationPlan());
 		var result = await upgrader.ExecuteAsync(GetRequiredService<IMigrationPlanExecutor>(), ScopeProvider, GetRequiredService<IKeyValueService>()).ConfigureAwait(false);
-
+		if (!result.Successful)
+		{
+			TestContext.WriteLine(result.Exception.Message);
+		}
 		Assert.That(result.Successful, Is.True);
 		_cspService = GetRequiredService<ICspService>();
 	}

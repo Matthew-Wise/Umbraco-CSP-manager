@@ -64,6 +64,8 @@ public sealed class InitialCspManagerMigration : AsyncMigrationBase
     	[NullSetting(NullSetting = NullSettings.Null)]
 		public string? ReportUri { get; set; }
 
+		public bool UpgradeInsecureRequests { get; set; }
+
 		[ResultColumn]
 		[Reference(ReferenceType.Many,
 			ColumnName = nameof(Id),
