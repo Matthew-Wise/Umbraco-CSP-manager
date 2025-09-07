@@ -24,6 +24,8 @@ public class CspDefinition
 	[Length(500)]
 	public string? ReportUri { get; set; }
 
+	public bool UpgradeInsecureRequests { get; set; }
+
 	[ResultColumn]
 	[Reference(ReferenceType.Many,
 		ColumnName = nameof(Id),

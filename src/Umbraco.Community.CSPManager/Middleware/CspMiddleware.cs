@@ -88,6 +88,11 @@ public class CspMiddleware
 			csp.TryAdd(definition.ReportingDirective, definition.ReportUri);
 		}
 
+		if (definition.UpgradeInsecureRequests)
+		{
+			csp.TryAdd(Constants.Directives.UpgradeInsecureRequests, "");
+		}
+
 		string? scriptNonce = null;
 		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerScriptNonceSet) == true)
 		{

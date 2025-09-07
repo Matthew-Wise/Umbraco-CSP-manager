@@ -16,6 +16,8 @@ public sealed class CspApiDefinition : IValidatableObject
 
 	public string? ReportUri { get; set; }
 
+	public bool UpgradeInsecureRequests { get; set; }
+
 	public List<CspApiDefinitionSource> Sources { get; set; } = [];
 
 	public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -48,6 +50,7 @@ public sealed class CspApiDefinition : IValidatableObject
 		{
 			Id = definition.Id,
 			Enabled = definition.Enabled,
+			UpgradeInsecureRequests = definition.UpgradeInsecureRequests,
 			ReportingDirective = definition.ReportingDirective,
 			IsBackOffice = definition.IsBackOffice,
 			ReportOnly = definition.ReportOnly,
@@ -62,6 +65,7 @@ public sealed class CspApiDefinition : IValidatableObject
 		{
 			Id = Id,
 			Enabled = Enabled,
+			UpgradeInsecureRequests = UpgradeInsecureRequests,
 			ReportOnly = ReportOnly,
 			IsBackOffice = IsBackOffice,
 			ReportingDirective = ReportingDirective,
