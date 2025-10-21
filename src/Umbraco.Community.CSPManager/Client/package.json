@@ -22,7 +22,7 @@
 	},
 	"devDependencies": {
 		"@hey-api/openapi-ts": "^0.77.0",
-		"@playwright/test": "^1.40.0",
+		"@playwright/test": "^1.56.1",
 		"@types/node": "^20.0.0",
 		"@umbraco-cms/backoffice": "^16.0.0",
 		"@umbraco/playwright-testhelpers": "^16.0.34",
