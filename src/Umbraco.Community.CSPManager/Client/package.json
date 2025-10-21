@@ -29,7 +29,7 @@
 		"dotenv": "^16.3.1",
 		"lit": "^3.3.0",
 		"typescript": "~5.8.3",
-		"vite": "^7.0.7",
+		"vite": "^7.0.8",
 		"linkifyjs": ">=4.3.2"
 	},
 	"dependencies": {
