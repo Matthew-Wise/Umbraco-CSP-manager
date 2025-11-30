@@ -105,7 +105,7 @@ jobs:
         working-directory: './src/Umbraco.Community.CSPManager/Client'
 
       - if: matrix.build-mode == 'manual'
-        run: dotnet build Umbraco.Community.CSPManager.sln -c Release
+        run: dotnet build Umbraco.Community.CSPManager.slnx -c Release
         working-directory: ./src/
 
       - name: Perform CodeQL Analysis
