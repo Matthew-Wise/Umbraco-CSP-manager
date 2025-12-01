@@ -31,7 +31,8 @@ public class CspMiddleware
 		_cspService = cspService;
 		_eventAggregator = eventAggregator;
 
-		cspOptions.OnChange(config => {
+		cspOptions.OnChange(config =>
+		{
 			_cspOptions = config;
 		});
 		_cspOptions = cspOptions.CurrentValue;
@@ -50,7 +51,7 @@ public class CspMiddleware
 			var isBackOfficeRequest = context.Request.IsBackOfficeRequest() ||
 			context.Request.Path.StartsWithSegments("/umbraco");
 
-			if(isBackOfficeRequest && _cspOptions.DisableBackOfficeHeader)
+			if (isBackOfficeRequest && _cspOptions.DisableBackOfficeHeader)
 			{
 				return;
 			}
@@ -98,7 +99,7 @@ public class CspMiddleware
 		{
 			scriptNonce = _cspService.GetOrCreateCspScriptNonce(httpContext);
 			AddNonceToDirective(csp, Constants.Directives.ScriptSource, scriptNonce);
-		}		
+		}
 
 		string? styleNonce = null;
 		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerStyleNonceSet) == true)

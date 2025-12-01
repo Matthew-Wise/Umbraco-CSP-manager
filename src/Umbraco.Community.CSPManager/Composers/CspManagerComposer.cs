@@ -8,6 +8,6 @@ public sealed class Composer : IComposer
 {
 	public void Compose(IUmbracoBuilder builder)
 	{
-		builder.AddCspManager();		
-    }
+		builder.AddCspManager();
+	}
 }

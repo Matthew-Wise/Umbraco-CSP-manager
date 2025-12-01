@@ -1,5 +1,5 @@
-﻿using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
-using NPoco;
+﻿using NPoco;
+using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 
 namespace Umbraco.Community.CSPManager.Models;
 
@@ -32,5 +32,3 @@ public class CspDefinition
 		ReferenceMemberName = nameof(CspDefinitionSource.DefinitionId))]
 	public List<CspDefinitionSource> Sources { get; set; } = [];
 }
-
-

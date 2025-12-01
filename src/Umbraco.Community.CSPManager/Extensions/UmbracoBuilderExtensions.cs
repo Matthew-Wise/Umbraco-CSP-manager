@@ -15,6 +15,7 @@ using Umbraco.Community.CSPManager.Notifications.Handlers;
 using Umbraco.Community.CSPManager.Services;
 
 namespace Umbraco.Community.CSPManager.Extensions;
+
 public static class UmbracoBuilderExtensions
 {
 	public static IUmbracoBuilder AddCspManager(this IUmbracoBuilder builder)

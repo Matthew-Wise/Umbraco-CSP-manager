@@ -7,7 +7,7 @@ using Umbraco.Community.CSPManager.Services;
 namespace Umbraco.Community.CSPManager.TagHelpers;
 
 
-[HtmlTargetElement(Constants.TagHelper.ScriptTag, Attributes = CspNonceAttributeName	)]
+[HtmlTargetElement(Constants.TagHelper.ScriptTag, Attributes = CspNonceAttributeName)]
 [HtmlTargetElement(Constants.TagHelper.StyleTag, Attributes = CspNonceAttributeName)]
 public class CspNonceTagHelper : TagHelper
 {

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Linq;
 
 namespace Umbraco.Community.CSPManager.Models.Api;
+
 public sealed class CspApiDefinition : IValidatableObject
 {
 	public Guid Id { get; set; }
@@ -39,7 +39,7 @@ public sealed class CspApiDefinition : IValidatableObject
 			}
 		}
 
-		if(duplicates.Count > 0)
+		if (duplicates.Count > 0)
 		{
 			yield return new ValidationResult("Duplicate Sources found", [nameof(Sources)]);
 		}
@@ -58,7 +58,7 @@ public sealed class CspApiDefinition : IValidatableObject
 			Sources = definition.Sources.ConvertAll(CspApiDefinitionSource.FromCspDefinitonSource),
 		};
 
-	
+
 
 	internal CspDefinition ToCspDefiniton()
 		=> new()

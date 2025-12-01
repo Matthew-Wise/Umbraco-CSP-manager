@@ -1,6 +1,6 @@
 ﻿
-using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 using NPoco;
+using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 
 namespace Umbraco.Community.CSPManager.Models;
 

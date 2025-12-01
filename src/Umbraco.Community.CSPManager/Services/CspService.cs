@@ -5,8 +5,8 @@ using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Community.CSPManager.Extensions;
-using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Models;
+using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Services;
@@ -89,22 +89,22 @@ internal sealed class CspService : ICspService
 		return nonce;
 	}
 
-	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition)
+	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken = default)
 	{
 		using var scope = _scopeProvider.CreateScope();
 
-		definition = await SaveDefinitionAsync(scope, definition);
+		definition = await SaveDefinitionAsync(scope, definition, cancellationToken);
 
 		scope.Complete();
 
-		await _eventAggregator.PublishAsync(new CspSavedNotification(definition));
+		await _eventAggregator.PublishAsync(new CspSavedNotification(definition), cancellationToken);
 
 		return definition;
 	}
 
-	private static async Task<CspDefinition> SaveDefinitionAsync(IScope scope, CspDefinition definition)
+	private static async Task<CspDefinition> SaveDefinitionAsync(IScope scope, CspDefinition definition, CancellationToken cancellationToken)
 	{
-		await scope.Database.SaveAsync(definition);
+		await scope.Database.SaveAsync(definition, cancellationToken);
 
 		definition.Sources = [.. definition.Sources.Where(s => !string.IsNullOrWhiteSpace(s.Source))];
 
@@ -112,11 +112,11 @@ internal sealed class CspService : ICspService
 		var cmdDelete = scope.Database.DeleteManyAsync<CspDefinitionSource>()
 			.Where(s => !s.Source.In(sourceValues) && s.DefinitionId == definition.Id);
 
-		await cmdDelete.Execute();
+		await cmdDelete.Execute(cancellationToken);
 
 		foreach (var source in definition.Sources)
 		{
-			await scope.Database.SaveAsync(source);
+			await scope.Database.SaveAsync(source, cancellationToken);
 		}
 
 		return definition;

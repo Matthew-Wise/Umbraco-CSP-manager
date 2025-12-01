@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Sync;
 
 namespace Umbraco.Community.CSPManager.Notifications.Handlers;
+
 internal sealed class CspSavedNotificationHandler : INotificationHandler<CspSavedNotification>
 {
 	private readonly IAppPolicyCache _runtimeCache;

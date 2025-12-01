@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Sync;
 
 namespace Umbraco.Community.CSPManager.Notifications.Handlers;
+
 public class CspDistributedCacheRefresher
 	: PayloadCacheRefresherBase<CspDistCacheRefresherNotification, CspSavedNotification>
 {

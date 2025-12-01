@@ -1,4 +1,5 @@
 ﻿namespace Umbraco.Community.CSPManager.Models.Api;
+
 public sealed class CspApiDefinitionSource
 {
 	public Guid DefinitionId { get; set; }

@@ -3,6 +3,7 @@ using Umbraco.Cms.Infrastructure.Migrations;
 using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager.Migrations;
+
 internal class UpgradeInsecureRequestsMigration : AsyncMigrationBase
 {
 
