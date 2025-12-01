@@ -20,21 +20,22 @@ public class DefinitionsController : CspManagerControllerBase
 	[HttpGet("Definitions")]
 	[MapToApiVersion("1.0")]
 	[ProducesResponseType(typeof(CspApiDefinition), 200)]
-	public ActionResult<CspApiDefinition> GetDefinition(bool isBackOffice = false)
+	// Has a CancellationToken parameter to allow MethodSelector to work correctly for testing
+	public ActionResult<CspApiDefinition> GetDefinition(bool isBackOffice = false, CancellationToken _ = default)
 		=> CspApiDefinition.FromCspDefiniton(_cspService.GetCspDefinition(isBackOffice));
 
 	[HttpPost("Definitions/save")]
 	[MapToApiVersion("1.0")]
 	[ProducesResponseType(typeof(CspApiDefinition), 200)]
 	[ProducesResponseType(typeof(ProblemDetails), 400)]
-	public async Task<IActionResult> SaveDefinition([FromBody] CspApiDefinition definition)
+	public async Task<IActionResult> SaveDefinition([FromBody] CspApiDefinition definition, CancellationToken cancellationToken = default)
 	{
 		if (!ModelState.IsValid)
 		{
 			return BadRequest(new ValidationProblemDetails(ModelState));
 		}
 
-		var savedDefinition = await _cspService.SaveCspDefinitionAsync(definition.ToCspDefiniton());
+		var savedDefinition = await _cspService.SaveCspDefinitionAsync(definition.ToCspDefiniton(), cancellationToken);
 		return Ok(savedDefinition);
 	}
 }

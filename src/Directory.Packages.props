@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="SystemTextJson.JsonDiffPatch.NUnit" Version="2.0.0" />
+    <PackageVersion Include="Umbraco.Cms" Version="17.0.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="17.0.0" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="17.0.0" />
+    <PackageVersion Include="uSync" Version="17.0.0" />
+    <PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="NUnit" Version="3.14.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="4.4.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.0.0" />
+  </ItemGroup>
+</Project>

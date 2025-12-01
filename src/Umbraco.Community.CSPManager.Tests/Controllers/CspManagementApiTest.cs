@@ -20,9 +20,7 @@ namespace Umbraco.Community.CSPManager.Tests.Controllers;
 public abstract class CspManagementApiTest<T> : ManagementApiTest<T>
 	where T : ManagementApiControllerBase
 {
-	protected VerifySettings VerifySettings;
-
-	protected abstract override Expression<Func<T, object>> MethodSelector { get; }
+	protected override Expression<Func<T, object>> MethodSelector { get; set; }
 
 	protected IShortStringHelper ShortStringHelper;
 
@@ -43,15 +41,12 @@ public abstract class CspManagementApiTest<T> : ManagementApiTest<T>
 		var result = await upgrader.ExecuteAsync(GetRequiredService<IMigrationPlanExecutor>(), GetRequiredService<IScopeProvider>(), GetRequiredService<IKeyValueService>()).ConfigureAwait(false);
 		Assert.That(result.Successful, Is.True);
 
-		VerifySettings = new VerifySettings();
-		VerifySettings.IgnoreMember("traceId");
-
 		ShortStringHelper = GetRequiredService<IShortStringHelper>();
 	}
 
 	protected async Task<IUserGroup> CreateCspUserGroupAsync()
 	{
-		if(CspUserGroup is not null) return CspUserGroup;
+		if (CspUserGroup is not null) return CspUserGroup;
 
 		var userGroup = new UserGroup(ShortStringHelper)
 		{

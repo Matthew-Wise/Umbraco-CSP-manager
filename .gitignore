@@ -410,3 +410,4 @@ src/**/App_Plugins/UmbracoCommunityCSPManager/
 **/.roo/mcp.json
 .copilot/mcp.json
 .claude/settings.local.json
+/src/.claude/settings.local.json

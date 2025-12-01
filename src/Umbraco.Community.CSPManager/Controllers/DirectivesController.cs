@@ -8,8 +8,9 @@ namespace Umbraco.Community.CSPManager.Controllers;
 public class DirectivesController : CspManagerControllerBase
 {
 	[HttpGet("Directives")]
-    [ProducesResponseType(typeof(ICollection<string>), 200)]
+	[MapToApiVersion("1.0")]
+	[ProducesResponseType(typeof(ICollection<string>), 200)]
 #pragma warning disable CA1822 // Mark members as static
-	public ICollection<string> GetCspDirectiveOptions() => Constants.AllDirectives.ToArray();
+	public ICollection<string> GetCspDirectiveOptions(CancellationToken cancellationToken = default) => Constants.AllDirectives.ToArray();
 #pragma warning restore CA1822 // Mark members as static
 }

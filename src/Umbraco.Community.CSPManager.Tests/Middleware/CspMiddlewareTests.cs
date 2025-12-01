@@ -6,17 +6,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Routing;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Integration.Implementations;
-using Umbraco.Cms.Core.Configuration;
 using Umbraco.Community.CSPManager.Middleware;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Services;
-
 using UmbConstants = Umbraco.Cms.Core.Constants;
 
 namespace Umbraco.Community.CSPManager.Tests.Middleware;
@@ -99,9 +98,16 @@ public class CspMiddlewareTests
 		var response = await _host.GetTestClient().GetAsync(uri);
 		if (definition.Enabled)
 		{
-			await Verify(response.Headers)
-				.UseDirectory(nameof(CspMiddleware_ReturnsExpectedCspWhenEnabled))
-				.UseFileName(TestContext.CurrentContext.Test.Name);
+			string expectedHeaderName = definition.ReportOnly
+				? Constants.ReportOnlyHeaderName
+				: Constants.HeaderName;
+
+			Assert.That(response.Headers.Contains(expectedHeaderName), Is.True);
+			var headerValues = response.Headers.GetValues(expectedHeaderName).FirstOrDefault();
+			Assert.That(headerValues, Is.Not.Null);
+
+			var expectedCsp = "default-src 'self' marketplace.umbraco.com our.umbraco.com;script-src 'self' 'unsafe-inline' 'unsafe-eval';style-src 'self' 'unsafe-inline';img-src 'self' our.umbraco.com data: dashboard.umbraco.com;font-src 'self'";
+			Assert.That(headerValues, Is.EqualTo(expectedCsp));
 		}
 		else
 		{

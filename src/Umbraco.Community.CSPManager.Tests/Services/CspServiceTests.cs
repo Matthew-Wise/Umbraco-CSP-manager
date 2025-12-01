@@ -32,7 +32,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var result = await upgrader.ExecuteAsync(GetRequiredService<IMigrationPlanExecutor>(), ScopeProvider, GetRequiredService<IKeyValueService>()).ConfigureAwait(false);
 		if (!result.Successful)
 		{
-			TestContext.WriteLine(result.Exception.Message);
+			await TestContext.Out.WriteLineAsync(result.Exception.Message);
 		}
 		Assert.That(result.Successful, Is.True);
 		_cspService = GetRequiredService<ICspService>();
@@ -211,7 +211,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var realCache = AppCaches.Create(requestCache).RuntimeCache;
 		var factoryCallCount = 0;
 		var spyCache = Mock.Of<IAppPolicyCache>();
-		
+
 		Mock.Get(spyCache)
 			.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<Func<object>>()))
 			.Returns((string key, Func<object> factory) =>

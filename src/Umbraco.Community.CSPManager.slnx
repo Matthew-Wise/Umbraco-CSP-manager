@@ -10,6 +10,7 @@
     <File Path="../docs/README_nuget.md" />
     <File Path="../umbraco-marketplace.json" />
     <File Path=".editorconfig" />
+    <File Path="Directory.Packages.props" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Umbraco.Community.CSPManager.Benchmarks/Umbraco.Community.CSPManager.Benchmarks.csproj" />

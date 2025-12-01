@@ -1,73 +1,57 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
 
-	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
-		<LangVersion>latest</LangVersion>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>disable</Nullable>
-		<IsPackable>false</IsPackable>
-		<IsTestProject>true</IsTestProject>
-		<PreserveCompilationContext>true</PreserveCompilationContext>
-	</PropertyGroup>
-
-	<ItemGroup>
-	  <Content Include="Umbraco.Tests.Integration.deps.json">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-	  </Content>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="coverlet.collector" Version="6.0.4">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-		<PackageReference Include="Microsoft.TestPlatform" Version="17.14.1" />
-		<PackageReference Include="NUnit" Version="3.14.0" />
-		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
-		<PackageReference Include="NUnit.Analyzers" Version="3.10.0">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="Umbraco.Cms.Tests.Integration" Version="16.0.0">
-		</PackageReference>
-		<PackageReference Include="Verify.NUnit" Version="22.5.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Umbraco.Community.CSPManager\Umbraco.Community.CSPManager.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="appsettings.Tests.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<Using Include="Moq" />
-		<Using Include="NUnit.Framework" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="appsettings.Tests.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Controllers\DefinitonsController\SaveDefinitionsTests.SaveDefinition_ReturnsBadRequest_WithDuplicateSourceNames.verified.txt">
-		  <DependentUpon>SaveDefinitionsTests.cs</DependentUpon>
-		</None>
-		<None Update="Controllers\DefinitonsController\SaveDefinitionsTests.SaveDefinition_ReturnsBadRequest_WhenIdIsEmpty.verified.txt">
-		  <DependentUpon>SaveDefinitionsTests.cs</DependentUpon>
-		</None>
-	</ItemGroup>
-<Target Name="CopyUmbracoDepsFile" AfterTargets="Build">
   <ItemGroup>
-    <DepsFile Include="$(UserProfile)\.nuget\packages\umbraco.cms.tests.integration\16.0.0\**\Umbraco.Tests.Integration.deps.json" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit.Analyzers" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="SystemTextJson.JsonDiffPatch.NUnit" />
+
+    <PackageReference Include="Umbraco.Cms.Tests.Integration" />
+    <ProjectReference Include="..\Umbraco.Community.CSPManager\Umbraco.Community.CSPManager.csproj" />
   </ItemGroup>
-  <Copy SourceFiles="@(DepsFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
-</Target>
 
+  <ItemGroup>
+    <None Update="appsettings.Tests.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="appSettings.Tests.Local.json" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="appSettings.Tests.Local.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Moq" />
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <GenerateDepsFile>true</GenerateDepsFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Update="$(NuGetPackageRoot)\umbraco.cms.tests.integration\17.0.0\contentFiles\any\net10.0\appsettings.Tests.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="EnsureUmbracoDepsJson" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).deps.json" DestinationFiles="$(OutputPath)Umbraco.Tests.Integration.deps.json" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
