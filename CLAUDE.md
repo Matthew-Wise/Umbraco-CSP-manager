@@ -31,7 +31,7 @@ src/
 
 ### Backend (.NET)
 
-- **Framework**: .NET 9 with Umbraco CMS 17+
+- **Framework**: .NET 10 with Umbraco CMS 17+
 - **Database**: Uses Umbraco's database abstraction (NPoco ORM)
 - **Testing**: XUnit with Umbraco's testing framework
 - **Patterns**: Repository pattern, notification pattern, middleware pattern
