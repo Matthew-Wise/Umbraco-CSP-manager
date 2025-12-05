@@ -2,10 +2,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Validation.AspNetCore;
-using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.DependencyInjection;
-using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.Community.CSPManager.Authorization;
 using Umbraco.Community.CSPManager.Configuration;
@@ -29,8 +26,7 @@ public static class UmbracoBuilderExtensions
 		builder.Services.ConfigureOptions<ConfigCspApiSwaggerGenOptions>();
 		builder.Services.Configure<CspManagerOptions>(builder.Config.GetSection(Constants.OptionsName));
 
-		builder.Services.AddTransient<ICspService, CspService>(sp =>
-			new CspService(sp.GetRequiredService<IEventAggregator>(), sp.GetRequiredService<IScopeProvider>(), sp.GetRequiredService<AppCaches>().RuntimeCache));
+		builder.Services.AddTransient<ICspService, CspService>();
 
 		builder.Services.Configure<UmbracoPipelineOptions>(options =>
 		{

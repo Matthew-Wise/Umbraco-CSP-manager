@@ -11,6 +11,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Services;
 
+/// <inheritdoc />
 internal sealed class CspService : ICspService
 {
 	private readonly IEventAggregator _eventAggregator;
@@ -25,6 +26,12 @@ internal sealed class CspService : ICspService
 		_scopeProvider = scopeProvider;
 		_runtimeCache = runtimeCache;
 	}
+	public CspService(
+		IEventAggregator eventAggregator,
+		IScopeProvider scopeProvider,
+		AppCaches caches) : this(eventAggregator, scopeProvider, caches.RuntimeCache) { }
+
+
 	public CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest)
 	{
 		var cacheKey = isBackOfficeRequest ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
@@ -106,6 +113,7 @@ internal sealed class CspService : ICspService
 	{
 		await scope.Database.SaveAsync(definition, cancellationToken);
 
+		//Empty sources have no value and clog up the header so remove them
 		definition.Sources = [.. definition.Sources.Where(s => !string.IsNullOrWhiteSpace(s.Source))];
 
 		var sourceValues = definition.Sources.Select(s => s.Source).ToList();

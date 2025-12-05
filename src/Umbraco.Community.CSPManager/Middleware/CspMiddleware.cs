@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Text;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
@@ -66,7 +67,7 @@ public class CspMiddleware
 			}
 
 			var csp = ConstructCspDictionary(definition, context);
-			var cspValue = string.Join(";", csp.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+			var cspValue = BuildCspHeader(csp);
 
 			if (!string.IsNullOrWhiteSpace(cspValue))
 			{
@@ -77,12 +78,41 @@ public class CspMiddleware
 		await _next(context);
 	}
 
+	private static string BuildCspHeader(Dictionary<string, string> csp)
+	{
+		if (csp.Count == 0) return string.Empty;
+
+		var builder = new StringBuilder(256); // Pre-allocate reasonable size
+		foreach (var kvp in csp)
+		{
+			if (builder.Length > 0) builder.Append(';');
+			builder.Append(kvp.Key);
+			if (!string.IsNullOrEmpty(kvp.Value))
+			{
+				builder.Append(' ').Append(kvp.Value);
+			}
+		}
+		return builder.ToString();
+	}
+
 	private Dictionary<string, string> ConstructCspDictionary(CspDefinition definition, HttpContext httpContext)
 	{
-		var csp = definition.Sources
-		.SelectMany(c => c.Directives.Select(d => new { Directive = d, c.Source }))
-		.GroupBy(x => x.Directive)
-		.ToDictionary(g => g.Key, g => string.Join(" ", new HashSet<string>(g.Select(x => x.Source))));
+		var csp = new Dictionary<string, string>(definition.Sources.Count);
+
+		foreach (var source in definition.Sources)
+		{
+			foreach (var directive in source.Directives)
+			{
+				if (!csp.TryGetValue(directive, out var existingValue))
+				{
+					csp[directive] = source.Source;
+				}
+				else if (!existingValue.Contains(source.Source))
+				{
+					csp[directive] = $"{existingValue} {source.Source}";
+				}
+			}
+		}
 
 		if (!string.IsNullOrWhiteSpace(definition.ReportingDirective) && !string.IsNullOrWhiteSpace(definition.ReportUri))
 		{
