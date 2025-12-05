@@ -124,17 +124,15 @@ public class CspMiddleware
 			csp.TryAdd(Constants.Directives.UpgradeInsecureRequests, "");
 		}
 
-		string? scriptNonce = null;
 		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerScriptNonceSet) == true)
 		{
-			scriptNonce = _cspService.GetOrCreateCspScriptNonce(httpContext);
+			string? scriptNonce = _cspService.GetOrCreateCspScriptNonce(httpContext);
 			AddNonceToDirective(csp, Constants.Directives.ScriptSource, scriptNonce);
 		}
 
-		string? styleNonce = null;
 		if (httpContext.GetItem<bool>(Constants.TagHelper.CspManagerStyleNonceSet) == true)
 		{
-			styleNonce = _cspService.GetOrCreateCspStyleNonce(httpContext);
+			string? styleNonce = _cspService.GetOrCreateCspStyleNonce(httpContext);
 			AddNonceToDirective(csp, Constants.Directives.StyleSource, styleNonce);
 		}
 

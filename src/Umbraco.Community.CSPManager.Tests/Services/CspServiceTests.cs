@@ -144,7 +144,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			.Callback<INotification, CancellationToken>((notification, _) => notificationPublished = true)
 			.Returns(Task.CompletedTask);
 
-		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches.RuntimeCache);
+		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches);
 
 		var definition = new CspDefinition
 		{
@@ -224,7 +224,8 @@ public class CspServiceTests : UmbracoIntegrationTest
 				});
 			});
 
-		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCache);
+		var spyCaches = new AppCaches(spyCache, requestCache, new IsolatedCaches(_ => spyCache));
+		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCaches);
 
 		// Call GetCachedCspDefinition twice
 		var definition1 = spyService.GetCachedCspDefinition(isBackOfficeRequest: true);

@@ -20,17 +20,12 @@ internal sealed class CspService : ICspService
 	public CspService(
 		IEventAggregator eventAggregator,
 		IScopeProvider scopeProvider,
-		IAppPolicyCache runtimeCache)
+		AppCaches caches)
 	{
 		_eventAggregator = eventAggregator;
 		_scopeProvider = scopeProvider;
-		_runtimeCache = runtimeCache;
+		_runtimeCache = caches.RuntimeCache;
 	}
-	public CspService(
-		IEventAggregator eventAggregator,
-		IScopeProvider scopeProvider,
-		AppCaches caches) : this(eventAggregator, scopeProvider, caches.RuntimeCache) { }
-
 
 	public CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest)
 	{
