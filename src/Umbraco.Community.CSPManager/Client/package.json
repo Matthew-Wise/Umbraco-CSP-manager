@@ -1,7 +1,7 @@
 {
 	"name": "umbraco-community-csp-manager",
 	"private": true,
-	"version": "16.0.0",
+	"version": "17.0.0",
 	"type": "module",
 	"scripts": {
 		"watch": "vite build --watch",
@@ -21,14 +21,14 @@
 		"npm": ">=10.9"
 	},
 	"devDependencies": {
-		"@hey-api/openapi-ts": "^0.77.0",
+		"@hey-api/openapi-ts": "^0.88.0",
 		"@playwright/test": "^1.56.1",
-		"@types/node": "^20.0.0",
-		"@umbraco-cms/backoffice": "^16.0.0",
-		"@umbraco/playwright-testhelpers": "^16.0.34",
-		"dotenv": "^16.3.1",
-		"lit": "^3.3.0",
-		"typescript": "~5.8.3",
+		"@types/node": "^22.0.0",
+		"@umbraco-cms/backoffice": "^17.0.0",
+		"@umbraco/playwright-testhelpers": "^17.0.0",
+		"dotenv": "^17.2.3",
+		"lit": "^3.3.1",
+		"typescript": "~5.9.3",
 		"vite": "^7.0.8",
 		"linkifyjs": ">=4.3.2"
 	},

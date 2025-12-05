@@ -178,7 +178,8 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 }
 
 export const UMB_CSP_MANAGER_WORKSPACE_CONTEXT = new UmbContextToken<UmbCspManagerWorkspaceContext>(
-	'UmbCspManagerWorkspaceContext'
+	'UmbWorkspaceContext',
+	'csp-manager.workspace'
 );
 
 export { UmbCspManagerWorkspaceContext as api };
