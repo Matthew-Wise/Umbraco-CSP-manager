@@ -11,7 +11,15 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Services;
 
-/// <inheritdoc />
+/// <summary>
+/// Implementation of <see cref="ICspService"/> that manages CSP definitions using
+/// Umbraco's scoping and caching infrastructure.
+/// </summary>
+/// <remarks>
+/// This service uses NPoco ORM for database operations and Umbraco's runtime cache
+/// for performance. It also integrates with the event aggregator to publish notifications
+/// when CSP definitions are saved.
+/// </remarks>
 internal sealed class CspService : ICspService
 {
 	private readonly IEventAggregator _eventAggregator;

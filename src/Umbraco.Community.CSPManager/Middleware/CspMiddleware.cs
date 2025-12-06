@@ -12,6 +12,20 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Middleware;
 
+/// <summary>
+/// ASP.NET Core middleware that injects Content Security Policy headers into HTTP responses.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This middleware intercepts all requests and adds the appropriate CSP header based on the
+/// configured policy for either the frontend or backoffice context. It supports both
+/// enforcing (Content-Security-Policy) and report-only (Content-Security-Policy-Report-Only) modes.
+/// </para>
+/// <para>
+/// The middleware only runs when Umbraco is in the <see cref="Umbraco.Cms.Core.RuntimeLevel.Run"/> state.
+/// It also respects the <see cref="CspManagerOptions.DisableBackOfficeHeader"/> configuration option.
+/// </para>
+/// </remarks>
 public class CspMiddleware
 {
 	private readonly RequestDelegate _next;
@@ -20,6 +34,14 @@ public class CspMiddleware
 	private readonly IEventAggregator _eventAggregator;
 	private CspManagerOptions _cspOptions;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="CspMiddleware"/> class.
+	/// </summary>
+	/// <param name="next">The next middleware in the pipeline.</param>
+	/// <param name="runtimeState">The Umbraco runtime state service.</param>
+	/// <param name="cspService">The CSP service for retrieving definitions.</param>
+	/// <param name="eventAggregator">The event aggregator for publishing notifications.</param>
+	/// <param name="cspOptions">The CSP Manager configuration options.</param>
 	public CspMiddleware(
 		RequestDelegate next,
 		IRuntimeState runtimeState,
@@ -39,6 +61,17 @@ public class CspMiddleware
 		_cspOptions = cspOptions.CurrentValue;
 	}
 
+	/// <summary>
+	/// Processes the HTTP request and adds CSP headers to the response.
+	/// </summary>
+	/// <param name="context">The HTTP context for the current request.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	/// <remarks>
+	/// The CSP header is added using <see cref="HttpResponse.OnStarting"/> to ensure it is
+	/// set before any response body is written. A <see cref="Notifications.CspWritingNotification"/>
+	/// is published before the header is constructed, allowing other components to modify
+	/// or react to the CSP being applied.
+	/// </remarks>
 	public async Task InvokeAsync(HttpContext context)
 	{
 		if (_runtimeState.Level != RuntimeLevel.Run)
