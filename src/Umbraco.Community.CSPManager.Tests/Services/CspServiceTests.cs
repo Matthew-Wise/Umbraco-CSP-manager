@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Migrations;
@@ -144,7 +145,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			.Callback<INotification, CancellationToken>((notification, _) => notificationPublished = true)
 			.Returns(Task.CompletedTask);
 
-		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches);
+		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches, NullLogger<CspService>.Instance);
 
 		var definition = new CspDefinition
 		{
@@ -225,7 +226,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			});
 
 		var spyCaches = new AppCaches(spyCache, requestCache, new IsolatedCaches(_ => spyCache));
-		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCaches);
+		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCaches, NullLogger<CspService>.Instance);
 
 		// Call GetCachedCspDefinition twice
 		var definition1 = spyService.GetCachedCspDefinition(isBackOfficeRequest: true);

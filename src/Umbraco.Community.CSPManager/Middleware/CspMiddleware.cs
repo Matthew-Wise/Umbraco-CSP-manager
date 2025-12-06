@@ -1,10 +1,12 @@
 ﻿using System.Text;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.CSPManager.Extensions;
+using Umbraco.Community.CSPManager.Logging;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Services;
@@ -32,6 +34,7 @@ public class CspMiddleware
 	private readonly IRuntimeState _runtimeState;
 	private readonly ICspService _cspService;
 	private readonly IEventAggregator _eventAggregator;
+	private readonly ILogger<CspMiddleware> _logger;
 	private CspManagerOptions _cspOptions;
 
 	/// <summary>
@@ -42,17 +45,20 @@ public class CspMiddleware
 	/// <param name="cspService">The CSP service for retrieving definitions.</param>
 	/// <param name="eventAggregator">The event aggregator for publishing notifications.</param>
 	/// <param name="cspOptions">The CSP Manager configuration options.</param>
+	/// <param name="logger">The logger for diagnostic output.</param>
 	public CspMiddleware(
 		RequestDelegate next,
 		IRuntimeState runtimeState,
 		ICspService cspService,
 		IEventAggregator eventAggregator,
-		IOptionsMonitor<CspManagerOptions> cspOptions)
+		IOptionsMonitor<CspManagerOptions> cspOptions,
+		ILogger<CspMiddleware> logger)
 	{
 		_next = next;
 		_runtimeState = runtimeState;
 		_cspService = cspService;
 		_eventAggregator = eventAggregator;
+		_logger = logger;
 
 		cspOptions.OnChange(config =>
 		{
@@ -82,29 +88,37 @@ public class CspMiddleware
 
 		context.Response.OnStarting(async () =>
 		{
-			var isBackOfficeRequest = context.Request.IsBackOfficeRequest() ||
-			context.Request.Path.StartsWithSegments("/umbraco");
-
-			if (isBackOfficeRequest && _cspOptions.DisableBackOfficeHeader)
+			try
 			{
-				return;
+				var isBackOfficeRequest = context.Request.IsBackOfficeRequest() ||
+					context.Request.Path.StartsWithSegments("/umbraco");
+
+				if (isBackOfficeRequest && _cspOptions.DisableBackOfficeHeader)
+				{
+					return;
+				}
+
+				var definition = _cspService.GetCachedCspDefinition(isBackOfficeRequest);
+				await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
+
+				if (definition is not { Enabled: true })
+				{
+					return;
+				}
+
+				var csp = ConstructCspDictionary(definition, context);
+				var cspValue = BuildCspHeader(csp);
+
+				if (!string.IsNullOrWhiteSpace(cspValue))
+				{
+					context.Response.Headers.Append(definition.ReportOnly ? Constants.ReportOnlyHeaderName : Constants.HeaderName, cspValue);
+				}
 			}
-
-			var definition = _cspService.GetCachedCspDefinition(isBackOfficeRequest);
-			await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
-
-			if (definition is not { Enabled: true })
+			catch (Exception ex)
 			{
-
-				return;
-			}
-
-			var csp = ConstructCspDictionary(definition, context);
-			var cspValue = BuildCspHeader(csp);
-
-			if (!string.IsNullOrWhiteSpace(cspValue))
-			{
-				context.Response.Headers.Append(definition.ReportOnly ? Constants.ReportOnlyHeaderName : Constants.HeaderName, cspValue);
+				// CSP header injection should never break the request.
+				// Log the error and continue without the CSP header.
+				Log.CspHeaderConstructionFailed(_logger, context.Request.Path, ex);
 			}
 		});
 

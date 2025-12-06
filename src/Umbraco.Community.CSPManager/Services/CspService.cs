@@ -1,10 +1,12 @@
 ﻿using System.Security.Cryptography;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using NPoco.Expressions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Community.CSPManager.Extensions;
+using Umbraco.Community.CSPManager.Logging;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Extensions;
@@ -25,14 +27,18 @@ internal sealed class CspService : ICspService
 	private readonly IEventAggregator _eventAggregator;
 	private readonly IScopeProvider _scopeProvider;
 	private readonly IAppPolicyCache _runtimeCache;
+	private readonly ILogger<CspService> _logger;
+
 	public CspService(
 		IEventAggregator eventAggregator,
 		IScopeProvider scopeProvider,
-		AppCaches caches)
+		AppCaches caches,
+		ILogger<CspService> logger)
 	{
 		_eventAggregator = eventAggregator;
 		_scopeProvider = scopeProvider;
 		_runtimeCache = caches.RuntimeCache;
+		_logger = logger;
 	}
 
 	public CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest)
@@ -101,15 +107,28 @@ internal sealed class CspService : ICspService
 
 	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken = default)
 	{
-		using var scope = _scopeProvider.CreateScope();
+		var context = definition.IsBackOffice ? "BackOffice" : "Frontend";
+		Log.SavingCspDefinition(_logger, definition.Id, context);
 
-		definition = await SaveDefinitionAsync(scope, definition, cancellationToken);
+		try
+		{
+			using var scope = _scopeProvider.CreateScope();
 
-		scope.Complete();
+			definition = await SaveDefinitionAsync(scope, definition, cancellationToken);
 
-		await _eventAggregator.PublishAsync(new CspSavedNotification(definition), cancellationToken);
+			scope.Complete();
 
-		return definition;
+			await _eventAggregator.PublishAsync(new CspSavedNotification(definition), cancellationToken);
+
+			Log.CspDefinitionSaved(_logger, definition.Id, definition.Sources.Count);
+
+			return definition;
+		}
+		catch (Exception ex)
+		{
+			Log.CspDefinitionSaveFailed(_logger, definition.Id, ex);
+			throw;
+		}
 	}
 
 	private static async Task<CspDefinition> SaveDefinitionAsync(IScope scope, CspDefinition definition, CancellationToken cancellationToken)
