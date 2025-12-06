@@ -63,12 +63,93 @@ internal class SaveDefinitionsValidationTests : CspManagementApiTest<Definitions
 					"status": 400,
 					"errors": [
 						{
-							"$.sources": ["Duplicate Sources found"]
+							"$.sources": ["Duplicate sources found: 'test'"]
 						}
 					]
 				}
 				""")
 			{ TestName = "Duplicate sources returns validation error" };
+
+			yield return new TestCaseData(
+				new CspApiDefinition
+				{
+					Id = Constants.DefaultBackofficeId,
+					ReportingDirective = "invalid-directive"
+				},
+				"""
+				{
+					"type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+					"title": "One or more validation errors occurred.",
+					"status": 400,
+					"errors": [
+						{
+							"$.reportingDirective": ["ReportingDirective must be 'report-uri' or 'report-to'"]
+						}
+					]
+				}
+				""")
+			{ TestName = "Invalid ReportingDirective returns validation error" };
+
+			yield return new TestCaseData(
+				new CspApiDefinition
+				{
+					Id = Constants.DefaultBackofficeId,
+					ReportingDirective = "report-uri"
+				},
+				"""
+				{
+					"type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+					"title": "One or more validation errors occurred.",
+					"status": 400,
+					"errors": [
+						{
+							"$.reportUri": ["ReportUri is required when ReportingDirective is set"]
+						}
+					]
+				}
+				""")
+			{ TestName = "Missing ReportUri when ReportingDirective is set returns validation error" };
+
+			yield return new TestCaseData(
+				new CspApiDefinition
+				{
+					Id = Constants.DefaultBackofficeId,
+					ReportingDirective = "report-uri",
+					ReportUri = "ftp://example.com/report"
+				},
+				"""
+				{
+					"type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+					"title": "One or more validation errors occurred.",
+					"status": 400,
+					"errors": [
+						{
+							"$.reportUri": ["ReportUri must use HTTP or HTTPS scheme when using an absolute URI"]
+						}
+					]
+				}
+				""")
+			{ TestName = "Non-HTTP scheme for report-uri returns validation error" };
+
+			yield return new TestCaseData(
+				new CspApiDefinition
+				{
+					Id = Constants.DefaultBackofficeId,
+					Sources = [new() { Source = "'self'", Directives = ["invalid-directive"] }]
+				},
+				"""
+				{
+					"type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+					"title": "One or more validation errors occurred.",
+					"status": 400,
+					"errors": [
+						{
+							"$.sources": ["Unknown directive 'invalid-directive' in source ''self''"]
+						}
+					]
+				}
+				""")
+			{ TestName = "Unknown directive returns validation error" };
 		}
 	}
 }
