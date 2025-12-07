@@ -4,7 +4,7 @@ import { CspConstants } from "../src/constants";
 
 test.beforeEach(async ({ umbracoUi }) => {
 	await umbracoUi.goToBackOffice();
-	await umbracoUi.login.goToSection(CspConstants.sectionLabel);
+	await umbracoUi.login.goToSection(CspConstants.section.label);
 });
 
 test.describe("CSP Manager Section & Dashboard", () => {

@@ -89,8 +89,10 @@ export class UmbCspSettingsViewElement extends UmbElementMixin(LitElement) {
 						<span slot="description">Enable or disable the Content Security Policy header</span>
 						<div class="setting-control">
 							<uui-toggle
+								label="${this._workspaceState.definition.enabled ? 'Enabled' : 'Disabled'}"
 								.checked=${this._workspaceState.definition.enabled}
-								@change=${(e: Event) => this._updateDefinitionSetting('enabled', (e.target as any).checked)}>
+								@change=${(e: Event) =>
+									this._updateDefinitionSetting('enabled', (e.target as HTMLInputElement).checked)}>
 								${this._workspaceState.definition.enabled ? 'Enabled' : 'Disabled'}
 							</uui-toggle>
 						</div>
@@ -103,9 +105,11 @@ export class UmbCspSettingsViewElement extends UmbElementMixin(LitElement) {
 						</span>
 						<div class="setting-control">
 							<uui-toggle
+								label="Report Only Mode"
 								.checked=${this._workspaceState.definition.reportOnly}
 								.disabled=${!this._workspaceState.definition.enabled}
-								@change=${(e: Event) => this._updateDefinitionSetting('reportOnly', (e.target as any).checked)}>
+								@change=${(e: Event) =>
+									this._updateDefinitionSetting('reportOnly', (e.target as HTMLInputElement).checked)}>
 								${this._workspaceState.definition.reportOnly ? 'Report Only' : 'Enforced'}
 							</uui-toggle>
 						</div>
@@ -124,7 +128,8 @@ export class UmbCspSettingsViewElement extends UmbElementMixin(LitElement) {
 						<div class="setting-control">
 							<uui-radio-group
 								.value=${this._workspaceState.definition.reportingDirective || 'none'}
-								@change=${(e: Event) => this._updateDefinitionSetting('reportingDirective', (e.target as any).value)}>
+								@change=${(e: Event) =>
+									this._updateDefinitionSetting('reportingDirective', (e.target as HTMLInputElement).value)}>
 								<uui-radio value="none" label="No reporting"></uui-radio>
 								<uui-radio value="report-to" label="report-to (recommended)"></uui-radio>
 								<uui-radio value="report-uri" label="report-uri (deprecated)"></uui-radio>

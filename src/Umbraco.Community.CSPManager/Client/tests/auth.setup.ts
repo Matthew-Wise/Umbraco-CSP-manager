@@ -10,6 +10,6 @@ setup("authenticate", async ({ page }) => {
 	await umbracoUi.login.enterEmail(process.env.UMBRACO_USER_LOGIN!);
 	await umbracoUi.login.enterPassword(process.env.UMBRACO_USER_PASSWORD!);
 	await umbracoUi.login.clickLoginButton();
-	await umbracoUi.login.goToSection(CspConstants.sectionLabel);
+	await umbracoUi.login.goToSection(CspConstants.section.label);
 	await umbracoUi.page.context().storageState({ path: STORAGE_STATE });
 });
