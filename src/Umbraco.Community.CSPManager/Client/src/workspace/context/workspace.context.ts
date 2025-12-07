@@ -2,7 +2,8 @@ import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import { UMB_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/workspace';
-import type { UmbWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
+import type { UmbWorkspaceContext, UmbRoutableWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
+import { UmbWorkspaceRouteManager } from '@umbraco-cms/backoffice/workspace';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import type { CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
@@ -17,13 +18,19 @@ export interface WorkspaceState {
 	error?: UmbError | UmbApiError | UmbCancelError | Error | undefined;
 }
 
-const URL_TO_POLICY_TYPE = {
+const ID_TO_POLICY_TYPE: Record<string, PolicyType> = {
 	frontend: CspConstants.policyTypes.frontend,
 	backoffice: CspConstants.policyTypes.backoffice,
-} as const;
+};
 
-export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements UmbWorkspaceContext {
-	public readonly workspaceAlias: string;
+export class UmbCspManagerWorkspaceContext
+	extends UmbControllerBase
+	implements UmbWorkspaceContext, UmbRoutableWorkspaceContext
+{
+	public readonly workspaceAlias = CspConstants.workspace.alias;
+	public readonly routes = new UmbWorkspaceRouteManager(this);
+
+	#policyId: string | null = null;
 
 	#state = new UmbObjectState<WorkspaceState>({
 		definition: null,
@@ -38,34 +45,23 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 	readonly state = this.#state.asObservable();
 
 	getEntityType(): string {
-		const policyType = this.getPolicyType();
-		return policyType.value;
+		return CspConstants.workspace.entityType;
+	}
+
+	getUnique(): string | null {
+		return this.#policyId;
 	}
 
 	getPolicyType(): PolicyType {
-		try {
-			const url = window.location.pathname;
-			const matches = url.match(/\/umbraco\/section\/csp-manager\/workspace\/(frontend|backoffice)/);
-
-			if (matches && matches[1]) {
-				const urlSegment = matches[1] as keyof typeof URL_TO_POLICY_TYPE;
-				return URL_TO_POLICY_TYPE[urlSegment] || CspConstants.policyTypes.frontend;
-			}
-
-			console.warn('Invalid CSP policy type in URL, defaulting to frontend');
-			return CspConstants.policyTypes.frontend;
-		} catch (error) {
-			console.error('Error parsing policy type from URL:', error);
-			return CspConstants.policyTypes.frontend;
+		if (this.#policyId && ID_TO_POLICY_TYPE[this.#policyId]) {
+			return ID_TO_POLICY_TYPE[this.#policyId];
 		}
+		console.warn('Invalid CSP policy ID, defaulting to frontend');
+		return CspConstants.policyTypes.frontend;
 	}
 
 	constructor(host: UmbControllerHost) {
 		super(host);
-
-		// Set workspace alias based on current URL
-		const policyType = this.getPolicyType();
-		this.workspaceAlias = `${CspConstants.workspace.alias}.${policyType.aliasPart}`;
 
 		this.#cspDefinitionContext = new UmbCspDefinitionContext(this);
 		this.#cspDirectivesContext = new UmbCspDirectivesContext(this);
@@ -73,6 +69,20 @@ export class UmbCspManagerWorkspaceContext extends UmbControllerBase implements 
 		this.provideContext(UMB_CSP_MANAGER_WORKSPACE_CONTEXT, this);
 		this.provideContext(UMB_WORKSPACE_CONTEXT, this);
 
+		this.routes.setRoutes([
+			{
+				path: 'edit/:unique',
+				component: () => import('../csp-management-workspace.element.js'),
+				setup: (_component, info) => {
+					const unique = info.match.params.unique;
+					this.#load(unique);
+				},
+			},
+		]);
+	}
+
+	#load(unique: string) {
+		this.#policyId = unique;
 		this.loadDefinition();
 		this.loadDirectives();
 	}

@@ -22,9 +22,9 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
               <div class="card-content">
                 <h3>Front-end CSP</h3>
                 <p>Configure Content Security Policy for your website visitors. This controls what resources can be loaded on your public-facing pages.</p>
-                <uui-button 
-                  look="primary" 
-                  href="/umbraco/section/csp-manager/workspace/frontend"
+                <uui-button
+                  look="primary"
+                  href="/umbraco/section/csp-manager/workspace/csp-policy/edit/frontend"
                   label="Configure Front-end CSP"
                 >
                   Configure Front-end CSP
@@ -36,9 +36,9 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
               <div class="card-content">
                 <h3>Back-office CSP</h3>
                 <p>Configure Content Security Policy for the Umbraco back-office. This controls what resources can be loaded in the admin interface.</p>
-                <uui-button 
-                  look="primary" 
-                  href="/umbraco/section/csp-manager/workspace/backoffice"
+                <uui-button
+                  look="primary"
+                  href="/umbraco/section/csp-manager/workspace/csp-policy/edit/backoffice"
                   label="Configure Back-office CSP"
                 >
                   Configure Back-office CSP

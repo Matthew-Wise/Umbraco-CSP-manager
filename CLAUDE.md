@@ -95,6 +95,54 @@ export const client = createClient(createConfig<ClientOptions>({
 - **Policy Evaluation**: Built-in tools for testing CSP policies before deployment
 - **Report-Only Mode**: Safe testing without breaking functionality
 
+## Client Development Workflow
+
+When making changes to the client code in `src/Umbraco.Community.CSPManager/Client/`:
+
+### Build Commands
+
+```bash
+cd src/Umbraco.Community.CSPManager/Client
+
+# Type checking only (fast, use during development)
+npm run build:ts
+
+# Full build (TypeScript + Vite bundling)
+npm run build
+
+# Development server with hot reload
+npm run dev
+```
+
+### Testing with Playwright
+
+Always run Playwright tests after making client changes:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with UI (for debugging)
+npm run test:ui
+
+# Run tests in headed mode (see browser)
+npm run test:headed
+
+# Debug tests
+npm run test:debug
+
+# View test report
+npm run test:report
+```
+
+### API Client Generation
+
+When backend API changes are made, regenerate the TypeScript client:
+
+```bash
+npm run generate-client
+```
+
 ## Development Principles
 
 - **Security by Design**: All code should enhance security, never compromise it

@@ -1,22 +1,4 @@
-import { CspConstants, type PolicyType } from '@/constants';
-
-const createMenuItemManifest = (policyType: PolicyType, weight: number): UmbExtensionManifest => ({
-	type: 'menuItem',
-	alias: `${CspConstants.alias}.MenuItems.${policyType.aliasPart}`,
-	name: `CSP ${policyType.label} Menu Item`,
-	weight,
-	meta: {
-		label: policyType.label,
-		icon: policyType.icon,
-		entityType: policyType.value,
-		menus: [CspConstants.menu.alias],
-	},
-});
-
-const menuItemsConfig = [
-	{ policyType: CspConstants.policyTypes.frontend, weight: CspConstants.weights.high },
-	{ policyType: CspConstants.policyTypes.backoffice, weight: CspConstants.weights.medium },
-];
+import { CspConstants } from '@/constants';
 
 export const manifests: Array<UmbExtensionManifest> = [
 	{
@@ -69,5 +51,4 @@ export const manifests: Array<UmbExtensionManifest> = [
 			},
 		],
 	},
-	...menuItemsConfig.map(({ policyType, weight }) => createMenuItemManifest(policyType, weight)),
 ];

@@ -8,8 +8,15 @@ export const CspConstants = {
 	menu: {
 		alias: `${packageAlias}.Menu`,
 	},
+	tree: {
+		alias: `${packageAlias}.Tree`,
+		repositoryAlias: `${packageAlias}.Tree.Repository`,
+		itemAlias: `${packageAlias}.TreeItem`,
+		menuItemAlias: `${packageAlias}.MenuItem.Tree`,
+	},
 	workspace: {
 		alias: `${packageAlias}.Workspace`,
+		entityType: 'csp-policy',
 	},
 	umbraco: {
 		conditions: {
