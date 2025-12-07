@@ -2,12 +2,11 @@ import { LitElement, css, html, customElement, state } from '@umbraco-cms/backof
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
-import { UmbCspManagerWorkspaceContext, type WorkspaceState } from './context/workspace.context.js';
+import { UMB_CSP_MANAGER_WORKSPACE_CONTEXT, type WorkspaceState } from './context/workspace.context.js';
 import { CspConstants, type PolicyType } from '@/constants';
 
 @customElement('umb-csp-management-workspace')
 export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement) {
-	#workspaceContext: UmbCspManagerWorkspaceContext;
 	#notificationContext?: UmbNotificationContext;
 
 	@state()
@@ -26,20 +25,20 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 
 	constructor() {
 		super();
-		this.#workspaceContext = new UmbCspManagerWorkspaceContext(this);
 
-		this.observe(this.#workspaceContext.state, (state) => {
-			this._workspaceState = state;
+		this.consumeContext(UMB_CSP_MANAGER_WORKSPACE_CONTEXT, (context) => {
+			if (!context) return;
+
+			this._policyType = context.getPolicyType();
+
+			this.observe(context.state, (state) => {
+				this._workspaceState = state;
+			});
 		});
 
 		this.consumeContext(UMB_NOTIFICATION_CONTEXT, (context) => {
 			this.#notificationContext = context;
 		});
-	}
-
-	connectedCallback() {
-		super.connectedCallback();
-		this._policyType = this.#workspaceContext.getPolicyType();
 	}
 
 	private async _handleSave() {
@@ -48,7 +47,11 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 		this._saving = true;
 
 		try {
-			const result = await this.#workspaceContext.save();
+			const context = await this.getContext(UMB_CSP_MANAGER_WORKSPACE_CONTEXT);
+			if (!context) {
+				throw new Error('Workspace context not available');
+			}
+			const result = await context.save();
 
 			if (result.success) {
 				this.#notificationContext?.peek('positive', {
@@ -81,7 +84,7 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 		return html`
 			<umb-workspace-editor
 				headline="${this._policyType.label} CSP Management"
-				alias="${this.#workspaceContext.workspaceAlias}">
+				alias="${CspConstants.workspace.alias}">
 				<div slot="actions">
 					<uui-button
 						label="Save"

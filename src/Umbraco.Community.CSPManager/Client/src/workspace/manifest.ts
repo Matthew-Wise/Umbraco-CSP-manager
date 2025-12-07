@@ -1,31 +1,20 @@
-import { CspConstants, type PolicyType } from '@/constants';
+import { CspConstants } from '@/constants';
 
-const createWorkspaceManifests = (policyType: PolicyType): Array<UmbExtensionManifest> => [
+export const manifests: Array<UmbExtensionManifest> = [
 	{
 		type: 'workspace',
-		alias: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
-		name: `CSP Manager ${policyType.label} Workspace`,
-		js: () => import('./csp-management-workspace.element.js'),
+		kind: 'routable',
+		alias: CspConstants.workspace.alias,
+		name: 'CSP Manager Workspace',
+		api: () => import('./context/workspace.context.js'),
 		meta: {
-			entityType: policyType.value,
+			entityType: CspConstants.workspace.entityType,
 		},
 	},
 	{
-		type: 'workspaceContext',
-		alias: `${CspConstants.workspace.alias}Context.${policyType.aliasPart}`,
-		name: `CSP Manager ${policyType.label} Workspace Context`,
-		js: () => import('./context/workspace.context.js'),
-		conditions: [
-			{
-				alias: CspConstants.umbraco.conditions.workspaceAlias,
-				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
-			},
-		],
-	},
-	{
 		type: 'workspaceView',
-		alias: `${CspConstants.workspace.alias}View.${policyType.aliasPart}.Default`,
-		name: `CSP ${policyType.label} Sources View`,
+		alias: `${CspConstants.workspace.alias}View.Default`,
+		name: 'CSP Sources View',
 		js: () => import('./views/default/default.element.js'),
 		weight: CspConstants.weights.medium,
 		meta: {
@@ -36,14 +25,14 @@ const createWorkspaceManifests = (policyType: PolicyType): Array<UmbExtensionMan
 		conditions: [
 			{
 				alias: CspConstants.umbraco.conditions.workspaceAlias,
-				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+				match: CspConstants.workspace.alias,
 			},
 		],
 	},
 	{
 		type: 'workspaceView',
-		alias: `${CspConstants.workspace.alias}View.${policyType.aliasPart}.Settings`,
-		name: `CSP ${policyType.label} Settings View`,
+		alias: `${CspConstants.workspace.alias}View.Settings`,
+		name: 'CSP Settings View',
 		js: () => import('./views/settings/settings.element.js'),
 		weight: CspConstants.weights.high,
 		meta: {
@@ -54,14 +43,14 @@ const createWorkspaceManifests = (policyType: PolicyType): Array<UmbExtensionMan
 		conditions: [
 			{
 				alias: CspConstants.umbraco.conditions.workspaceAlias,
-				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+				match: CspConstants.workspace.alias,
 			},
 		],
 	},
 	{
 		type: 'workspaceView',
-		alias: `${CspConstants.workspace.alias}View.${policyType.aliasPart}.Evaluate`,
-		name: `CSP ${policyType.label} Evaluate View`,
+		alias: `${CspConstants.workspace.alias}View.Evaluate`,
+		name: 'CSP Evaluate View',
 		js: () => import('./views/evaluate/evaluate.element.js'),
 		weight: 50,
 		meta: {
@@ -72,13 +61,8 @@ const createWorkspaceManifests = (policyType: PolicyType): Array<UmbExtensionMan
 		conditions: [
 			{
 				alias: CspConstants.umbraco.conditions.workspaceAlias,
-				match: `${CspConstants.workspace.alias}.${policyType.aliasPart}`,
+				match: CspConstants.workspace.alias,
 			},
 		],
 	},
-];
-
-export const manifests: Array<UmbExtensionManifest> = [
-	...createWorkspaceManifests(CspConstants.policyTypes.frontend),
-	...createWorkspaceManifests(CspConstants.policyTypes.backoffice),
 ];
