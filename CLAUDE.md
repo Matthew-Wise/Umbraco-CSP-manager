@@ -1,10 +1,5 @@
 Please also reference the following documents as needed:
 
-@.claude/memories/csharp-standards.md description: "C# coding standards and best practices for CSP Manager backend" globs: "src/**/*.cs,!src/**/Client/**/*"
-@.claude/memories/security-practices.md description: "Security practices specific to CSP management and web security" globs: "src/**/*,!**/node_modules/**/*"
-@.claude/memories/testing-guidelines.md description: "Testing standards for both backend and frontend code" globs: "**/*test*,**/*spec*,**/Tests/**/*"
-@.claude/memories/typescript-standards.md description: "TypeScript coding standards for Umbraco backoffice UI components" globs: "src/**/Client/**/*.ts,!src/**/Client/node_modules/**/*"
-
 # Umbraco Community CSP Manager - Project Overview
 
 ## Purpose & Mission
