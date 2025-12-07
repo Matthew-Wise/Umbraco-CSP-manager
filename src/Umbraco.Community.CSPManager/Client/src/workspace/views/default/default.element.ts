@@ -238,15 +238,17 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		return html`
 			<uui-box headline="Directives">
 				<uui-form-layout-item>
-					<uui-label slot="label">Upgrade Insecure Requests</uui-label>
+					<uui-label slot="label" for="insecure-requests">Upgrade Insecure Requests</uui-label>
 					<span slot="description">
 						Automatically Converts urls from http to https for links, images, javascript, css, etc.
 					</span>
 					<div class="setting-control">
 						<uui-toggle
+							id="insecure-requests"
 							.checked=${this._workspaceState.definition.upgradeInsecureRequests}
 							.disabled=${!this._workspaceState.definition.enabled}
-							@change=${(e: Event) => this._updateUpgradeInsecureRequests((e.target as any).checked)}>
+							label="${this._workspaceState.definition.upgradeInsecureRequests ? 'Enabled' : 'Disabled'}"
+							@change=${(e: Event) => this._updateUpgradeInsecureRequests((e.target as HTMLInputElement).checked)}>
 							${this._workspaceState.definition.upgradeInsecureRequests ? 'Enabled' : 'Disabled'}
 						</uui-toggle>
 					</div>
@@ -317,6 +319,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 													>
 													<uui-input
 														id="source-input-${index}"
+														label="CSP Source"
 														.value=${source.source || ''}
 														@input=${(e: Event) => this._updateSourceName(index, (e.target as HTMLInputElement).value)}
 														.error=${this._hasError(source)}

@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Security.Authorization;
 using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Authorization;
+
 internal sealed class CspManagerAllowedApplicationHandler : MustSatisfyRequirementAuthorizationHandler<CspManagerApplicationRequirement>
 {
 	private readonly IAuthorizationHelper _authorizationHelper;

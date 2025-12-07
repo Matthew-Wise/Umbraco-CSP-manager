@@ -15,5 +15,6 @@ export type CreateClientConfig<T extends DefaultClientOptions = ClientOptions> =
 
 export const client = createClient(createConfig<ClientOptions>({
     baseUrl: 'https://localhost:44370',
-    throwOnError: true
+    throwOnError: true,
+    credentials: 'include'
 }));

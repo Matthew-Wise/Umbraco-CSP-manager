@@ -1,9 +1,4 @@
----
-targets: ["*"]
-description: "Project overview and general development guidelines for Umbraco Community CSP Manager"
-globs: ["**/*"]
-root: true
----
+Please also reference the following documents as needed:
 
 # Umbraco Community CSP Manager - Project Overview
 
@@ -31,17 +26,66 @@ src/
 
 ### Backend (.NET)
 
-- **Framework**: .NET 9 with Umbraco CMS 16+
+- **Framework**: .NET 10 with Umbraco CMS 17+
 - **Database**: Uses Umbraco's database abstraction (NPoco ORM)
 - **Testing**: XUnit with Umbraco's testing framework
 - **Patterns**: Repository pattern, notification pattern, middleware pattern
 
 ### Frontend (TypeScript)
 
-- **Framework**: Lit Web Components for Umbraco 16+ compatibility
-- **Build Tools**: Vite for development and bundling
+- **Framework**: Lit Web Components (v3.x) for Umbraco 17+ backoffice
+- **Build Tools**: Vite 7.x for development and bundling
 - **Testing**: Playwright for E2E testing
-- **API**: OpenAPI code generation for type-safe client
+- **API**: OpenAPI code generation via @hey-api/openapi-ts
+- **Node**: Requires Node.js 22+
+
+## Umbraco v17 Patterns
+
+### Context Token Pattern
+
+All contexts must use `UmbContextToken` with two parameters:
+
+```typescript
+// Define token with context alias and unique API alias
+export const UMB_MY_CONTEXT = new UmbContextToken<MyContext>(
+  'MyContextType',        // Context alias (for grouping)
+  'my-package.context'    // API alias (unique identifier)
+);
+
+// Use token in constructor (not a string)
+constructor(host: UmbControllerHost) {
+  super(host, UMB_MY_CONTEXT);
+}
+```
+
+### Workspace Context Token
+
+Workspace contexts should use `'UmbWorkspaceContext'` as the context alias:
+
+```typescript
+export const UMB_CSP_MANAGER_WORKSPACE_CONTEXT = new UmbContextToken<UmbCspManagerWorkspaceContext>(
+  'UmbWorkspaceContext',      // Shared workspace context alias
+  'csp-manager.workspace'     // Unique API alias
+);
+```
+
+### HTTP Client Configuration
+
+API clients must include credentials for cookie-based authentication:
+
+```typescript
+export const client = createClient(createConfig<ClientOptions>({
+  baseUrl: 'https://localhost:44370',
+  throwOnError: true,
+  credentials: 'include'  // Required for v17 authentication
+}));
+```
+
+### Import Paths
+
+- `UmbContextToken`: Import from `@umbraco-cms/backoffice/context-api`
+- `UmbContextBase`: Import from `@umbraco-cms/backoffice/class-api`
+- `UmbRepositoryBase`: Import from `@umbraco-cms/backoffice/repository`
 
 ## Core Concepts
 

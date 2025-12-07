@@ -37,4 +37,3 @@ public class NonceGeneration
 		return Convert.ToBase64String(nonceBytes);
 	}
 }
-

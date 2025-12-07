@@ -28,7 +28,7 @@ public class ReportingMigration : AsyncMigrationBase
 			.AsString(500).Nullable().Do();
 		}
 
-		return Task.CompletedTask; 
+		return Task.CompletedTask;
 	}
 
 

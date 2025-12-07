@@ -78,6 +78,19 @@ public static class Constants
 		}
 	];
 
+	public static class ReportingDirectives
+	{
+		/// <summary>
+		/// The deprecated report-uri directive. Value should be a valid URI.
+		/// </summary>
+		public const string ReportUri = "report-uri";
+
+		/// <summary>
+		/// The report-to directive. Value should be an endpoint name defined in the Reporting-Endpoints header.
+		/// </summary>
+		public const string ReportTo = "report-to";
+	}
+
 	public static class Directives
 	{
 		public const string BaseUri = "base-uri";

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@playwright/mcp@latest"
+      ],
+      "env": {
+        "ALLOWED_ORIGINS": "https://localhost:44370"
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Migrations;
@@ -32,7 +33,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var result = await upgrader.ExecuteAsync(GetRequiredService<IMigrationPlanExecutor>(), ScopeProvider, GetRequiredService<IKeyValueService>()).ConfigureAwait(false);
 		if (!result.Successful)
 		{
-			TestContext.WriteLine(result.Exception.Message);
+			await TestContext.Out.WriteLineAsync(result.Exception.Message);
 		}
 		Assert.That(result.Successful, Is.True);
 		_cspService = GetRequiredService<ICspService>();
@@ -144,7 +145,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			.Callback<INotification, CancellationToken>((notification, _) => notificationPublished = true)
 			.Returns(Task.CompletedTask);
 
-		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches.RuntimeCache);
+		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches, NullLogger<CspService>.Instance);
 
 		var definition = new CspDefinition
 		{
@@ -211,7 +212,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var realCache = AppCaches.Create(requestCache).RuntimeCache;
 		var factoryCallCount = 0;
 		var spyCache = Mock.Of<IAppPolicyCache>();
-		
+
 		Mock.Get(spyCache)
 			.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<Func<object>>()))
 			.Returns((string key, Func<object> factory) =>
@@ -224,7 +225,8 @@ public class CspServiceTests : UmbracoIntegrationTest
 				});
 			});
 
-		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCache);
+		var spyCaches = new AppCaches(spyCache, requestCache, new IsolatedCaches(_ => spyCache));
+		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCaches, NullLogger<CspService>.Instance);
 
 		// Call GetCachedCspDefinition twice
 		var definition1 = spyService.GetCachedCspDefinition(isBackOfficeRequest: true);

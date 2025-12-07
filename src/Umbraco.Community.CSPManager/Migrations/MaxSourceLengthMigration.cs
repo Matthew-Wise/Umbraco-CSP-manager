@@ -7,6 +7,7 @@ using Umbraco.Community.CSPManager.Models;
 using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Migrations;
+
 public class MaxSourceLengthMigration : AsyncMigrationBase
 {
 	public const string MigrationKey = "csp-manager-max-source-length";

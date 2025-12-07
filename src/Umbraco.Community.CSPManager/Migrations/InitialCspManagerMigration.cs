@@ -41,7 +41,7 @@ public sealed class InitialCspManagerMigration : AsyncMigrationBase
 		}
 	}
 
-	[ExcludeFromCodeCoverage(Justification ="Migration model so not accessed directly.")]
+	[ExcludeFromCodeCoverage(Justification = "Migration model so not accessed directly.")]
 	[TableName((nameof(CspDefinition)))]
 	[PrimaryKey(nameof(Id), AutoIncrement = false)]
 	private sealed class CspDefinitionSchema
@@ -57,11 +57,11 @@ public sealed class InitialCspManagerMigration : AsyncMigrationBase
 
 
 		[Length(500)]
-    	[NullSetting(NullSetting = NullSettings.Null)]
+		[NullSetting(NullSetting = NullSettings.Null)]
 		public string? ReportingDirective { get; set; }
 
 		[Length(500)]
-    	[NullSetting(NullSetting = NullSettings.Null)]
+		[NullSetting(NullSetting = NullSettings.Null)]
 		public string? ReportUri { get; set; }
 
 		public bool UpgradeInsecureRequests { get; set; }

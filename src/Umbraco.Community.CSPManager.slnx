@@ -1,0 +1,21 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path="../.github/CONTRIBUTING.md" />
+    <File Path="../.github/README.md" />
+    <File Path="../docs/README_nuget.md" />
+    <File Path="../umbraco-marketplace.json" />
+    <File Path=".editorconfig" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Umbraco.Community.CSPManager.Benchmarks/Umbraco.Community.CSPManager.Benchmarks.csproj" />
+    <Project Path="Umbraco.Community.CSPManager.Tests/Umbraco.Community.CSPManager.Tests.csproj" />
+  </Folder>
+  <Project Path="Umbraco.Community.CSPManager.TestSite/Umbraco.Community.CSPManager.TestSite.csproj" />
+  <Project Path="Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj" />
+</Solution>
