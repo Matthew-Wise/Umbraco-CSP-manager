@@ -40,9 +40,9 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
-	public void GetCspDefinition_WhenNoDefinitionExists_ReturnsDefaultDefinition()
+	public async Task GetCspDefinitionAsync_WhenNoDefinitionExists_ReturnsDefaultDefinition()
 	{
-		var result = _cspService.GetCspDefinition(isBackOfficeRequest: false);
+		var result = await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 
 		Assert.That(result, Is.Not.Null);
 		Assert.Multiple(() =>
@@ -54,9 +54,9 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
-	public void GetCspDefinition_BackOffice_WhenNoDefinitionExists_ReturnsDefaultBackOfficeDefinition()
+	public async Task GetCspDefinitionAsync_BackOffice_WhenNoDefinitionExists_ReturnsDefaultBackOfficeDefinition()
 	{
-		var result = _cspService.GetCspDefinition(isBackOfficeRequest: true);
+		var result = await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
 
 		Assert.That(result, Is.Not.Null);
 		Assert.Multiple(() =>
@@ -78,7 +78,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			Sources = []
 		};
 
-		await _cspService.SaveCspDefinitionAsync(originalDefinition);
+		await _cspService.SaveCspDefinitionAsync(originalDefinition, CancellationToken.None);
 
 		originalDefinition.Enabled = true;
 		originalDefinition.Sources.Add(new CspDefinitionSource
@@ -88,7 +88,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			Directives = [Constants.Directives.ScriptSource]
 		});
 
-		var result = await _cspService.SaveCspDefinitionAsync(originalDefinition);
+		var result = await _cspService.SaveCspDefinitionAsync(originalDefinition, CancellationToken.None);
 
 		Assert.Multiple(() =>
 		{
@@ -129,7 +129,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 		   ]
 		};
 
-		var result = await _cspService.SaveCspDefinitionAsync(definition);
+		var result = await _cspService.SaveCspDefinitionAsync(definition, CancellationToken.None);
 
 		Assert.That(result.Sources, Has.Count.EqualTo(1));
 		Assert.That(result.Sources.FirstOrDefault().Source, Is.EqualTo("'self'"));
@@ -155,7 +155,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			Sources = []
 		};
 
-		await serviceWithMockEventAggregator.SaveCspDefinitionAsync(definition);
+		await serviceWithMockEventAggregator.SaveCspDefinitionAsync(definition, CancellationToken.None);
 
 		Assert.That(notificationPublished, Is.True);
 	}
@@ -204,7 +204,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
-	public void GetCachedCspDefinition_CachesResult()
+	public async Task GetCachedCspDefinitionAsync_CachesResult()
 	{
 		// Create a spy cache that counts factory calls
 		var httpContextAccessor = GetRequiredService<IHttpContextAccessor>();
@@ -214,23 +214,28 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var spyCache = Mock.Of<IAppPolicyCache>();
 
 		Mock.Get(spyCache)
-			.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<Func<object>>()))
-			.Returns((string key, Func<object> factory) =>
+			.Setup(x => x.Get(It.IsAny<string>()))
+			.Returns((string key) => realCache.Get(key));
+
+		Mock.Get(spyCache)
+			.Setup(x => x.Insert(It.IsAny<string>(), It.IsAny<Func<object>>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>()))
+			.Callback((string key, Func<object> factory, TimeSpan? _, bool _) =>
 			{
 				// Use real cache but count factory calls
-				return realCache.GetCacheItem(key, () =>
+				realCache.Insert(key, () =>
 				{
 					factoryCallCount++;
 					return factory();
 				});
 			});
 
+
 		var spyCaches = new AppCaches(spyCache, requestCache, new IsolatedCaches(_ => spyCache));
 		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCaches, NullLogger<CspService>.Instance);
 
 		// Call GetCachedCspDefinition twice
-		var definition1 = spyService.GetCachedCspDefinition(isBackOfficeRequest: true);
-		var definition2 = spyService.GetCachedCspDefinition(isBackOfficeRequest: true);
+		var definition1 = await spyService.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
+		var definition2 = await spyService.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
 
 		// Factory should only be called once (first call), second should come from cache
 		Assert.Multiple(() =>
@@ -242,10 +247,10 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
-	public void GetCachedCspDefinition_CachesSeparatelyForBackOfficeAndFrontEnd()
+	public async Task GetCachedCspDefinitionAsync_CachesSeparatelyForBackOfficeAndFrontEnd()
 	{
-		var frontEndDefinition = _cspService.GetCachedCspDefinition(isBackOfficeRequest: false);
-		var backOfficeDefinition = _cspService.GetCachedCspDefinition(isBackOfficeRequest: true);
+		var frontEndDefinition = await _cspService.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+		var backOfficeDefinition = await _cspService.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
 
 		Assert.Multiple(() =>
 		{
@@ -283,9 +288,9 @@ public class CspServiceTests : UmbracoIntegrationTest
 		   ]
 		};
 
-		await _cspService.SaveCspDefinitionAsync(definition);
+		await _cspService.SaveCspDefinitionAsync(definition, CancellationToken.None);
 
-		var retrievedDefinition = _cspService.GetCspDefinition(isBackOfficeRequest: false);
+		var retrievedDefinition = await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 
 		Assert.That(retrievedDefinition, Is.Not.Null);
 		Assert.Multiple(() =>

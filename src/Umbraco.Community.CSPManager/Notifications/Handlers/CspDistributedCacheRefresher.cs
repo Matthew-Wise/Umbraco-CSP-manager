@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Sync;
+using Umbraco.Community.CSPManager.Logging;
 
 namespace Umbraco.Community.CSPManager.Notifications.Handlers;
 
@@ -35,10 +36,10 @@ public class CspDistributedCacheRefresher
 		{
 			foreach (var payload in payloads)
 			{
-				_logger.LogDebug("CSP dist cache refresher. Clearing cache");
 				var cacheKey = payload.CspDefinition.IsBackOffice
 					? Constants.BackOfficeCacheKey
 					: Constants.FrontEndCacheKey;
+				Log.ClearingCspCache(_logger, cacheKey);
 				_runtimeCache.ClearByKey(cacheKey);
 			}
 		}
@@ -47,7 +48,7 @@ public class CspDistributedCacheRefresher
 	{
 		if (_serverRoleAccessor.CurrentServerRole == ServerRole.Subscriber)
 		{
-			_logger.LogDebug("CSP dist cache refresher. Clearing all CSP caches");
+			Log.ClearingAllCspCaches(_logger);
 			_runtimeCache.ClearByKey(Constants.BackOfficeCacheKey);
 			_runtimeCache.ClearByKey(Constants.FrontEndCacheKey);
 		}

@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager;
@@ -142,8 +143,8 @@ public static class Constants
 		public const string WorkerSource = "worker-src";
 	}
 
-	public static ReadOnlySpan<string> AllDirectives => new[]
-	{
+	public static readonly FrozenSet<string> AllDirectives =
+	[
 		Directives.BaseUri, Directives.ChildSource, Directives.ConnectSource, Directives.DefaultSource,
 		Directives.FontSource, Directives.FormAction, Directives.FrameAncestors, Directives.FrameSource,
 		Directives.ImageSource, Directives.ManifestSource, Directives.MediaSource, Directives.NavigateTo,
@@ -154,7 +155,7 @@ public static class Constants
 		Directives.TrustedTypes,
 		Directives.UpgradeInsecureRequests,
 		Directives.WorkerSource
-	};
+	];
 
 	public static class TagHelper
 	{

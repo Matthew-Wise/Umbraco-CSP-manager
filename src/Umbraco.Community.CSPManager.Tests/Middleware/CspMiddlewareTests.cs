@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -84,7 +85,7 @@ public class CspMiddlewareTests
 			.SetupGet(x => x.Level).Returns(runtimeLevel);
 
 		await _host.GetTestClient().GetAsync("/", HttpCompletionOption.ResponseHeadersRead);
-		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinition(It.IsAny<bool>()), verifyCalls);
+		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), verifyCalls);
 		Mock.Get(_eventAggregator).Verify(x => x.PublishAsync(It.IsAny<CspWritingNotification>(),
 			It.IsAny<CancellationToken>()), verifyCalls);
 	}
@@ -93,7 +94,7 @@ public class CspMiddlewareTests
 	[TestCaseSource(typeof(MiddlewareTestCases), nameof(MiddlewareTestCases.CspMiddlewareReturnsExpectedCspWhenEnabledCases))]
 	public async Task CspMiddleware_ReturnsExpectedCspWhenEnabled(string uri, CspDefinition definition)
 	{
-		Mock.Get(_cspService).Setup(x => x.GetCachedCspDefinition(It.IsAny<bool>())).Returns(definition);
+		Mock.Get(_cspService).Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(definition);
 
 		var response = await _host.GetTestClient().GetAsync(uri);
 		if (definition.Enabled)
@@ -116,9 +117,9 @@ public class CspMiddlewareTests
 	}
 
 	[TearDown]
-	public void TearDownAsync()
+	public async Task TearDownAsync()
 	{
-		_host.StopAsync();
+		await _host.StopAsync();
 		_host.Dispose();
 	}
 }

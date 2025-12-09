@@ -139,7 +139,6 @@ public sealed class CspApiDefinition : IValidatableObject
 			yield break;
 		}
 
-		var validDirectives = Constants.AllDirectives.ToArray();
 		var sourceSet = new HashSet<string>();
 		var duplicates = new HashSet<string>();
 
@@ -164,7 +163,7 @@ public sealed class CspApiDefinition : IValidatableObject
 			// Validate directives are known CSP directives
 			foreach (var directive in source.Directives)
 			{
-				if (!validDirectives.Contains(directive))
+				if (!Constants.AllDirectives.Contains(directive))
 				{
 					yield return new ValidationResult(
 						$"Unknown directive '{directive}' in source '{TruncateForDisplay(source.Source)}'",

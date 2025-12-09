@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_type",
+      "Bash(npm test)",
+      "Bash(dotnet build:*)"
+    ],
+    "additionalDirectories": [
+      "D:\\Code\\CSP-Manager\\Umbraco-CMS\\src\\Umbraco.Web.UI.Client"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
+}
