@@ -26,8 +26,9 @@ internal sealed class CspSavedNotificationHandler : INotificationHandler<CspSave
 		string cacheKey = notification.CspDefinition.IsBackOffice ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
 		_runtimeCache.ClearByKey(cacheKey);
 
-
 		if (_serverRoleAccessor.CurrentServerRole == ServerRole.SchedulingPublisher)
+		{
 			_distributedCache.RefreshByPayload(CspDistributedCacheRefresher.UniqueId, [notification]);
+		}
 	}
 }

@@ -41,17 +41,34 @@ internal sealed class CspService : ICspService
 		_logger = logger;
 	}
 
-	public CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest)
+	public async Task<CspDefinition?> GetCachedCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken)
 	{
 		var cacheKey = isBackOfficeRequest ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
-		return _runtimeCache.GetCacheItem(cacheKey, () => GetCspDefinition(isBackOfficeRequest));
+		var context = isBackOfficeRequest ? "BackOffice" : "Frontend";
+		var factoryCalled = false;
+
+		var result = await _runtimeCache.GetCacheItemAsync(cacheKey, async () =>
+		{
+			factoryCalled = true;
+			return await GetCspDefinitionAsync(isBackOfficeRequest, cancellationToken);
+		}, timeout: null);
+
+		if (!factoryCalled && result is not null)
+		{
+			Log.CspDefinitionRetrievedFromCache(_logger, result.Id, context);
+		}
+
+		return result;
 	}
 
-	public CspDefinition GetCspDefinition(bool isBackOfficeRequest)
+	public async Task<CspDefinition> GetCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken)
 	{
+		var context = isBackOfficeRequest ? "BackOffice" : "Frontend";
+		Log.LoadingCspDefinitionFromDatabase(_logger, context);
+
 		using var scope = _scopeProvider.CreateScope();
 
-		CspDefinition definition = GetDefinition(scope, isBackOfficeRequest)
+		CspDefinition definition = await GetDefinitionAsync(scope, isBackOfficeRequest, cancellationToken)
 			?? new CspDefinition
 			{
 				Id = isBackOfficeRequest ? Constants.DefaultBackofficeId : Constants.DefaultFrontEndId,
@@ -105,7 +122,7 @@ internal sealed class CspService : ICspService
 		return nonce;
 	}
 
-	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken = default)
+	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken)
 	{
 		var context = definition.IsBackOffice ? "BackOffice" : "Frontend";
 		Log.SavingCspDefinition(_logger, definition.Id, context);
@@ -152,17 +169,30 @@ internal sealed class CspService : ICspService
 		return definition;
 	}
 
-	private static CspDefinition? GetDefinition(IScope scope, bool isBackOffice)
+	// Two queries instead of a single join because FetchOneToMany has no async variant.
+	// The extra round-trip is acceptable here since results are cached and cache misses are rare.
+	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice, CancellationToken cancellationToken)
 	{
-		var sql = scope.SqlContext.Sql()
+		var definitionSql = scope.SqlContext.Sql()
 			.SelectAll()
 			.From<CspDefinition>()
-			.LeftJoin<CspDefinitionSource>()
-			.On<CspDefinition, CspDefinitionSource>((d, s) => d.Id == s.DefinitionId)
 			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice);
 
-		var data = scope.Database.FetchOneToMany<CspDefinition>(c => c.Sources, sql);
-		return data.FirstOrDefault();
+		var definition = await scope.Database.FirstOrDefaultAsync<CspDefinition>(definitionSql, cancellationToken);
+
+		if (definition is null)
+		{
+			return null;
+		}
+
+		var sourcesSql = scope.SqlContext.Sql()
+			.SelectAll()
+			.From<CspDefinitionSource>()
+			.Where<CspDefinitionSource>(x => x.DefinitionId == definition.Id);
+
+		definition.Sources = await scope.Database.FetchAsync<CspDefinitionSource>(sourcesSql, cancellationToken);
+
+		return definition;
 	}
 
 	private static string GenerateCspNonceValue()
