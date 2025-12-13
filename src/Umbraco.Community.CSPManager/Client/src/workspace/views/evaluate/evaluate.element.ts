@@ -1,5 +1,5 @@
-import { LitElement, css, html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
-import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
+import { css, html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_CSP_MANAGER_WORKSPACE_CONTEXT, type WorkspaceState } from '../../context/workspace.context.js';
 import { CspEvaluator } from 'csp_evaluator/dist/evaluator.js';
 import { CspParser } from 'csp_evaluator/dist/parser.js';
@@ -19,9 +19,9 @@ const getSeverityInfo = (severity: Severity) => {
 		20: { text: 'Syntax Error', icon: 'icon-code', level: 'syntax', color: 'red' }, // SYNTAX
 		30: { text: 'Medium severity finding', icon: 'icon-alert', level: 'medium', color: 'orange' }, // MEDIUM
 		40: { text: 'Possible high severity finding', icon: 'icon-alert', level: 'high-possible', color: 'orange' }, // HIGH_MAYBE
-		45: { text: 'Strict CSP', icon: 'icon=info', level: 'strict-csp', color: 'blue' }, // STRICT_CSP
+		45: { text: 'Strict CSP', icon: 'icon-info', level: 'strict-csp', color: 'blue' }, // STRICT_CSP
 		50: { text: 'Possible medium severity finding', icon: 'icon-alert', level: 'medium-possible', color: 'yellow' }, // MEDIUM_MAYBE
-		60: { text: 'Information', icon: 'icon=info', level: 'info', color: 'blue' }, // INFO
+		60: { text: 'Information', icon: 'icon-info', level: 'info', color: 'blue' }, // INFO
 		100: { text: 'All Good', icon: 'icon-check', level: 'none', color: 'green' }, // NONE
 	};
 
@@ -30,7 +30,7 @@ const getSeverityInfo = (severity: Severity) => {
 };
 
 @customElement('umb-csp-evaluate-view')
-export class UmbCspEvaluateViewElement extends UmbElementMixin(LitElement) {
+export class UmbCspEvaluateViewElement extends UmbLitElement {
 	@state()
 	private _workspaceState: WorkspaceState = {
 		definition: null,
@@ -52,10 +52,6 @@ export class UmbCspEvaluateViewElement extends UmbElementMixin(LitElement) {
 				});
 			}
 		});
-	}
-
-	override connectedCallback() {
-		super.connectedCallback();
 	}
 
 	private _toggleDirectiveExpansion(directive: string) {

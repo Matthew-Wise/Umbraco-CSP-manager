@@ -56,7 +56,6 @@ export class UmbCspManagerWorkspaceContext
 		if (this.#policyId && ID_TO_POLICY_TYPE[this.#policyId]) {
 			return ID_TO_POLICY_TYPE[this.#policyId];
 		}
-		console.warn('Invalid CSP policy ID, defaulting to frontend');
 		return CspConstants.policyTypes.frontend;
 	}
 
@@ -81,10 +80,10 @@ export class UmbCspManagerWorkspaceContext
 		]);
 	}
 
-	#load(unique: string) {
+	async #load(unique: string) {
 		this.#policyId = unique;
-		this.loadDefinition();
-		this.loadDirectives();
+		// Load both in parallel but await completion to avoid race conditions
+		await Promise.all([this.loadDefinition(), this.loadDirectives()]);
 	}
 
 	getIsBackOffice(): boolean {

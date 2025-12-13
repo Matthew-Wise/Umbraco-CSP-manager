@@ -62,10 +62,6 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		});
 	}
 
-	override connectedCallback() {
-		super.connectedCallback();
-	}
-
 	private _toggleSourceExpansion(index: number) {
 		if (this._expandedSources.has(index)) {
 			this._expandedSources.delete(index);
@@ -215,7 +211,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
-	private _updateUpgradeInsecureRequests(value: any) {
+	private _updateUpgradeInsecureRequests(value: boolean) {
 		if (!this._workspaceState.definition) return;
 
 		const updatedDefinition = {

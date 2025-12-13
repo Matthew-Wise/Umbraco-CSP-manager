@@ -24,7 +24,9 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
     // tokens expire and get refreshed
     client.interceptors.request.use(async (request, _options) => {
       const token = await config.token();
-      request.headers.set('Authorization', `Bearer ${token}`);
+      if (token) {
+        request.headers.set('Authorization', `Bearer ${token}`);
+      }
       return request;
     });
 
