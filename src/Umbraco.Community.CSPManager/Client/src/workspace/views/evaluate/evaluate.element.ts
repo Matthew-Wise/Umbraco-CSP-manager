@@ -34,9 +34,9 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 	@state()
 	private _workspaceState: WorkspaceState = {
 		definition: null,
+		persistedDefinition: null,
 		availableDirectives: [],
 		loading: true,
-		hasChanges: false,
 	};
 
 	@state()

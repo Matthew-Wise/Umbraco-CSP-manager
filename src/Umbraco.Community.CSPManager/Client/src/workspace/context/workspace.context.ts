@@ -5,6 +5,7 @@ import { UMB_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/workspace';
 import type { UmbWorkspaceContext, UmbRoutableWorkspaceContext } from '@umbraco-cms/backoffice/workspace';
 import { UmbWorkspaceRouteManager } from '@umbraco-cms/backoffice/workspace';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
+import { UMB_DISCARD_CHANGES_MODAL, umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type { CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
 import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
@@ -12,9 +13,9 @@ import { CspConstants, type PolicyType } from '@/constants';
 
 export interface WorkspaceState {
 	definition: CspApiDefinition | null;
+	persistedDefinition: CspApiDefinition | null;
 	availableDirectives: string[];
 	loading: boolean;
-	hasChanges: boolean;
 	error?: UmbError | UmbApiError | UmbCancelError | Error | undefined;
 }
 
@@ -31,12 +32,13 @@ export class UmbCspManagerWorkspaceContext
 	public readonly routes = new UmbWorkspaceRouteManager(this);
 
 	#policyId: string | null = null;
+	#allowNavigateAway = false;
 
 	#state = new UmbObjectState<WorkspaceState>({
 		definition: null,
+		persistedDefinition: null,
 		availableDirectives: [],
 		loading: true,
-		hasChanges: false,
 	});
 
 	#cspDefinitionContext: UmbCspDefinitionContext;
@@ -68,6 +70,9 @@ export class UmbCspManagerWorkspaceContext
 		this.provideContext(UMB_CSP_MANAGER_WORKSPACE_CONTEXT, this);
 		this.provideContext(UMB_WORKSPACE_CONTEXT, this);
 
+		// Listen for navigation events to show discard changes modal
+		window.addEventListener('willchangestate', this.#onWillNavigate);
+
 		this.routes.setRoutes([
 			{
 				path: 'edit/:unique',
@@ -92,6 +97,7 @@ export class UmbCspManagerWorkspaceContext
 
 	async loadDefinition() {
 		this.#state.update({ loading: true, error: undefined });
+		this.#allowNavigateAway = false;
 		const isBackOffice = this.getIsBackOffice();
 		const { data, error } = await this.#cspDefinitionContext.load(isBackOffice);
 
@@ -100,8 +106,8 @@ export class UmbCspManagerWorkspaceContext
 		} else if (data) {
 			this.#state.update({
 				definition: data,
+				persistedDefinition: structuredClone(data),
 				loading: false,
-				hasChanges: false,
 				error: undefined,
 			});
 		} else {
@@ -137,11 +143,10 @@ export class UmbCspManagerWorkspaceContext
 	updateDefinition(definition: CspApiDefinition) {
 		const error = this._validateDefinition(definition);
 		if (error) {
-			this.#state.update({ definition, hasChanges: true, error });
+			this.#state.update({ definition, error });
 		} else {
 			this.#state.update({
 				definition,
-				hasChanges: true,
 				error: undefined,
 			});
 		}
@@ -163,8 +168,11 @@ export class UmbCspManagerWorkspaceContext
 			return { success: false, error };
 		}
 
-		this.#state.update({ hasChanges: false, error: undefined });
-		await this.loadDefinition();
+		// Update persisted to match current after successful save
+		this.#state.update({
+			persistedDefinition: structuredClone(currentState.definition),
+			error: undefined,
+		});
 
 		return { success: true };
 	}
@@ -177,12 +185,61 @@ export class UmbCspManagerWorkspaceContext
 		return this.#state.getValue().loading;
 	}
 
+	/**
+	 * Check if there are unsaved changes by comparing current and persisted definitions
+	 * Uses JSON string comparison for deep equality check
+	 */
 	hasUnsavedChanges(): boolean {
-		return this.#state.getValue().hasChanges;
+		const state = this.#state.getValue();
+		if (!state.definition || !state.persistedDefinition) {
+			return false;
+		}
+		return JSON.stringify(state.definition) !== JSON.stringify(state.persistedDefinition);
 	}
 
 	getAvailableDirectives(): string[] {
 		return this.#state.getValue().availableDirectives;
+	}
+
+	/**
+	 * Check if the workspace is about to navigate away from the current route
+	 */
+	#checkWillNavigateAway(newUrl: string | URL): boolean {
+		if (newUrl instanceof URL) {
+			newUrl = newUrl.href;
+		}
+		return !newUrl.includes(this.routes.getActiveLocalPath());
+	}
+
+	/**
+	 * Handle navigation events to show discard changes modal
+	 */
+	#onWillNavigate = async (e: CustomEvent) => {
+		const newUrl = e.detail.url;
+
+		if (this.#allowNavigateAway) {
+			return true;
+		}
+
+		if (this.#checkWillNavigateAway(newUrl) && this.hasUnsavedChanges()) {
+			e.preventDefault();
+
+			try {
+				await umbOpenModal(this, UMB_DISCARD_CHANGES_MODAL);
+				this.#allowNavigateAway = true;
+				history.pushState({}, '', e.detail.url);
+				return true;
+			} catch {
+				return false;
+			}
+		}
+
+		return true;
+	};
+
+	override destroy(): void {
+		window.removeEventListener('willchangestate', this.#onWillNavigate);
+		super.destroy();
 	}
 }
 

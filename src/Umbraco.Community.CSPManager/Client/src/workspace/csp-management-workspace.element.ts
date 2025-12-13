@@ -1,12 +1,12 @@
-import { LitElement, css, html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
-import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
+import { css, html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
 import { UMB_CSP_MANAGER_WORKSPACE_CONTEXT, type WorkspaceState } from './context/workspace.context.js';
 import { CspConstants, type PolicyType } from '@/constants';
 
 @customElement('umb-csp-management-workspace')
-export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement) {
+export class UmbCspManagementWorkspaceElement extends UmbLitElement {
 	#notificationContext?: UmbNotificationContext;
 
 	@state()
@@ -15,13 +15,16 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 	@state()
 	private _workspaceState: WorkspaceState = {
 		definition: null,
+		persistedDefinition: null,
 		availableDirectives: [],
 		loading: true,
-		hasChanges: false,
 	};
 
 	@state()
 	private _saving: boolean = false;
+
+	@state()
+	private _hasChanges: boolean = false;
 
 	constructor() {
 		super();
@@ -33,6 +36,7 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 
 			this.observe(context.state, (state) => {
 				this._workspaceState = state;
+				this._hasChanges = context.hasUnsavedChanges();
 			});
 		});
 
@@ -90,7 +94,7 @@ export class UmbCspManagementWorkspaceElement extends UmbElementMixin(LitElement
 						label="Save"
 						look="primary"
 						color="positive"
-						.disabled=${this._saving || !this._workspaceState.hasChanges || this._workspaceState.error !== undefined}
+						.disabled=${this._saving || !this._hasChanges || this._workspaceState.error !== undefined}
 						@click=${this._handleSave}>
 						${this._saving ? 'Saving...' : 'Save'}
 					</uui-button>

@@ -1,3 +1,6 @@
+additionalDirectories:
+  - D:\Code\CSP-Manager\Umbraco-CMS\src\Umbraco.Web.UI.Client
+
 Please also reference the following documents as needed:
 
 # Umbraco Community CSP Manager - Project Overview
