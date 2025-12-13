@@ -1,5 +1,5 @@
-import { LitElement, css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
-import { UmbElementMixin } from "@umbraco-cms/backoffice/element-api";
+import { css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
+import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import type { CspApiDefinition } from '@/api';
 import {
 	UmbCspManagerWorkspaceContext,
@@ -9,13 +9,13 @@ import {
 import { CspConstants, type PolicyType } from '@/constants';
 
 @customElement('umb-csp-settings-view')
-export class UmbCspSettingsViewElement extends UmbElementMixin(LitElement) {
+export class UmbCspSettingsViewElement extends UmbLitElement {
 	@state()
 	private _workspaceState: WorkspaceState = {
 		definition: null,
+		persistedDefinition: null,
 		availableDirectives: [],
 		loading: true,
-		hasChanges: false,
 	};
 
 	@state()
@@ -38,11 +38,7 @@ export class UmbCspSettingsViewElement extends UmbElementMixin(LitElement) {
 		});
 	}
 
-	override connectedCallback() {
-		super.connectedCallback();
-	}
-
-	private _updateDefinitionSetting(field: keyof CspApiDefinition, value: any) {
+	private _updateDefinitionSetting<K extends keyof CspApiDefinition>(field: K, value: CspApiDefinition[K]) {
 		if (!this._workspaceState.definition) return;
 
 		const updatedDefinition = {

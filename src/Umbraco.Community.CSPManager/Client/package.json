@@ -35,5 +35,8 @@
 	},
 	"dependencies": {
 		"csp_evaluator": "^1.1.5"
+	},
+	"overrides": {
+		"dompurify": "^3.2.4"
 	}
 }

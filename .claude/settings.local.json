@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npm run build:ts:*)",
       "Bash(npm run build:*)",
       "mcp__playwright__browser_snapshot",
       "mcp__playwright__browser_click",

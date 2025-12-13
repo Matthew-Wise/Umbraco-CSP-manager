@@ -21,9 +21,9 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	@state()
 	private _workspaceState: WorkspaceState = {
 		definition: null,
+		persistedDefinition: null,
 		availableDirectives: [],
 		loading: true,
-		hasChanges: false,
 	};
 
 	@state()
@@ -60,10 +60,6 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.consumeContext(UMB_NOTIFICATION_CONTEXT, (context) => {
 			this.#notificationContext = context;
 		});
-	}
-
-	override connectedCallback() {
-		super.connectedCallback();
 	}
 
 	private _toggleSourceExpansion(index: number) {
@@ -215,7 +211,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
-	private _updateUpgradeInsecureRequests(value: any) {
+	private _updateUpgradeInsecureRequests(value: boolean) {
 		if (!this._workspaceState.definition) return;
 
 		const updatedDefinition = {
