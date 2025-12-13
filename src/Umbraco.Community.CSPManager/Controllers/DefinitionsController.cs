@@ -35,13 +35,13 @@ public class DefinitionsController : CspManagerControllerBase
 	/// <c>true</c> to retrieve the backoffice CSP policy; <c>false</c> for the frontend policy.
 	/// Defaults to <c>false</c>.
 	/// </param>
-	/// <param name="_">Cancellation token (unused, required for test infrastructure).</param>
+	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>The <see cref="CspApiDefinition"/> for the specified context.</returns>
 	[HttpGet("Definitions")]
 	[MapToApiVersion("1.0")]
 	[ProducesResponseType(typeof(CspApiDefinition), 200)]
-	public ActionResult<CspApiDefinition> GetDefinition(bool isBackOffice = false, CancellationToken _ = default)
-		=> CspApiDefinition.FromCspDefinition(_cspService.GetCspDefinition(isBackOffice));
+	public async Task<ActionResult<CspApiDefinition>> GetDefinition(bool isBackOffice = false, CancellationToken cancellationToken = default)
+		=> CspApiDefinition.FromCspDefinition(await _cspService.GetCspDefinitionAsync(isBackOffice, cancellationToken));
 
 	/// <summary>
 	/// Saves a CSP definition to the database.
@@ -66,6 +66,6 @@ public class DefinitionsController : CspManagerControllerBase
 		}
 
 		var savedDefinition = await _cspService.SaveCspDefinitionAsync(definition.ToCspDefinition(), cancellationToken);
-		return Ok(savedDefinition);
+		return Ok(CspApiDefinition.FromCspDefinition(savedDefinition));
 	}
 }

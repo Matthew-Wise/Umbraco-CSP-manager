@@ -19,11 +19,12 @@ public interface ICspService
 	/// <param name="isBackOfficeRequest">
 	/// <c>true</c> to retrieve the backoffice CSP policy; <c>false</c> for the frontend policy.
 	/// </param>
+	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>
 	/// The <see cref="CspDefinition"/> for the specified context, or a default disabled
 	/// definition if none exists in the database.
 	/// </returns>
-	CspDefinition GetCspDefinition(bool isBackOfficeRequest);
+	Task<CspDefinition> GetCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Retrieves the CSP definition from the runtime cache, loading from the database if not cached.
@@ -31,6 +32,7 @@ public interface ICspService
 	/// <param name="isBackOfficeRequest">
 	/// <c>true</c> to retrieve the backoffice CSP policy; <c>false</c> for the frontend policy.
 	/// </param>
+	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>
 	/// The cached <see cref="CspDefinition"/> for the specified context, or <c>null</c> if
 	/// the cache factory returns null.
@@ -39,7 +41,7 @@ public interface ICspService
 	/// This method uses separate cache keys for frontend and backoffice policies to ensure
 	/// isolation. The cache is automatically invalidated when definitions are saved.
 	/// </remarks>
-	CspDefinition? GetCachedCspDefinition(bool isBackOfficeRequest);
+	Task<CspDefinition?> GetCachedCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Saves a CSP definition to the database and publishes a <see cref="Notifications.CspSavedNotification"/>.
@@ -52,7 +54,7 @@ public interface ICspService
 	/// any sources that were removed from the definition and publishes a notification
 	/// that can be handled by other components.
 	/// </remarks>
-	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken = default);
+	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Gets or creates a cryptographically secure nonce for script elements.
