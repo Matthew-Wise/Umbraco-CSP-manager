@@ -74,9 +74,9 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 			}
 		});
 
-		var cspValue = '';
-		for (var key in cspDirectives) {
-			cspValue += key + ' ' + cspDirectives[key].join(' ') + '; ';
+		let cspValue = '';
+		for (const [key, values] of Object.entries(cspDirectives)) {
+			cspValue += key + ' ' + values.join(' ') + '; ';
 		}
 
 		return cspValue;
