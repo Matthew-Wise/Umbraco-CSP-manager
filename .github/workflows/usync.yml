@@ -1,0 +1,118 @@
+name: uSync Build
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/uSync/**'
+      - 'src/Directory.Build.props'
+      - 'src/Directory.Packages.props'
+      - '.github/workflows/usync.yml'
+    tags:
+      - 'usync-*'
+      - 'usync-complete-*'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/uSync/**'
+      - 'src/Directory.Build.props'
+      - 'src/Directory.Packages.props'
+      - '.github/workflows/usync.yml'
+
+env:
+  USYNC_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync/Umbraco.Community.CSPManager.uSync.csproj"
+  COMPLETE_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Umbraco.Community.CSPManager.uSync.Complete.csproj"
+  OUT_FOLDER: ./build-out/
+
+jobs:
+  build:
+    if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build & Pack uSync
+        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=0.0.0-ci.${{ github.run_number }} -p:UseProjectReferences=false -p:CspManagerMinVersion=3.0.0 --output ${{ env.OUT_FOLDER }}
+
+      - name: Build & Pack uSync Complete
+        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=0.0.0-ci.${{ github.run_number }} -p:UseProjectReferences=false -p:USyncMinVersion=0.0.0-ci.${{ github.run_number }} --output ${{ env.OUT_FOLDER }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: uSync Build Output
+          path: ${{ env.OUT_FOLDER }}
+
+  release-usync:
+    if: startsWith(github.ref, 'refs/tags/usync-') && !startsWith(github.ref, 'refs/tags/usync-complete-')
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/usync-}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build & Pack
+        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=${{ steps.version.outputs.version }} -p:UseProjectReferences=false -p:CspManagerMinVersion=3.0.0 --output ${{ env.OUT_FOLDER }}
+
+      - name: Publish to NuGet
+        run: |
+          for package in ${{ env.OUT_FOLDER }}*.nupkg; do
+            echo "Publishing $package"
+            dotnet nuget push "$package" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
+  release-usync-complete:
+    if: startsWith(github.ref, 'refs/tags/usync-complete-')
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/usync-complete-}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build & Pack
+        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=${{ steps.version.outputs.version }} -p:UseProjectReferences=false -p:USyncMinVersion=3.0.0 --output ${{ env.OUT_FOLDER }}
+
+      - name: Publish to NuGet
+        run: |
+          for package in ${{ env.OUT_FOLDER }}*.nupkg; do
+            echo "Publishing $package"
+            dotnet nuget push "$package" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done

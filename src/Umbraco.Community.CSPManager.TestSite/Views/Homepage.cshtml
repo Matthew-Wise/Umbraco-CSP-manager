@@ -3,3 +3,11 @@
 @{
 	Layout = "_Layout.cshtml";
 }
+
+<ul>
+	@foreach(var child in Model.Children()){
+		<li>
+			<a href="@child.Url()">@child.Name</a>
+		</li>
+    }
+</ul>

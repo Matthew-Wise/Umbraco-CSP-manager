@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>Umbraco.Community.CSPManager.uSync.Complete</Product>
+    <PackageId>Umbraco.Community.CSPManager.uSync.Complete</PackageId>
+    <Title>Umbraco.Community.CSPManager.uSync.Complete</Title>
+    <Description>uSync Complete (Publisher) support for Umbraco.Community.CSPManager</Description>
+    <PackageTags>umbraco plugin package umbraco-marketplace Content-Security-Policy security CSP csp Content Security Policy uSync uSync-Complete</PackageTags>
+    <RootNamespace>Umbraco.Community.CSPManager.uSync.Complete</RootNamespace>
+    <PackageProjectUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</PackageProjectUrl>
+    <PackageReadmeFile>README_nuget_complete.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <USyncMinVersion Condition="'$(USyncMinVersion)' == ''">3.0.0</USyncMinVersion>
+    <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Web.Website" />
+    <PackageReference Include="Umbraco.Cms.Web.Common" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
+    <ProjectReference Include="..\Umbraco.Community.CSPManager.uSync\Umbraco.Community.CSPManager.uSync.csproj"
+                      Condition="'$(UseProjectReferences)' == 'true'" />
+    <PackageReference Include="Umbraco.Community.CSPManager.uSync"
+                      VersionOverride="$(USyncMinVersion)"
+                      Condition="'$(UseProjectReferences)' != 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClientAssetsInputs Include="Client\**" Exclude="$(DefaultItemExcludes)" />
+
+    <!-- Dont include the client folder as part of packaging nuget build -->
+    <Content Remove="Client\**" />
+
+    <!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
+    <None Include="Client\public\umbraco-package.json" Pack="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\docs\README_nuget_complete.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <!-- Detect package manager: check if bun is available, fall back to npm -->
+  <Target Name="DetectPackageManager" BeforeTargets="RestoreClient">
+    <Exec Command="bun --version" IgnoreExitCode="true" StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output TaskParameter="ExitCode" PropertyName="BunExitCode" />
+    </Exec>
+    <PropertyGroup>
+      <PackageManager Condition="'$(BunExitCode)' == '0'">bun</PackageManager>
+      <PackageManager Condition="'$(PackageManager)' == ''">npm</PackageManager>
+      <PackageManagerInstall Condition="'$(PackageManager)' == 'bun'">bun install</PackageManagerInstall>
+      <PackageManagerInstall Condition="'$(PackageManager)' == 'npm'">npm i</PackageManagerInstall>
+      <PackageManagerRun Condition="'$(PackageManager)' == 'bun'">bun run</PackageManagerRun>
+      <PackageManagerRun Condition="'$(PackageManager)' == 'npm'">npm run</PackageManagerRun>
+    </PropertyGroup>
+    <Message Importance="high" Text="Using package manager: $(PackageManager)" />
+  </Target>
+
+  <!-- Restore and build Client files -->
+  <Target Name="RestoreClient" Inputs="Client\package.json;Client\bun.lock;Client\package-lock.json" Outputs="Client\node_modules\.package-lock.json">
+    <Exec Command="$(PackageManagerInstall)" WorkingDirectory="Client" />
+  </Target>
+
+  <Target Name="BuildClient" BeforeTargets="AssignTargetPaths" DependsOnTargets="RestoreClient" Inputs="@(ClientAssetsInputs)" Outputs="$(IntermediateOutputPath)client.complete.txt">
+    <Exec Command="$(PackageManagerRun) build" WorkingDirectory="Client" />
+    <ItemGroup>
+      <_ClientAssetsBuildOutput Include="wwwroot\App_Plugins\**" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)client.complete.txt" Lines="@(_ClientAssetsBuildOutput)" Overwrite="true" />
+  </Target>
+
+</Project>

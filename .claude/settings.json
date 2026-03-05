@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "claude-md-management@claude-plugins-official": true,
+    "umbraco-cms-backoffice-skills@umbraco-backoffice-marketplace": true,
+    "umbraco-cms-backoffice-testing-skills@umbraco-backoffice-marketplace": true
+  }
+}

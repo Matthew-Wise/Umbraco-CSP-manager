@@ -1,22 +1,41 @@
 name: "Feature request"
 description: "Suggest an idea for this package."
-labels: "enhancement"
+labels: ["enhancement"]
 body:
-- type: markdown
-  attributes:
-    value: |
-      Thanks for taking the time to suggest this feature request!
-- type: textarea
-  id: "summary"
-  attributes:
-    label: "Feature summary"
-    description: "Write a brief summary of the feature"
-  validations:
-    required: true
-- type: textarea
-  id: "details"
-  attributes:
-    label: "Additional details"
-    description: "Provide any additional details or comments about the feature you are suggesting"
-  validations:
-    required: false
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a feature!
+  - type: dropdown
+    id: package
+    attributes:
+      label: "Which package does this relate to?"
+      options:
+        - Umbraco.Community.CSPManager
+        - Umbraco.Community.CSPManager.uSync
+        - Umbraco.Community.CSPManager.uSync.Complete
+        - Not sure / general
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem or use case"
+      description: "What problem are you trying to solve, or what use case does this address?"
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proposed solution"
+      description: "Describe the solution you'd like to see."
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives considered"
+      description: "Have you considered any alternative solutions or workarounds?"
+    validations:
+      required: false

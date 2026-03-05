@@ -1,0 +1,31 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "AuthorDetails": {
+    "Name": "Matt Wise",
+    "ImageUrl": "https://github.com/Matthew-Wise.png",
+    "Contributors": []
+  },
+  "Category": "Developer Tools",
+  "LicenseTypes": [
+    "Free"
+  ],
+  "IssueTrackerUrl": "https://github.com/Matthew-Wise/Umbraco-CSP-manager/issues",
+  "PackageType": "Package",
+  "IsSubPackageOf": "Umbraco.Community.CSPManager",
+  "RelatedPackages": [
+    {
+      "PackageId": "Umbraco.Community.CSPManager",
+      "Description": "Content Security Policy Management"
+    },
+    {
+      "PackageId": "Umbraco.Community.CSPManager.uSync",
+      "Description": "Base uSync serialization support (required)"
+    }
+  ],
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/management-screen.png",
+      "Caption": "Managment dashboard for CSP"
+    }
+  ]
+}

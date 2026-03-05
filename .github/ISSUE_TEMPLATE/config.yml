@@ -1,1 +1,8 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/Matthew-Wise/CSP-Manager/discussions
+    about: Use GitHub Discussions for questions, help, and general chat.
+  - name: Umbraco Forum
+    url: https://forum.umbraco.com/
+    about: Ask questions and get help from the Umbraco community.

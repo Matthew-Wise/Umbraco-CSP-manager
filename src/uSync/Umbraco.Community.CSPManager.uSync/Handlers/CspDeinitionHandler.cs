@@ -1,0 +1,91 @@
+using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Strings;
+using Umbraco.Community.CSPManager.Models;
+using Umbraco.Community.CSPManager.Notifications;
+using Umbraco.Community.CSPManager.Services;
+using uSync.BackOffice.Configuration;
+using uSync.BackOffice.Services;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static Umbraco.Cms.Core.Constants.HttpContext;
+
+namespace Umbraco.Community.CSPManager.uSync.Handlers;
+
+[SyncHandler("CspDefinitionHandler", "CSP", "CspDefinitions", 3000, Icon = "icon-shield", EntityType = Constants.CspPolicyEntityType)]
+public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition>, ISyncHandler,
+	INotificationAsyncHandler<CspSavedNotification>
+{
+	private readonly ICspService _cspService;
+
+	public CspDefinitionHandler(ILogger<CspDefinitionHandler> logger,
+		AppCaches appCaches,
+		IShortStringHelper shortStringHelper,
+		ISyncFileService syncFileService,
+		ISyncEventService mutexService,
+		ISyncConfigService uSyncConfig,
+		ISyncItemFactory itemFactory,
+		ICspService cspService)
+		: base(logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
+	{
+		_cspService = cspService;
+	}
+
+	public override string Group => "Settings";
+
+	public async Task HandleAsync(CspSavedNotification notification, CancellationToken cancellationToken)
+	{
+		try
+		{
+			var handlerFolders = GetDefaultHandlerFolders();
+			var item = notification.CspDefinition;
+			var attempts = await ExportAsync(item, handlerFolders, DefaultConfig);
+			foreach (var attempt in attempts)
+			{
+				if (attempt.Success && attempt.FileName is not null)
+				{
+					await CleanUpAsync(item, attempt.FileName, handlerFolders[handlerFolders.Length - 1]);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.LogWarning(ex, "Failed to create uSync export file");
+		}
+	}
+
+
+	/// <summary>
+	///  can be called - if uSync.Complete is attempting to delete items that might not exist on the target.
+	///  we can ignore this, if the things are not directly pushed - normal syncs when things get deleted will
+	///  produce the 'empty' files that delete things.
+	/// </summary>
+	protected override Task<IEnumerable<uSyncAction>> DeleteMissingItemsAsync(CspDefinition parent, IEnumerable<Guid> keysToKeep, bool reportOnly) => Task.FromResult(Enumerable.Empty<uSyncAction>());
+
+
+	/// <summary>
+	///  return child items - if there are none, return an empty list
+	/// </summary>
+	protected override async Task<IEnumerable<CspDefinition>> GetChildItemsAsync(CspDefinition? parent)
+	{
+		if (parent != null) return Enumerable.Empty<CspDefinition>();
+
+		return [
+			await _cspService.GetCspDefinitionAsync(true, CancellationToken.None),
+			await _cspService.GetCspDefinitionAsync(false, CancellationToken.None)
+		];
+	}
+
+	/// <summary>
+	///  returns any folders - we don't have any so just return an empty list
+	/// </summary>
+	protected override Task<IEnumerable<CspDefinition>> GetFoldersAsync(CspDefinition? parent) => Task.FromResult(Enumerable.Empty<CspDefinition>());
+
+	// fetches it from a service.
+	protected override async Task<CspDefinition?> GetFromServiceAsync(CspDefinition? item) => item is null ? null : await _cspService.GetCspDefinitionAsync(item.IsBackOffice, CancellationToken.None);
+
+	/// <summary>
+	///  name doesn't really matter, its what is shown via the ui, if there isn't one, the id is fine.
+	/// </summary>
+	protected override string GetItemName(CspDefinition item) => item.Id.ToString();
+}

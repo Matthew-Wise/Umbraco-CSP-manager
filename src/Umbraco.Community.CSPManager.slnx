@@ -7,15 +7,20 @@
   <Folder Name="/Solution Items/">
     <File Path="../.github/CONTRIBUTING.md" />
     <File Path="../.github/README.md" />
-    <File Path="../docs/README_nuget.md" />
-    <File Path="../umbraco-marketplace.json" />
-    <File Path=".editorconfig" />
+    <File Path="../.editorconfig" />
     <File Path="Directory.Packages.props" />
+    <File Path="Directory.Build.props" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Umbraco.Community.CSPManager.Benchmarks/Umbraco.Community.CSPManager.Benchmarks.csproj" />
     <Project Path="Umbraco.Community.CSPManager.Tests/Umbraco.Community.CSPManager.Tests.csproj" />
   </Folder>
   <Project Path="Umbraco.Community.CSPManager.TestSite/Umbraco.Community.CSPManager.TestSite.csproj" />
+  <Folder Name="/uSync/">
+    <Project Path="uSync/Umbraco.Community.CSPManager.uSync/Umbraco.Community.CSPManager.uSync.csproj" />
+    <Project Path="uSync/Umbraco.Community.CSPManager.uSync.Complete/Umbraco.Community.CSPManager.uSync.Complete.csproj" />
+    <Project Path="uSync/uSync.TestSite/uSync.TestSite.csproj" />
+    <Project Path="uSync/uSync.TestSiteB/uSync.TestSiteB.csproj" />
+  </Folder>
   <Project Path="Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj" />
 </Solution>

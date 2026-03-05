@@ -1,4 +1,4 @@
-name: Build
+name: CSP Manager Build
 permissions:
   contents: read
   pull-requests: write
@@ -9,9 +9,23 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/Umbraco.Community.CSPManager/**'
+      - 'src/Umbraco.Community.CSPManager.Tests/**'
+      - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
+      - 'src/Directory.Build.props'
+      - 'src/Directory.Packages.props'
+      - '.github/workflows/csp-manager.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'src/Umbraco.Community.CSPManager/**'
+      - 'src/Umbraco.Community.CSPManager.Tests/**'
+      - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
+      - 'src/Directory.Build.props'
+      - 'src/Directory.Packages.props'
+      - '.github/workflows/csp-manager.yml'
 
 jobs:
   build:
@@ -34,7 +48,7 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
-          
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -68,10 +82,8 @@ jobs:
         env:
           NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
 
-
       - name: Upload nuget file as build artifact
         uses: actions/upload-artifact@v4
         with:
           name: Nuget Build Output
           path: ${{env.OUT_FOLDER}}
-

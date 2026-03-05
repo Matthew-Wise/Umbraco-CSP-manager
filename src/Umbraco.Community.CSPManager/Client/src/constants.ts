@@ -36,13 +36,13 @@ export const CspConstants = {
 	},
 	policyTypes: {
 		backoffice: {
-			value: 'backoffice',
+			value: '9cbfa28c-2b19-40f4-9f8e-bbc52bd8e780',
 			label: 'Back Office',
 			aliasPart: 'BackOffice',
 			icon: 'icon-umbraco',
 		},
 		frontend: {
-			value: 'frontend',
+			value: 'fac780be-53af-41dc-b51d-1aa647100221',
 			label: 'Frontend',
 			aliasPart: 'Frontend',
 			icon: 'icon-globe',

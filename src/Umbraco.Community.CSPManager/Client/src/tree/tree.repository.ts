@@ -5,7 +5,7 @@ import type { UmbApi } from '@umbraco-cms/backoffice/extension-api';
 import { CspTreeDataSource, type CspTreeItemModel } from './tree-data-source.js';
 
 export interface CspTreeRootModel extends UmbTreeRootModel {
-	entityType: 'csp-manager-root';
+	entityType: 'csp-policy-root';
 }
 
 export class CspTreeRepository
@@ -19,7 +19,7 @@ export class CspTreeRepository
 	async requestTreeRoot() {
 		const root: CspTreeRootModel = {
 			unique: null,
-			entityType: 'csp-manager-root',
+			entityType: 'csp-policy-root',
 			name: 'CSP Policies',
 			hasChildren: true,
 			isFolder: true,

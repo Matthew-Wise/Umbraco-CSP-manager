@@ -7,6 +7,14 @@
     var addNonce = Model.ApplyNonce;
 }
 
+<ul>
+    @foreach (var child in Model.Children())
+    {
+        <li>
+            <a href="@child.Url()">@child.Name</a>
+        </li>
+    }
+</ul>
 
 <script csp-manager-add-nonce="@addNonce" csp-manager-add-nonce-data-attribute="@addNonce">
     console.log("ContentPage script");

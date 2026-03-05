@@ -1,155 +1,41 @@
-additionalDirectories:
-  - D:\Code\CSP-Manager\Umbraco-CMS\src\Umbraco.Web.UI.Client
+# Umbraco Community CSP Manager
 
-Please also reference the following documents as needed:
-
-# Umbraco Community CSP Manager - Project Overview
-
-## Purpose & Mission
-
-The Umbraco Community CSP Manager is a comprehensive Content Security Policy management solution for Umbraco CMS that enables developers and content editors to manage security policies through an intuitive backoffice interface. This project transforms complex CSP configuration from a developer-only task into something manageable like content within Umbraco.
+CSP management package for Umbraco CMS. Monorepo with 3 independently releasable NuGet packages.
 
 ## Project Structure
 
 ```
 src/
-├── Umbraco.Community.CSPManager/          # Main package
-│   ├── Controllers/                       # API controllers for CSP management
-│   ├── Services/                          # Core CSP business logic
-│   ├── Middleware/                        # HTTP middleware for CSP header injection
-│   ├── Models/                           # Data models and API DTOs
-│   ├── Client/                           # TypeScript/Lit frontend components
-│   ├── Notifications/                    # Event system for extensibility
-│   └── TagHelpers/                      # Razor tag helpers for nonce support
-├── Umbraco.Community.CSPManager.TestSite/ # Development/testing site
-└── Umbraco.Community.CSPManager.Tests/   # Unit and integration tests
+├── Umbraco.Community.CSPManager/          # Main package (NuGet)
+│   └── Client/                            # TypeScript/Lit frontend
+├── Umbraco.Community.CSPManager.TestSite/ # Dev/testing site (port 44370)
+├── Umbraco.Community.CSPManager.Tests/    # Unit/integration tests
+├── Umbraco.Community.CSPManager.Benchmarks/
+├── Directory.Build.props                  # Shared NuGet metadata
+├── Directory.Packages.props               # Central package versioning
+└── uSync/                                 # uSync integration packages
+    ├── Umbraco.Community.CSPManager.uSync/           # Base uSync serialization
+    ├── Umbraco.Community.CSPManager.uSync.Complete/  # uSync Publisher push/pull
+    ├── uSync.TestSite/                    # Test site A (port 44381)
+    └── uSync.TestSiteB/                   # Test site B (port 44382)
 ```
 
-## Technology Stack
+## Tech Stack
 
-### Backend (.NET)
+- Backend: .NET 10, Umbraco 17+, NPoco ORM
+- Frontend: Lit 3.x, Vite 7.x, Node 22+
+- Testing: NUnit (backend), Playwright (frontend)
+- API: OpenAPI code generation via @hey-api/openapi-ts
 
-- **Framework**: .NET 10 with Umbraco CMS 17+
-- **Database**: Uses Umbraco's database abstraction (NPoco ORM)
-- **Testing**: XUnit with Umbraco's testing framework
-- **Patterns**: Repository pattern, notification pattern, middleware pattern
+## CI Release Tags
 
-### Frontend (TypeScript)
-
-- **Framework**: Lit Web Components (v3.x) for Umbraco 17+ backoffice
-- **Build Tools**: Vite 7.x for development and bundling
-- **Testing**: Playwright for E2E testing
-- **API**: OpenAPI code generation via @hey-api/openapi-ts
-- **Node**: Requires Node.js 22+
-
-## Umbraco v17 Patterns
-
-### Context Token Pattern
-
-All contexts must use `UmbContextToken` with two parameters:
-
-```typescript
-// Define token with context alias and unique API alias
-export const UMB_MY_CONTEXT = new UmbContextToken<MyContext>(
-  'MyContextType',        // Context alias (for grouping)
-  'my-package.context'    // API alias (unique identifier)
-);
-
-// Use token in constructor (not a string)
-constructor(host: UmbControllerHost) {
-  super(host, UMB_MY_CONTEXT);
-}
-```
-
-### Workspace Context Token
-
-Workspace contexts should use `'UmbWorkspaceContext'` as the context alias:
-
-```typescript
-export const UMB_CSP_MANAGER_WORKSPACE_CONTEXT = new UmbContextToken<UmbCspManagerWorkspaceContext>(
-  'UmbWorkspaceContext',      // Shared workspace context alias
-  'csp-manager.workspace'     // Unique API alias
-);
-```
-
-### HTTP Client Configuration
-
-API clients must include credentials for cookie-based authentication:
-
-```typescript
-export const client = createClient(createConfig<ClientOptions>({
-  baseUrl: 'https://localhost:44370',
-  throwOnError: true,
-  credentials: 'include'  // Required for v17 authentication
-}));
-```
-
-### Import Paths
-
-- `UmbContextToken`: Import from `@umbraco-cms/backoffice/context-api`
-- `UmbContextBase`: Import from `@umbraco-cms/backoffice/class-api`
-- `UmbRepositoryBase`: Import from `@umbraco-cms/backoffice/repository`
-
-## Core Concepts
-
-- **Content Security Policy (CSP)**: Web security standard preventing XSS attacks
-- **Dual Context Management**: Separate policies for frontend and Umbraco backoffice
-- **Nonce Support**: Automatic generation and injection of cryptographic nonces
-- **Policy Evaluation**: Built-in tools for testing CSP policies before deployment
-- **Report-Only Mode**: Safe testing without breaking functionality
-
-## Client Development Workflow
-
-When making changes to the client code in `src/Umbraco.Community.CSPManager/Client/`:
-
-### Build Commands
-
-```bash
-cd src/Umbraco.Community.CSPManager/Client
-
-# Type checking only (fast, use during development)
-npm run build:ts
-
-# Full build (TypeScript + Vite bundling)
-npm run build
-
-# Development server with hot reload
-npm run dev
-```
-
-### Testing with Playwright
-
-Always run Playwright tests after making client changes:
-
-```bash
-# Run all tests
-npm test
-
-# Run tests with UI (for debugging)
-npm run test:ui
-
-# Run tests in headed mode (see browser)
-npm run test:headed
-
-# Debug tests
-npm run test:debug
-
-# View test report
-npm run test:report
-```
-
-### API Client Generation
-
-When backend API changes are made, regenerate the TypeScript client:
-
-```bash
-npm run generate-client
-```
+- CSP Manager: GitHub Release tag format `3.1.0`
+- uSync: tag `usync-3.0.2`
+- uSync Complete: tag `usync-complete-3.0.2`
 
 ## Development Principles
 
-- **Security by Design**: All code should enhance security, never compromise it
-- **Content-Like Management**: CSP policies should be as easy to manage as Umbraco content
-- **Developer Experience**: APIs should be intuitive and well-documented
-- **Performance**: Minimal impact on request processing and page load times
-- **Extensibility**: Support for custom integrations via notification system
+- Security by Design: all code should enhance security, never compromise it
+- Content-Like Management: CSP policies as easy to manage as Umbraco content
+- Performance: minimal impact on request processing and page load times
+- Extensibility: support custom integrations via notification system
