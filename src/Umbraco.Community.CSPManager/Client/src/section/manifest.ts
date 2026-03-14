@@ -13,13 +13,14 @@ export const manifests: Array<UmbExtensionManifest> = [
 	},
 	{
 		type: 'sectionSidebarApp',
-		kind: 'menu',
+		kind: 'menuWithEntityActions',
 		alias: `${CspConstants.alias}.Management`,
 		name: 'CSP Manager Section Sidebar App',
 		weight: CspConstants.weights.high,
 		meta: {
 			label: 'CSP Manager',
 			menu: CspConstants.menu.alias,
+			entityType: CspConstants.entityTypes.cspPolicyRoot,
 		},
 		conditions: [
 			{

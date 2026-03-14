@@ -7,12 +7,12 @@ using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Services;
 using uSync.BackOffice.Configuration;
 using uSync.BackOffice.Services;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using static Umbraco.Cms.Core.Constants.HttpContext;
+
+using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
 
 namespace Umbraco.Community.CSPManager.uSync.Handlers;
 
-[SyncHandler("CspDefinitionHandler", "CSP", "CspDefinitions", 3000, Icon = "icon-shield", EntityType = Constants.CspPolicyEntityType)]
+[SyncHandler("CspDefinitionHandler", "CSP", "CspDefinitions", 3000, Icon = "icon-shield", EntityType = CspManagerConstants.EntityTypes.CspPolicy)]
 public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition>, ISyncHandler,
 	INotificationAsyncHandler<CspSavedNotification>
 {
@@ -42,6 +42,7 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 			var attempts = await ExportAsync(item, handlerFolders, DefaultConfig);
 			foreach (var attempt in attempts)
 			{
+				logger.LogWarning("Export attempt for {ItemId} changeType {ChangeType}: {Message}", item.Id, attempt.Change, attempt.Message);
 				if (attempt.Success && attempt.FileName is not null)
 				{
 					await CleanUpAsync(item, attempt.FileName, handlerFolders[handlerFolders.Length - 1]);
@@ -68,12 +69,17 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 	/// </summary>
 	protected override async Task<IEnumerable<CspDefinition>> GetChildItemsAsync(CspDefinition? parent)
 	{
-		if (parent != null) return Enumerable.Empty<CspDefinition>();
+		logger.LogWarning("GetChildItemsAsync called with parent: {ParentId}", parent?.Id.ToString() ?? "null (root)");
+		if (parent != null)
+		{
+			logger.LogWarning("Attempting to get child items for a CSP Definition, but there are no child items: {ParentId}", parent.Id);
+			return [];
+		}
 
-		return [
-			await _cspService.GetCspDefinitionAsync(true, CancellationToken.None),
-			await _cspService.GetCspDefinitionAsync(false, CancellationToken.None)
-		];
+		var backoffice = await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
+		var frontend = await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
+		logger.LogWarning("GetChildItemsAsync returning 2 items: backoffice={BackofficeId} frontend={FrontendId}", backoffice.Id, frontend.Id);
+		return [backoffice, frontend];
 	}
 
 	/// <summary>
@@ -82,7 +88,11 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 	protected override Task<IEnumerable<CspDefinition>> GetFoldersAsync(CspDefinition? parent) => Task.FromResult(Enumerable.Empty<CspDefinition>());
 
 	// fetches it from a service.
-	protected override async Task<CspDefinition?> GetFromServiceAsync(CspDefinition? item) => item is null ? null : await _cspService.GetCspDefinitionAsync(item.IsBackOffice, CancellationToken.None);
+	protected override async Task<CspDefinition?> GetFromServiceAsync(CspDefinition? item)
+	{
+		logger.LogWarning("GetFromServiceAsync called for item: {ItemId} isBackOffice: {IsBackOffice}", item?.Id.ToString() ?? "null", item?.IsBackOffice);
+		return item is null ? null : await _cspService.GetCspDefinitionAsync(item.Id, CancellationToken.None);
+	}
 
 	/// <summary>
 	///  name doesn't really matter, its what is shown via the ui, if there isn't one, the id is fine.

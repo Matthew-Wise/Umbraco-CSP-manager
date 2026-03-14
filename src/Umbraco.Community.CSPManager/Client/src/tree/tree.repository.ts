@@ -3,9 +3,10 @@ import type { UmbTreeRootModel, UmbTreeRepository } from '@umbraco-cms/backoffic
 import { UmbTreeRepositoryBase } from '@umbraco-cms/backoffice/tree';
 import type { UmbApi } from '@umbraco-cms/backoffice/extension-api';
 import { CspTreeDataSource, type CspTreeItemModel } from './tree-data-source.js';
+import { CspConstants } from '@/constants.js';
 
 export interface CspTreeRootModel extends UmbTreeRootModel {
-	entityType: 'csp-policy-root';
+	entityType: typeof CspConstants.entityTypes.cspPolicyRoot;
 }
 
 export class CspTreeRepository
@@ -19,7 +20,7 @@ export class CspTreeRepository
 	async requestTreeRoot() {
 		const root: CspTreeRootModel = {
 			unique: null,
-			entityType: 'csp-policy-root',
+			entityType: CspConstants.entityTypes.cspPolicyRoot,
 			name: 'CSP Policies',
 			hasChildren: true,
 			isFolder: true,

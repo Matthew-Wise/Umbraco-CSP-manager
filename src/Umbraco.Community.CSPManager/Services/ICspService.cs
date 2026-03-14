@@ -26,6 +26,8 @@ public interface ICspService
 	/// </returns>
 	Task<CspDefinition> GetCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken);
 
+	Task<CspDefinition?> GetCspDefinitionAsync(Guid key, CancellationToken cancellationToken);
+
 	/// <summary>
 	/// Retrieves the CSP definition from the runtime cache, loading from the database if not cached.
 	/// </summary>

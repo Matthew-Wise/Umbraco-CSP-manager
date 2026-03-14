@@ -1,15 +1,10 @@
-using System.Collections.Frozen;
-using Umbraco.Community.CSPManager.Models;
-
 namespace Umbraco.Community.CSPManager;
 
-public static class Constants
+public static partial class Constants
 {
 	public const string ApiName = "csp";
 
 	public const string PackageAlias = "Umbraco.Community.CSPManager";
-
-	public const string PluginAlias = "CspManager";
 
 	public const string OptionsName = "CspManager";
 
@@ -29,133 +24,12 @@ public static class Constants
 
 	public const string ReportOnlyHeaderName = HeaderName + "-Report-Only";
 
-	public static readonly List<CspDefinitionSource> DefaultBackOfficeCsp =
-	[
-		new()
-		{
-			DefinitionId = DefaultBackofficeId,
-			Source = "'self'",
-			Directives = [
-				Directives.DefaultSource,
-				Directives.ScriptSource,
-				Directives.StyleSource,
-				Directives.ImageSource,
-				Directives.FontSource
-			]
-		},
-		new()
-		{
-			DefinitionId = DefaultBackofficeId,
-			Source = "marketplace.umbraco.com",
-			Directives = [Directives.DefaultSource]
-		},
-		new()
-		{
-			DefinitionId = DefaultBackofficeId,
-			Source = "our.umbraco.com",
-			Directives = [Directives.DefaultSource, Directives.ImageSource]
-		},
-		new()
-		{
-			DefinitionId = DefaultBackofficeId,
-			Source = "'unsafe-inline'",
-			Directives = [Directives.ScriptSource, Directives.StyleSource]
-		},
-		new()
-		{
-			DefinitionId = DefaultBackofficeId,
-			Source = "'unsafe-eval'",
-			Directives = [Directives.ScriptSource]
-		},
-		new()
-		{
-			DefinitionId = DefaultBackofficeId, Source = "data:", Directives = [Directives.ImageSource]
-		},
-		new()
-		{
-			DefinitionId = DefaultBackofficeId,
-			Source = "dashboard.umbraco.com",
-			Directives = [Directives.ImageSource]
-		}
-	];
-
-	public static class ReportingDirectives
+	public static class EntityTypes
 	{
-		/// <summary>
-		/// The deprecated report-uri directive. Value should be a valid URI.
-		/// </summary>
-		public const string ReportUri = "report-uri";
+		public const string CspPolicy = "csp-policy";
 
-		/// <summary>
-		/// The report-to directive. Value should be an endpoint name defined in the Reporting-Endpoints header.
-		/// </summary>
-		public const string ReportTo = "report-to";
+		public const string CspPolicyRoot = "csp-policy-root";
 	}
-
-	public static class Directives
-	{
-		public const string BaseUri = "base-uri";
-
-		public const string ChildSource = "child-src";
-
-		public const string ConnectSource = "connect-src";
-
-		public const string DefaultSource = "default-src";
-
-		public const string FontSource = "font-src";
-
-		public const string FormAction = "form-action";
-
-		public const string FrameAncestors = "frame-ancestors";
-
-		public const string FrameSource = "frame-src";
-
-		public const string ImageSource = "img-src";
-
-		public const string ManifestSource = "manifest-src";
-
-		public const string MediaSource = "media-src";
-
-		public const string NavigateTo = "navigate-to";
-
-		public const string ObjectSource = "object-src";
-
-		public const string PreFetchSource = "prefetch-src";
-
-		public const string RequireTrustedTypes = "require-trusted-types-for";
-
-		public const string ScriptSourceAttribute = "script-src-attr";
-
-		public const string ScriptSourceElement = "script-src-elem";
-
-		public const string ScriptSource = "script-src";
-
-		public const string StyleSourceAttribute = "style-src-attr";
-
-		public const string StyleSourceElement = "style-src-elem";
-
-		public const string StyleSource = "style-src";
-
-		public const string TrustedTypes = "trusted-types";
-
-		public const string UpgradeInsecureRequests = "upgrade-insecure-requests";
-
-		public const string WorkerSource = "worker-src";
-	}
-
-	public static readonly FrozenSet<string> AllDirectives =
-	[
-		Directives.BaseUri, Directives.ChildSource, Directives.ConnectSource, Directives.DefaultSource,
-		Directives.FontSource, Directives.FormAction, Directives.FrameAncestors, Directives.FrameSource,
-		Directives.ImageSource, Directives.ManifestSource, Directives.MediaSource, Directives.NavigateTo,
-		Directives.ObjectSource, Directives.PreFetchSource,
-		Directives.RequireTrustedTypes,
-		Directives.ScriptSourceAttribute, Directives.ScriptSourceElement, Directives.ScriptSource,
-		Directives.StyleSourceAttribute, Directives.StyleSourceElement, Directives.StyleSource,
-		Directives.TrustedTypes,
-		Directives.UpgradeInsecureRequests,
-		Directives.WorkerSource
-	];
 
 	public static class TagHelper
 	{

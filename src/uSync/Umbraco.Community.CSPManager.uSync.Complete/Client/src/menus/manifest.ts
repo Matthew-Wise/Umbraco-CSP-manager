@@ -1,6 +1,6 @@
 const cspEntityTypes = [
-  "csp-policy",
   "csp-policy-root",
+  "csp-policy",
 ];
 
 const actions: Array<UmbExtensionManifest> = [

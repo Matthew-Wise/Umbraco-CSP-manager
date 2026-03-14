@@ -7,7 +7,7 @@ using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
 
 namespace Umbraco.Community.CSPManager.uSync.Serializers;
 
-[SyncSerializer("f8c88eea-50c1-4146-95e9-a3c148339aea", "Csp Manager Serializer", "CspManager")]
+[SyncSerializer("f8c88eea-50c1-4146-95e9-a3c148339aea", "Csp Manager Serializer", CspManagerConstants.EntityTypes.CspPolicy)]
 public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncSerializer<CspDefinition>
 {
 	private readonly ICspService _cspService;
@@ -27,17 +27,28 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 
 	public override async Task<CspDefinition?> FindItemAsync(Guid key)
 	{
+		logger.LogWarning("FindItemAsync(Guid) called with key: {Key}", key);
 		if (key.Equals(CspManagerConstants.DefaultBackofficeId))
+		{
+			logger.LogWarning("FindItemAsync(Guid): matched backoffice key");
 			return await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
+		}
 
 		if (key.Equals(CspManagerConstants.DefaultFrontEndId))
+		{
+			logger.LogWarning("FindItemAsync(Guid): matched frontend key");
 			return await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
+		}
 
+		logger.LogWarning("FindItemAsync(Guid): no match for key {Key}", key);
 		return null;
 	}
 
 	public override async Task<CspDefinition?> FindItemAsync(string alias)
-		=> await _cspService.GetCspDefinitionAsync(alias.Equals("backoffice", StringComparison.InvariantCultureIgnoreCase), CancellationToken.None);
+	{
+		logger.LogWarning("FindItemAsync(string) called with alias: {Alias}", alias);
+		return await _cspService.GetCspDefinitionAsync(alias.Equals("backoffice", StringComparison.InvariantCultureIgnoreCase), CancellationToken.None);
+	}
 
 	public override string ItemAlias(CspDefinition item) => item.IsBackOffice ? "backoffice" : "front-end";
 
@@ -47,6 +58,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 
 	protected override async Task<SyncAttempt<CspDefinition>> DeserializeCoreAsync(XElement node, SyncSerializerOptions options)
 	{
+		logger.LogWarning("DeserializeCoreAsync called for node alias: {Alias} key: {Key}", node.GetAlias(), node.GetKey());
 		// find item is a base class method it will look for the item by key and alias.
 		var item = await FindItemAsync(node);
 		if (item is null)
@@ -95,6 +107,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 	protected override Task<SyncAttempt<XElement>> SerializeCoreAsync(CspDefinition item, SyncSerializerOptions options)
 	{
 		var alias = ItemAlias(item);
+		logger.LogWarning("SerializeCoreAsync called for item alias: {Alias} key: {Key}", alias, item.Id);
 
 		var node = new XElement(ItemType,
 			new XAttribute("Key", item.Id),

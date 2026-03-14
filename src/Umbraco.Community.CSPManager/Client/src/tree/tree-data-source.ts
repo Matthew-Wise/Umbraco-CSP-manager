@@ -22,7 +22,7 @@ export class CspTreeDataSource {
 				isFolder: false,
 				parent: {
 					unique: null,
-					entityType: 'csp-policy-root',
+					entityType: CspConstants.entityTypes.cspPolicyRoot,
 				},
 			},
 			{
@@ -34,7 +34,7 @@ export class CspTreeDataSource {
 				isFolder: false,
 				parent: {
 					unique: null,
-					entityType: 'csp-policy-root',
+					entityType: CspConstants.entityTypes.cspPolicyRoot,
 				},
 			},
 		];

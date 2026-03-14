@@ -14,6 +14,10 @@ export const CspConstants = {
 		itemAlias: `${packageAlias}.TreeItem`,
 		menuItemAlias: `${packageAlias}.MenuItem.Tree`,
 	},
+	entityTypes: {
+		cspPolicy: 'csp-policy',
+		cspPolicyRoot: 'csp-policy-root',
+	},
 	workspace: {
 		alias: `${packageAlias}.Workspace`,
 		entityType: 'csp-policy',

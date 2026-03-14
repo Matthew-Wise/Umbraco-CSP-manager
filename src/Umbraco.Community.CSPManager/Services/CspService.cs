@@ -61,6 +61,16 @@ internal sealed class CspService : ICspService
 		return result;
 	}
 
+	public async Task<CspDefinition?> GetCspDefinitionAsync(Guid key, CancellationToken cancellationToken)
+	{
+		using var scope = _scopeProvider.CreateScope();
+		var sql = scope.SqlContext.Sql()
+			.SelectAll()
+			.From<CspDefinition>()
+			.Where<CspDefinition>(x => x.Id == key);
+		return await scope.Database.FirstOrDefaultAsync<CspDefinition>(sql, cancellationToken);
+	}
+
 	public async Task<CspDefinition> GetCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken)
 	{
 		var context = isBackOfficeRequest ? "BackOffice" : "Frontend";

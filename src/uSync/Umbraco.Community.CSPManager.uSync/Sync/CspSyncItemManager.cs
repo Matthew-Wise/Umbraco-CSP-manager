@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Community.CSPManager.Services;
 using uSync.Core.Dependency;
@@ -8,47 +9,51 @@ using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
 
 namespace Umbraco.Community.CSPManager.uSync.Sync;
 
-[SyncItemManager(Constants.CspPolicyEntityType, "")]
+[SyncItemManager(CspManagerConstants.EntityTypes.CspPolicy)]
 public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 {
 	private readonly ICspService _cspService;
+	private readonly ILogger<CspSyncItemManager> _logger;
 
-	public CspSyncItemManager(ICspService cspService)
+	public CspSyncItemManager(ICspService cspService, ILogger<CspSyncItemManager> logger)
 	{
 		_cspService = cspService;
+		_logger = logger;
 	}
 
-	public override string[] EntityTypes => [Constants.CspPolicyEntityType];
+	public override string[] EntityTypes => [CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.EntityTypes.CspPolicyRoot];
 
 	public async Task<SyncEntity?> GetSyncEntityAsync(string key)
 	{
 		if (!Guid.TryParse(key, out var guidKey))
+		{
+			_logger.LogWarning("Attempting to get a CSP Definition with an invalid key: {Key}", key);
 			return null;
+		}
 
-		bool? isBackOffice = guidKey == CspManagerConstants.DefaultBackofficeId ? true
-			: guidKey == CspManagerConstants.DefaultFrontEndId ? false
-			: null;
-
-		if (isBackOffice is null)
+		var definition = await _cspService.GetCspDefinitionAsync(guidKey, CancellationToken.None);
+		if (definition is null)
+		{
+			_logger.LogWarning("No CSP Definition found for key: {Key}", key);
 			return null;
+		}
 
-		var definition = await _cspService.GetCspDefinitionAsync(isBackOffice.Value, CancellationToken.None);
 		return new SyncEntity
 		{
 			Icon = "icon-shield",
-			Name = isBackOffice.Value ? "Backoffice" : "Frontend",
-			Udi = Udi.Create(Constants.CspPolicyEntityType, definition.Id)
+			Name = definition.IsBackOffice ? "Backoffice" : "Frontend",
+			Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, definition.Id),
 		};
 	}
 
 	public override Task<IEnumerable<SyncItem>> GetItemsAsync(SyncItem item)
-		=> uSyncTaskHelper.FromResultOf(() => GetItems(item));
+		=> uSyncTaskHelper.FromResultOf(() => GetItems(item).AsEnumerable());
 
-	private IEnumerable<SyncItem> GetItems(SyncItem item)
+	private List<SyncItem> GetItems(SyncItem item)
 	{
 		var items = new List<SyncItem>();
 
-		if (item.Udi.EntityType == Constants.CspPolicyEntityType && !item.Udi.IsRoot)
+		if (item.Udi.EntityType == CspManagerConstants.EntityTypes.CspPolicy && !item.Udi.IsRoot)
 		{
 			items.Add(item);
 		}
@@ -57,7 +62,11 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 		{
 			items.AddRange(GetDescendants(item, item.Flags & ~DependencyFlags.IncludeChildren));
 		}
-
+		_logger.LogWarning("GetItems for item {ItemId} returned {ItemCount} items", item.Udi, items.Count);
+		foreach (var syncItem in items)
+		{
+			_logger.LogWarning("Included item {ItemId} with name {ItemName} and flags {ItemFlags} and Change {ItemChange}", syncItem.Udi, syncItem.Name, syncItem.Flags, syncItem.Change);
+		}
 		return items;
 	}
 
@@ -66,23 +75,26 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 
 	private IEnumerable<SyncItem> GetDescendants(SyncItem item, DependencyFlags flags)
 	{
-		if (!item.Udi.IsRoot)
-			return Enumerable.Empty<SyncItem>();
+		_logger.LogWarning("Getting descendants for item {ItemId} with flags {Flags} isRoot: {IsRoot}", item.Udi, flags, item.Udi.IsRoot);
+		if (item.Udi.IsRoot)
+		{
+			return
+			[
+				new SyncItem
+				{
+					Name = "Backoffice",
+					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultBackofficeId),
+					Flags = flags & ~DependencyFlags.IncludeChildren
+				},
+				new SyncItem
+				{
+					Name = "Frontend",
+					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultFrontEndId),
+					Flags = flags & ~DependencyFlags.IncludeChildren
+				}
+			];
+		}
 
-		return
-		[
-			new SyncItem
-			{
-				Name = "Backoffice",
-				Udi = Udi.Create(Constants.CspPolicyEntityType, CspManagerConstants.DefaultBackofficeId),
-				Flags = flags & ~DependencyFlags.IncludeChildren
-			},
-			new SyncItem
-			{
-				Name = "Frontend",
-				Udi = Udi.Create(Constants.CspPolicyEntityType, CspManagerConstants.DefaultFrontEndId),
-				Flags = flags & ~DependencyFlags.IncludeChildren
-			}
-		];
+		return [];
 	}
 }
