@@ -56,29 +56,13 @@
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
-  <!-- Detect package manager: check if bun is available, fall back to npm -->
-  <Target Name="DetectPackageManager" BeforeTargets="RestoreClient">
-    <Exec Command="bun --version" IgnoreExitCode="true" StandardOutputImportance="low" StandardErrorImportance="low">
-      <Output TaskParameter="ExitCode" PropertyName="BunExitCode" />
-    </Exec>
-    <PropertyGroup>
-      <PackageManager Condition="'$(BunExitCode)' == '0'">bun</PackageManager>
-      <PackageManager Condition="'$(PackageManager)' == ''">npm</PackageManager>
-      <PackageManagerInstall Condition="'$(PackageManager)' == 'bun'">bun install</PackageManagerInstall>
-      <PackageManagerInstall Condition="'$(PackageManager)' == 'npm'">npm i</PackageManagerInstall>
-      <PackageManagerRun Condition="'$(PackageManager)' == 'bun'">bun run</PackageManagerRun>
-      <PackageManagerRun Condition="'$(PackageManager)' == 'npm'">npm run</PackageManagerRun>
-    </PropertyGroup>
-    <Message Importance="high" Text="Using package manager: $(PackageManager)" />
-  </Target>
-
   <!-- Restore and build Client files -->
-  <Target Name="RestoreClient" Inputs="Client\package.json;Client\bun.lock;Client\package-lock.json" Outputs="Client\node_modules\.package-lock.json">
-    <Exec Command="$(PackageManagerInstall)" WorkingDirectory="Client" />
+  <Target Name="RestoreClient" Inputs="Client\package.json;Client\package-lock.json" Outputs="Client\node_modules\.package-lock.json">
+    <Exec Command="npm i" WorkingDirectory="Client" />
   </Target>
 
   <Target Name="BuildClient" BeforeTargets="AssignTargetPaths" DependsOnTargets="RestoreClient" Inputs="@(ClientAssetsInputs)" Outputs="$(IntermediateOutputPath)client.complete.txt">
-    <Exec Command="$(PackageManagerRun) build" WorkingDirectory="Client" />
+    <Exec Command="npm run build" WorkingDirectory="Client" />
     <ItemGroup>
       <_ClientAssetsBuildOutput Include="wwwroot\App_Plugins\**" />
     </ItemGroup>

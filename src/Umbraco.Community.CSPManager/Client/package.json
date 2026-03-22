@@ -18,15 +18,15 @@
 		"test:install": "playwright install"
 	},
 	"engines": {
-		"node": ">=22",
+		"node": ">=24",
 		"npm": ">=10.9"
 	},
 	"devDependencies": {
 		"@hey-api/openapi-ts": "^0.85.2",
 		"@playwright/test": "^1.56.1",
 		"@types/node": "^22.0.0",
-		"@umbraco-cms/backoffice": "^17.0.0",
-		"@umbraco/playwright-testhelpers": "^17.0.0",
+		"@umbraco-cms/backoffice": "^17.2.2",
+		"@umbraco/playwright-testhelpers": "^17.0.36",
 		"dotenv": "^17.2.3",
 		"lit": "^3.3.1",
 		"typescript": "~5.9.3",
@@ -38,5 +38,10 @@
 	},
 	"overrides": {
 		"dompurify": "^3.2.4"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild"
+		]
 	}
 }
