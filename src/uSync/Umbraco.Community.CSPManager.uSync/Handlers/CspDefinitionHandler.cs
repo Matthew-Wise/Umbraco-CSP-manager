@@ -90,8 +90,5 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 	protected override async Task<CspDefinition?> GetFromServiceAsync(CspDefinition? item)
 		=> item is null ? null : await _cspService.GetCspDefinitionAsync(item.Id, CancellationToken.None);
 
-	/// <summary>
-	///  name doesn't really matter, its what is shown via the ui, if there isn't one, the id is fine.
-	/// </summary>
-	protected override string GetItemName(CspDefinition item) => item.Id.ToString();
+	protected override string GetItemName(CspDefinition item) => item.IsBackOffice ? "Backoffice" : "Frontend";
 }

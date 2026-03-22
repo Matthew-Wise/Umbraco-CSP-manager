@@ -35,7 +35,11 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 	public override async Task<CspDefinition?> FindItemAsync(string alias)
 	{
 		Log.FindItemByAlias(logger, alias);
-		return await _cspService.GetCspDefinitionAsync(alias.Equals("backoffice", StringComparison.InvariantCultureIgnoreCase), CancellationToken.None);
+		if (alias.Equals("backoffice", StringComparison.InvariantCultureIgnoreCase))
+			return await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
+		if (alias.Equals("front-end", StringComparison.InvariantCultureIgnoreCase))
+			return await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
+		return null;
 	}
 
 	public override string ItemAlias(CspDefinition item) => item.IsBackOffice ? "backoffice" : "front-end";
@@ -64,7 +68,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			else
 			{
 				// assuming the two CspDefinition's exist - as we can't create them here?
-				return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "Cannot find CSPDefinition ?");
+				return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "Cannot find CSPDefinition");
 			}
 		}
 
@@ -122,13 +126,11 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			var sourceValue = sourceNode.Attribute("value")?.Value
 				?? sourceNode.Element("Value").ValueOrDefault(string.Empty);
 
+			// Directives are serialized as a comma-separated string e.g. "script-src, default-src".
+			// If you have uSync files from a different format, run a uSync export to regenerate them.
 			var directivesElement = sourceNode.Element("Directives");
-			List<string> directives;
-			if (directivesElement?.HasElements == true)
-				directives = directivesElement.Elements("Directive").Select(x => x.Value).ToList();
-			else
-				directives = directivesElement?.Value
-					.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList() ?? [];
+			var directives = directivesElement?.Value
+				.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList() ?? [];
 
 			var oldSource = definition.Sources.Find(s => s.DefinitionId == definitionId && s.Source == sourceValue);
 			var source = oldSource ??

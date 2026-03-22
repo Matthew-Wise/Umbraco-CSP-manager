@@ -19,7 +19,7 @@ public class CspDependencyChecker : ISyncDependencyChecker<CspDefinition>
 			{
 				Name = item.IsBackOffice ? "Backoffice" : "Frontend",
 				Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, item.Id),
-				Order = DependencyOrders.Languages,
+				Order = 11,
 				Flags = DependencyFlags.None,
 				Level = 0
 			}
