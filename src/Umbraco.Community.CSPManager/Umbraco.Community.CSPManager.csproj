@@ -24,6 +24,8 @@
     <InternalsVisibleTo Include="Umbraco.Community.CSPManager.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <ClientAssetsInputs Include="Client\**" Exclude="$(DefaultItemExcludes)" />
+
     <!-- Don't include the client folder as part of packaging nuget build -->
     <Content Remove="Client\**" />
     <!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
@@ -35,4 +37,18 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+
+  <!-- Restore and build Client files -->
+  <Target Name="RestoreClient" Inputs="Client\package.json;Client\package-lock.json" Outputs="Client\node_modules\.package-lock.json">
+    <Exec Command="npm ci" WorkingDirectory="Client" />
+  </Target>
+
+  <Target Name="BuildClient" BeforeTargets="AssignTargetPaths" DependsOnTargets="RestoreClient" Inputs="@(ClientAssetsInputs)" Outputs="$(IntermediateOutputPath)client.txt">
+    <Exec Command="npm run build" WorkingDirectory="Client" />
+    <ItemGroup>
+      <_ClientAssetsBuildOutput Include="wwwroot\App_Plugins\**" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(IntermediateOutputPath)client.txt" Lines="@(_ClientAssetsBuildOutput)" Overwrite="true" />
+  </Target>
+
 </Project>

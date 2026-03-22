@@ -58,7 +58,7 @@
 
   <!-- Restore and build Client files -->
   <Target Name="RestoreClient" Inputs="Client\package.json;Client\package-lock.json" Outputs="Client\node_modules\.package-lock.json">
-    <Exec Command="npm i" WorkingDirectory="Client" />
+    <Exec Command="npm ci" WorkingDirectory="Client" />
   </Target>
 
   <Target Name="BuildClient" BeforeTargets="AssignTargetPaths" DependsOnTargets="RestoreClient" Inputs="@(ClientAssetsInputs)" Outputs="$(IntermediateOutputPath)client.complete.txt">
