@@ -1,7 +1,4 @@
 name: uSync Build
-permissions:
-  contents: read
-  pull-requests: write
 
 on:
   push:
@@ -31,8 +28,10 @@ env:
 
 jobs:
   build:
-    if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -56,6 +55,7 @@ jobs:
           path: ${{ env.OUT_FOLDER }}
 
   release-usync:
+    needs: build
     if: startsWith(github.ref, 'refs/tags/usync-') && !startsWith(github.ref, 'refs/tags/usync-complete-')
     runs-on: ubuntu-latest
     environment: nuget-usync
@@ -96,6 +96,7 @@ jobs:
           done
 
   release-usync-complete:
+    needs: build
     if: startsWith(github.ref, 'refs/tags/usync-complete-')
     runs-on: ubuntu-latest
     environment: nuget-usync-complete

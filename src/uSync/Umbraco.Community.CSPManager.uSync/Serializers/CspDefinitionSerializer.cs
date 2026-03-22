@@ -2,6 +2,7 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Services;
+using Umbraco.Community.CSPManager.uSync.Logging;
 
 using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
 using uSyncConstants = uSync.Core.uSyncConstants;
@@ -23,18 +24,17 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 	/// <summary>
 	///  delete - you can't delete the csp definitions, so we just ignore this.
 	/// </summary>
-	/// <param name="item"></param>
 	public override Task DeleteItemAsync(CspDefinition item) => Task.CompletedTask;
 
 	public override async Task<CspDefinition?> FindItemAsync(Guid key)
 	{
-		logger.LogWarning("FindItemAsync(Guid) called with key: {Key}", key);
+		Log.FindItemByKey(logger, key);
 		return await _cspService.GetCspDefinitionAsync(key, CancellationToken.None);
 	}
 
 	public override async Task<CspDefinition?> FindItemAsync(string alias)
 	{
-		logger.LogWarning("FindItemAsync(string) called with alias: {Alias}", alias);
+		Log.FindItemByAlias(logger, alias);
 		return await _cspService.GetCspDefinitionAsync(alias.Equals("backoffice", StringComparison.InvariantCultureIgnoreCase), CancellationToken.None);
 	}
 
@@ -46,9 +46,10 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 
 	protected override async Task<SyncAttempt<CspDefinition>> DeserializeCoreAsync(XElement node, SyncSerializerOptions options)
 	{
-		logger.LogWarning("DeserializeCoreAsync called for node alias: {Alias} key: {Key}", node.GetAlias(), node.GetKey());
-		// find item is a base class method it will look for the item by key and alias.
+
 		var nodeKey = node.GetKey();
+		var alias = node.GetAlias();
+		Log.DeserializeStart(logger, alias, nodeKey);
 		var definition = await FindItemAsync(nodeKey);
 		if (definition is null)
 		{
@@ -63,14 +64,14 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			else
 			{
 				// assuming the two CspDefinition's exist - as we can't create them here?
-				return SyncAttempt<CspDefinition>.Fail(node.GetAlias(), ChangeType.Fail, "Cannot find CSPDefinition ?");
+				return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "Cannot find CSPDefinition ?");
 			}
 		}
 
 		var infoNode = node.Element("Info");
 		if (infoNode is null)
 		{
-			return SyncAttempt<CspDefinition>.Fail(node.GetAlias(), ChangeType.Fail, "No Info node");
+			return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "No Info node");
 		}
 
 		var details = new List<uSyncChange>();
@@ -97,12 +98,8 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 
 		definition.Sources = DeserializeSources(node, definition, details);
 
-		logger.LogWarning("Deserialization completed for {Alias} with {ChangeCount} changes", node.GetAlias(), details.Count);
-		foreach (var detail in details)
-		{
-			logger.LogWarning("Change detected for {Alias} - {Property} changed from {OldValue} to {NewValue}",
-				node.GetAlias(), detail.Name, detail.OldValue, detail.NewValue);
-		}
+		Log.DeserializeComplete(logger, alias, details.Count);
+
 		return SyncAttempt<CspDefinition>.Succeed(ItemAlias(definition), definition, ChangeType.Import, details);
 	}
 
@@ -115,8 +112,8 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 
 		foreach (var sourceNode in sourcesNode.Elements("Source"))
 		{
-			var definitiondId = sourceNode.Attribute("definitionId").ValueOrDefault(Guid.Empty);
-			if (definitiondId == Guid.Empty) continue;
+			var definitionId = sourceNode.Attribute("definitionId").ValueOrDefault(Guid.Empty);
+			if (definitionId == Guid.Empty) continue;
 
 			var sourceValue = sourceNode.Attribute("value")?.Value
 				?? sourceNode.Element("Value").ValueOrDefault(string.Empty);
@@ -129,14 +126,13 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 				directives = directivesElement?.Value
 					.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList() ?? [];
 
-			var oldSource = definition.Sources.Find(s => s.DefinitionId == definitiondId);
+			var oldSource = definition.Sources.Find(s => s.DefinitionId == definitionId);
 			var source = oldSource ??
 				new CspDefinitionSource()
 				{
-					DefinitionId = definitiondId,
+					DefinitionId = definitionId,
 					Source = sourceValue
 				};
-
 
 			details.AddIfUpdated(nameof(CspDefinitionSource.Source), oldSource?.Directives, directives);
 			source.Directives = directives;
@@ -148,7 +144,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 	protected override Task<SyncAttempt<XElement>> SerializeCoreAsync(CspDefinition item, SyncSerializerOptions options)
 	{
 		var alias = ItemAlias(item);
-		logger.LogWarning("SerializeCoreAsync called for item alias: {Alias} key: {Key}", alias, item.Id);
+		Log.SerializeStart(logger, alias, item.Id);
 
 		var node = new XElement(ItemType,
 			new XAttribute(uSyncConstants.Xml.Key, ItemKey(item)),
