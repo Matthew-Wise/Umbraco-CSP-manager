@@ -4,6 +4,7 @@ using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Services;
 
 using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
+using uSyncConstants = uSync.Core.uSyncConstants;
 
 namespace Umbraco.Community.CSPManager.uSync.Serializers;
 
@@ -28,20 +29,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 	public override async Task<CspDefinition?> FindItemAsync(Guid key)
 	{
 		logger.LogWarning("FindItemAsync(Guid) called with key: {Key}", key);
-		if (key.Equals(CspManagerConstants.DefaultBackofficeId))
-		{
-			logger.LogWarning("FindItemAsync(Guid): matched backoffice key");
-			return await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
-		}
-
-		if (key.Equals(CspManagerConstants.DefaultFrontEndId))
-		{
-			logger.LogWarning("FindItemAsync(Guid): matched frontend key");
-			return await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
-		}
-
-		logger.LogWarning("FindItemAsync(Guid): no match for key {Key}", key);
-		return null;
+		return await _cspService.GetCspDefinitionAsync(key, CancellationToken.None);
 	}
 
 	public override async Task<CspDefinition?> FindItemAsync(string alias)
@@ -60,11 +48,23 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 	{
 		logger.LogWarning("DeserializeCoreAsync called for node alias: {Alias} key: {Key}", node.GetAlias(), node.GetKey());
 		// find item is a base class method it will look for the item by key and alias.
-		var item = await FindItemAsync(node);
-		if (item is null)
+		var nodeKey = node.GetKey();
+		var definition = await FindItemAsync(nodeKey);
+		if (definition is null)
 		{
-			// assuming the two CspDefinition's exist - as we can't create them here?
-			return SyncAttempt<CspDefinition>.Fail(node.GetAlias(), ChangeType.Fail, "Cannot find CSPDefinition ?");
+			if (nodeKey == CspManagerConstants.DefaultBackofficeId || nodeKey == CspManagerConstants.DefaultFrontEndId)
+			{
+				definition = new CspDefinition
+				{
+					Id = nodeKey,
+					IsBackOffice = nodeKey == CspManagerConstants.DefaultBackofficeId
+				};
+			}
+			else
+			{
+				// assuming the two CspDefinition's exist - as we can't create them here?
+				return SyncAttempt<CspDefinition>.Fail(node.GetAlias(), ChangeType.Fail, "Cannot find CSPDefinition ?");
+			}
 		}
 
 		var infoNode = node.Element("Info");
@@ -72,19 +72,41 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		{
 			return SyncAttempt<CspDefinition>.Fail(node.GetAlias(), ChangeType.Fail, "No Info node");
 		}
-		item.Enabled = infoNode.Element("Enabled").ValueOrDefault(false); // default to false
-		item.ReportOnly = infoNode.Element("ReportOnly").ValueOrDefault(false); // default to false
-		item.ReportUri = infoNode.Element("ReportUri").ValueOrDefault(string.Empty);
-		item.ReportUri = infoNode.Element("ReportUri").ValueOrDefault(string.Empty);
-		item.ReportingDirective = infoNode.Element("ReportingDirective").ValueOrDefault(string.Empty);
-		item.UpgradeInsecureRequests = infoNode.Element("UpgradeInsecureRequests").ValueOrDefault(false);
 
-		item.Sources = DeserializeSources(node, options);
+		var details = new List<uSyncChange>();
 
-		return SyncAttempt<CspDefinition>.Succeed(ItemAlias(item), item, ChangeType.Import, []);
+		var enabled = infoNode.Element("Enabled").ValueOrDefault(false);
+		details.AddIfUpdated(nameof(definition.Enabled), definition.Enabled, enabled);
+		definition.Enabled = enabled;
+
+		var reportOnly = infoNode.Element("ReportOnly").ValueOrDefault(false);
+		details.AddIfUpdated(nameof(definition.ReportOnly), definition.ReportOnly, reportOnly);
+		definition.ReportOnly = reportOnly;
+
+		var reportUri = infoNode.Element("ReportUri").ValueOrDefault(string.Empty);
+		details.AddIfUpdated(nameof(definition.ReportUri), definition.ReportUri, reportUri);
+		definition.ReportUri = reportUri;
+
+		var reportingDirective = infoNode.Element("ReportingDirective").ValueOrDefault(string.Empty);
+		details.AddIfUpdated(nameof(definition.ReportingDirective), definition.ReportingDirective, reportingDirective);
+		definition.ReportingDirective = reportingDirective;
+
+		var upgradeInsecureRequests = infoNode.Element("UpgradeInsecureRequests").ValueOrDefault(false);
+		details.AddIfUpdated(nameof(definition.UpgradeInsecureRequests), definition.UpgradeInsecureRequests, upgradeInsecureRequests);
+		definition.UpgradeInsecureRequests = upgradeInsecureRequests;
+
+		definition.Sources = DeserializeSources(node, definition, details);
+
+		logger.LogWarning("Deserialization completed for {Alias} with {ChangeCount} changes", node.GetAlias(), details.Count);
+		foreach (var detail in details)
+		{
+			logger.LogWarning("Change detected for {Alias} - {Property} changed from {OldValue} to {NewValue}",
+				node.GetAlias(), detail.Name, detail.OldValue, detail.NewValue);
+		}
+		return SyncAttempt<CspDefinition>.Succeed(ItemAlias(definition), definition, ChangeType.Import, details);
 	}
 
-	private static List<CspDefinitionSource> DeserializeSources(XElement node, SyncSerializerOptions options)
+	private static List<CspDefinitionSource> DeserializeSources(XElement node, CspDefinition definition, List<uSyncChange> details)
 	{
 		var sources = new List<CspDefinitionSource>();
 		var sourcesNode = node.Element("Sources");
@@ -93,12 +115,31 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 
 		foreach (var sourceNode in sourcesNode.Elements("Source"))
 		{
-			var source = new CspDefinitionSource
-			{
-				DefinitionId = sourceNode.Attribute("definitionId").ValueOrDefault(Guid.Empty),
-				Source = sourceNode.Element("Value").ValueOrDefault(string.Empty),
-				Directives = sourceNode.Element("Directives")?.Elements("Directive").Select(x => x.Value).ToList() ?? []
-			};
+			var definitiondId = sourceNode.Attribute("definitionId").ValueOrDefault(Guid.Empty);
+			if (definitiondId == Guid.Empty) continue;
+
+			var sourceValue = sourceNode.Attribute("value")?.Value
+				?? sourceNode.Element("Value").ValueOrDefault(string.Empty);
+
+			var directivesElement = sourceNode.Element("Directives");
+			List<string> directives;
+			if (directivesElement?.HasElements == true)
+				directives = directivesElement.Elements("Directive").Select(x => x.Value).ToList();
+			else
+				directives = directivesElement?.Value
+					.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList() ?? [];
+
+			var oldSource = definition.Sources.Find(s => s.DefinitionId == definitiondId);
+			var source = oldSource ??
+				new CspDefinitionSource()
+				{
+					DefinitionId = definitiondId,
+					Source = sourceValue
+				};
+
+
+			details.AddIfUpdated(nameof(CspDefinitionSource.Source), oldSource?.Directives, directives);
+			source.Directives = directives;
 			sources.Add(source);
 		}
 		return sources;
@@ -110,8 +151,8 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		logger.LogWarning("SerializeCoreAsync called for item alias: {Alias} key: {Key}", alias, item.Id);
 
 		var node = new XElement(ItemType,
-			new XAttribute("Key", item.Id),
-			new XAttribute("Alias", alias));
+			new XAttribute(uSyncConstants.Xml.Key, ItemKey(item)),
+			new XAttribute(uSyncConstants.Xml.Alias, alias));
 
 		var info = new XElement("Info",
 			new XElement("IsBackOffice", item.IsBackOffice),
@@ -123,30 +164,24 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		);
 
 		node.Add(info);
-		node.Add(SerializeSources(item, options));
+		node.Add(SerializeSources(item));
 
 		return Task.FromResult(SyncAttempt<XElement>.Succeed(alias, node, ChangeType.Export, []));
 	}
 
-	private static XElement SerializeSources(CspDefinition item, SyncSerializerOptions options)
+	private static XElement SerializeSources(CspDefinition item)
 	{
 		var sources = new XElement("Sources");
 		foreach (CspDefinitionSource source in item.Sources)
 		{
 			var sourceNode = new XElement("Source",
 				new XAttribute("definitionId", source.DefinitionId),
-				new XElement("Value", source.Source));
+				new XAttribute("value", source.Source),
+				new XElement("Directives", string.Join(", ", source.Directives)));
 
-			var directives = new XElement("Directives");
-
-			foreach (var directive in source.Directives)
-			{
-				directives.Add(new XElement("Directive", directive));
-			}
-
-			sourceNode.Add(directives);
 			sources.Add(sourceNode);
 		}
+
 		return sources;
 	}
 }

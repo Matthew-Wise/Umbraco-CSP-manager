@@ -2,6 +2,7 @@ using Umbraco.Community.CSPManager.Models;
 using uSync.Core.Tracking;
 
 namespace Umbraco.Community.CSPManager.uSync.Trackers;
+
 internal class CspDefinitionTracker : SyncXmlTrackAndMerger<CspDefinition>, ISyncTracker<CspDefinition>
 {
 	public CspDefinitionTracker(SyncSerializerCollection serializers) : base(serializers)
@@ -15,6 +16,6 @@ internal class CspDefinitionTracker : SyncXmlTrackAndMerger<CspDefinition>, ISyn
 		TrackingItem.Single(nameof(CspDefinition.ReportUri),  $"Info/{nameof(CspDefinition.ReportUri)}"),
 		TrackingItem.Single(nameof(CspDefinition.ReportingDirective),  $"Info/{nameof(CspDefinition.ReportingDirective)}"),
 		TrackingItem.Single(nameof(CspDefinition.UpgradeInsecureRequests),  $"Info/{nameof(CspDefinition.UpgradeInsecureRequests)}"),
-		TrackingItem.Many("Source", "Sources/Source","Value")
+		TrackingItem.Many("Source", "Sources/Source", "@value"),
 	];
 }

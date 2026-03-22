@@ -21,7 +21,16 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 		_logger = logger;
 	}
 
-	public override string[] EntityTypes => [CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.EntityTypes.CspPolicyRoot];
+	public override SyncTreeType GetTreeType(SyncTreeItem treeItem)
+	{
+		_logger.LogWarning("GetTreeType called for treeItem {TreeItemId} {SectionAlias}", treeItem.Id, treeItem.SectionAlias);
+
+		return SyncTreeType.Settings;
+	}
+
+	public override string[] EntityTypes => [CspManagerConstants.EntityTypes.CspPolicy];
+
+	public override string[] Trees => ["Umbraco.Community.CSPManager.Tree"];
 
 	public async Task<SyncEntity?> GetSyncEntityAsync(string key)
 	{
@@ -40,7 +49,6 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 
 		return new SyncEntity
 		{
-			Icon = "icon-shield",
 			Name = definition.IsBackOffice ? "Backoffice" : "Frontend",
 			Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, definition.Id),
 		};
@@ -58,7 +66,7 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 			items.Add(item);
 		}
 
-		if (item.Flags.HasFlag(DependencyFlags.IncludeChildren) || item.Udi.IsRoot)
+		if (item.Flags.HasFlag(DependencyFlags.IncludeChildren))
 		{
 			items.AddRange(GetDescendants(item, item.Flags & ~DependencyFlags.IncludeChildren));
 		}
@@ -71,7 +79,7 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 	}
 
 	protected override Task<IEnumerable<SyncItem>> GetDescendantsAsync(SyncItem item, DependencyFlags flags)
-		=> uSyncTaskHelper.FromResultOf(() => GetDescendants(item, flags));
+		=> Task.FromResult(GetDescendants(item, flags));
 
 	private IEnumerable<SyncItem> GetDescendants(SyncItem item, DependencyFlags flags)
 	{
@@ -84,13 +92,15 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 				{
 					Name = "Backoffice",
 					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultBackofficeId),
-					Flags = flags & ~DependencyFlags.IncludeChildren
+					Flags = flags & ~DependencyFlags.IncludeChildren,
+					Icon = "icon-umbraco"
 				},
 				new SyncItem
 				{
 					Name = "Frontend",
 					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultFrontEndId),
-					Flags = flags & ~DependencyFlags.IncludeChildren
+					Flags = flags & ~DependencyFlags.IncludeChildren,
+					Icon = "icon-globe"
 				}
 			];
 		}

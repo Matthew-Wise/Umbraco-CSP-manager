@@ -27,8 +27,6 @@ public static partial class Constants
 	public static class EntityTypes
 	{
 		public const string CspPolicy = "csp-policy";
-
-		public const string CspPolicyRoot = "csp-policy-root";
 	}
 
 	public static class TagHelper

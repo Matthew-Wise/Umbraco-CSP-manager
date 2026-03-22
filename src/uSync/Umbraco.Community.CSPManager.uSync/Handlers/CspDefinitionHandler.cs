@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
@@ -98,4 +99,24 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 	///  name doesn't really matter, its what is shown via the ui, if there isn't one, the id is fine.
 	/// </summary>
 	protected override string GetItemName(CspDefinition item) => item.Id.ToString();
+
+	public new async Task<XElement?> TryFindItemNodeAsync(Guid key)
+	{
+		logger.LogWarning("TryFindItemNodeAsync called with key: {Key}", key);
+		var result = await base.TryFindItemNodeAsync(key);
+		logger.LogWarning("TryFindItemNodeAsync result for {Key}: {Found}", key, result is not null ? "FOUND" : "NULL");
+		if (result is not null)
+		{
+			logger.LogWarning("TryFindItemNodeAsync XML: {Xml}", result.ToString());
+		}
+		return result;
+	}
+
+	protected new async Task<CspDefinition?> GetFromServiceAsync(Guid key)
+	{
+		logger.LogWarning("GetFromServiceAsync(Guid) called with key: {Key}", key);
+		var result = await base.GetFromServiceAsync(key);
+		logger.LogWarning("GetFromServiceAsync(Guid) result for {Key}: {Found}", key, result is not null ? "FOUND" : "NULL");
+		return result;
+	}
 }

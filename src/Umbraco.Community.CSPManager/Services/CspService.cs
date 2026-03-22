@@ -68,7 +68,19 @@ internal sealed class CspService : ICspService
 			.SelectAll()
 			.From<CspDefinition>()
 			.Where<CspDefinition>(x => x.Id == key);
-		return await scope.Database.FirstOrDefaultAsync<CspDefinition>(sql, cancellationToken);
+		var definition = await scope.Database.FirstOrDefaultAsync<CspDefinition>(sql, cancellationToken);
+
+		if (definition is not null)
+		{
+			var sourcesSql = scope.SqlContext.Sql()
+				.SelectAll()
+				.From<CspDefinitionSource>()
+				.Where<CspDefinitionSource>(x => x.DefinitionId == definition.Id);
+			definition.Sources = await scope.Database.FetchAsync<CspDefinitionSource>(sourcesSql, cancellationToken);
+		}
+
+		scope.Complete();
+		return definition;
 	}
 
 	public async Task<CspDefinition> GetCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken)

@@ -15,8 +15,6 @@ internal class Composer : IComposer
 		builder.AdduSync();
 
 		builder.AddNotificationAsyncHandler<CspSavedNotification, CspDefinitionHandler>();
-
-		UdiParser.RegisterUdiType(CspManagerConstants.EntityTypes.CspPolicyRoot, UdiType.GuidUdi);
 		UdiParser.RegisterUdiType(CspManagerConstants.EntityTypes.CspPolicy, UdiType.GuidUdi);
 	}
 }
