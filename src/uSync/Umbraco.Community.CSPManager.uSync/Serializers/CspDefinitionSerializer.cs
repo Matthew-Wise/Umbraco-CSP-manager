@@ -8,7 +8,7 @@ using uSyncConstants = uSync.Core.uSyncConstants;
 
 namespace Umbraco.Community.CSPManager.uSync.Serializers;
 
-[SyncSerializer("f8c88eea-50c1-4146-95e9-a3c148339aea", "Csp Manager Serializer", Constants.EntityTypes.CspPolicy)]
+[SyncSerializer("f8c88eea-50c1-4146-95e9-a3c148339aea", "Csp Manager Serializer", CspManagerConstants.EntityTypes.CspPolicy)]
 public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncSerializer<CspDefinition>
 {
 	private readonly ICspService _cspService;

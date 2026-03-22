@@ -9,7 +9,7 @@ using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
 
 namespace Umbraco.Community.CSPManager.uSync.Sync;
 
-[SyncItemManager(Constants.EntityTypes.CspPolicy)]
+[SyncItemManager(CspManagerConstants.EntityTypes.CspPolicy)]
 public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 {
 	private readonly ICspService _cspService;
@@ -28,7 +28,7 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 		return SyncTreeType.Settings;
 	}
 
-	public override string[] EntityTypes => [Constants.EntityTypes.CspPolicy];
+	public override string[] EntityTypes => [CspManagerConstants.EntityTypes.CspPolicy];
 
 	public override string[] Trees => ["Umbraco.Community.CSPManager.Tree"];
 
@@ -50,7 +50,7 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 		return new SyncEntity
 		{
 			Name = definition.IsBackOffice ? "Backoffice" : "Frontend",
-			Udi = Udi.Create(Constants.EntityTypes.CspPolicy, definition.Id),
+			Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, definition.Id),
 		};
 	}
 
@@ -61,7 +61,7 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 	{
 		var items = new List<SyncItem>();
 
-		if (item.Udi.EntityType == Constants.EntityTypes.CspPolicy && !item.Udi.IsRoot)
+		if (item.Udi.EntityType == CspManagerConstants.EntityTypes.CspPolicy && !item.Udi.IsRoot)
 		{
 			items.Add(item);
 		}
@@ -91,14 +91,14 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 				new SyncItem
 				{
 					Name = "Backoffice",
-					Udi = Udi.Create(Constants.EntityTypes.CspPolicy, CspManagerConstants.DefaultBackofficeId),
+					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultBackofficeId),
 					Flags = flags & ~DependencyFlags.IncludeChildren,
 					Icon = "icon-umbraco"
 				},
 				new SyncItem
 				{
 					Name = "Frontend",
-					Udi = Udi.Create(Constants.EntityTypes.CspPolicy, CspManagerConstants.DefaultFrontEndId),
+					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultFrontEndId),
 					Flags = flags & ~DependencyFlags.IncludeChildren,
 					Icon = "icon-globe"
 				}
