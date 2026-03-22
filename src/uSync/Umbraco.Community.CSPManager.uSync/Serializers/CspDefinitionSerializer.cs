@@ -80,6 +80,10 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		details.AddIfUpdated(nameof(definition.Enabled), definition.Enabled, enabled);
 		definition.Enabled = enabled;
 
+		var isBackOffice = infoNode.Element("IsBackOffice").ValueOrDefault(false);
+		details.AddIfUpdated(nameof(definition.IsBackOffice), definition.IsBackOffice, isBackOffice);
+		definition.IsBackOffice = isBackOffice;
+
 		var reportOnly = infoNode.Element("ReportOnly").ValueOrDefault(false);
 		details.AddIfUpdated(nameof(definition.ReportOnly), definition.ReportOnly, reportOnly);
 		definition.ReportOnly = reportOnly;
@@ -126,7 +130,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 				directives = directivesElement?.Value
 					.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList() ?? [];
 
-			var oldSource = definition.Sources.Find(s => s.DefinitionId == definitionId);
+			var oldSource = definition.Sources.Find(s => s.DefinitionId == definitionId && s.Source == sourceValue);
 			var source = oldSource ??
 				new CspDefinitionSource()
 				{

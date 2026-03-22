@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
+using uSync.Core.Dependency;
 
 namespace Umbraco.Community.CSPManager.uSync.Logging;
 
@@ -72,4 +74,44 @@ internal static partial class Log
 		Level = LogLevel.Debug,
 		Message = "Serializing CSP definition alias='{Alias}' key={Key}")]
 	public static partial void SerializeStart(ILogger logger, string alias, Guid key);
+
+	// ===========================================
+	// SyncItemManager Events (40-59)
+	// ===========================================
+
+	[LoggerMessage(
+		EventId = 40,
+		Level = LogLevel.Debug,
+		Message = "GetTreeType: treeItem={TreeItemId} section={SectionAlias}")]
+	public static partial void GetTreeType(ILogger logger, string? treeItemId, string? sectionAlias);
+
+	[LoggerMessage(
+		EventId = 41,
+		Level = LogLevel.Warning,
+		Message = "Cannot get CSP definition: invalid key '{Key}'")]
+	public static partial void InvalidCspDefinitionKey(ILogger logger, string key);
+
+	[LoggerMessage(
+		EventId = 42,
+		Level = LogLevel.Warning,
+		Message = "No CSP definition found for key '{Key}'")]
+	public static partial void CspDefinitionNotFound(ILogger logger, string key);
+
+	[LoggerMessage(
+		EventId = 43,
+		Level = LogLevel.Debug,
+		Message = "GetItems for {ItemUdi}: returned {ItemCount} item(s)")]
+	public static partial void GetItemsResult(ILogger logger, Udi itemUdi, int itemCount);
+
+	[LoggerMessage(
+		EventId = 44,
+		Level = LogLevel.Debug,
+		Message = "Included item {ItemUdi} name='{Name}' flags={Flags} change={Change}")]
+	public static partial void IncludedSyncItem(ILogger logger, Udi itemUdi, string name, DependencyFlags flags, ChangeType change);
+
+	[LoggerMessage(
+		EventId = 45,
+		Level = LogLevel.Debug,
+		Message = "GetDescendants: item={ItemUdi} flags={Flags} isRoot={IsRoot}")]
+	public static partial void GetDescendants(ILogger logger, Udi itemUdi, DependencyFlags flags, bool isRoot);
 }
