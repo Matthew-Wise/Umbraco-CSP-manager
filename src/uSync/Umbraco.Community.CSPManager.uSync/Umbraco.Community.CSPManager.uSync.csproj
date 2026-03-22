@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>Umbraco.Community.CSPManager.uSync</Product>
+    <PackageId>Umbraco.Community.CSPManager.uSync</PackageId>
+    <Title>Umbraco.Community.CSPManager.uSync</Title>
+    <Description>uSync support for Umbraco.Community.CSPManager</Description>
+    <PackageTags>umbraco plugin package umbraco-marketplace Content-Security-Policy security CSP csp Content Security Policy uSync</PackageTags>
+    <RootNamespace>Umbraco.Community.CSPManager.uSync</RootNamespace>
+    <PackageProjectUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</PackageProjectUrl>
+    <PackageReadmeFile>README_nuget_usync.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CspManagerMinVersion Condition="'$(CspManagerMinVersion)' == ''">17.0.0-0</CspManagerMinVersion>
+    <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="uSync.BackOffice" />
+    <ProjectReference Include="..\..\Umbraco.Community.CSPManager\Umbraco.Community.CSPManager.csproj"
+                      Condition="'$(UseProjectReferences)' == 'true'" />
+    <PackageReference Include="Umbraco.Community.CSPManager"
+                      VersionOverride="[$(CspManagerMinVersion), 18.0.0)"
+                      Condition="'$(UseProjectReferences)' != 'true'">
+      <ExcludeAssets>buildTransitive;build</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\docs\README_nuget_usync.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+</Project>

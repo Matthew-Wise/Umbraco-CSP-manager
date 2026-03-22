@@ -1,0 +1,23 @@
+{
+  "name": "u-sync-csp-complete",
+  "private": true,
+  "version": "17.0.0",
+  "type": "module",
+  "scripts": {
+    "watch": "tsc && vite build --watch",
+    "build": "tsc && vite build"
+  },
+  "engines": {
+    "node": ">=24",
+    "npm": ">=10.9"
+  },
+  "devDependencies": {
+    "@jumoo/usync-publisher-assets": "^17.0.0",
+    "@umbraco-cms/backoffice": "^*",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

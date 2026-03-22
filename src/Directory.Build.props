@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Matt Wise</Authors>
+    <Copyright>$([System.DateTime]::UtcNow.ToString(`yyyy`)) © Matt Wise</Copyright>
+    <RepositoryUrl>https://github.com/Matthew-Wise/Umbraco-CSP-manager</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\images\icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+</Project>

@@ -20,8 +20,8 @@ export interface WorkspaceState {
 }
 
 const ID_TO_POLICY_TYPE: Record<string, PolicyType> = {
-	frontend: CspConstants.policyTypes.frontend,
-	backoffice: CspConstants.policyTypes.backoffice,
+	[CspConstants.policyTypes.frontend.value]: CspConstants.policyTypes.frontend,
+	[CspConstants.policyTypes.backoffice.value]: CspConstants.policyTypes.backoffice,
 };
 
 export class UmbCspManagerWorkspaceContext

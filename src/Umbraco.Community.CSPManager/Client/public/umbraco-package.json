@@ -2,7 +2,7 @@
   "$schema": "../../umbraco-package-schema.json",
   "id": "Umbraco.Community.CSPManager",
   "name": "Umbraco.Community.CSPManager",
-  "version": "16.0.0",
+  "version": "17.0.0",
   "allowPackageTelemetry": true,
   "extensions": [
     {

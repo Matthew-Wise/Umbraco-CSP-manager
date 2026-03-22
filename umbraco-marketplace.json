@@ -22,10 +22,22 @@
   "LicenseTypes": ["Free"],
   "IssueTrackerUrl": "https://github.com/Matthew-Wise/Umbraco-CSP-manager/issues",
   "PackageType": "Package",
+  "RelatedPackages": [
+    {
+      "GroupTitle": "uSync Integration",
+      "PackageId": "Umbraco.Community.CSPManager.uSync",
+      "Description": "Sync CSP policies between environments with uSync"
+    },
+    {
+      "GroupTitle": "uSync Complete Integration",
+      "PackageId": "Umbraco.Community.CSPManager.uSync.Complete",
+      "Description": "Adds uSync Publisher push/pull support"
+    }
+  ],
   "Screenshots": [
     {
       "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/management-screen.png",
-      "Caption": "Managment dashboard for CSP"
+      "Caption": "Management dashboard for CSP"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/settings-screen.png",
