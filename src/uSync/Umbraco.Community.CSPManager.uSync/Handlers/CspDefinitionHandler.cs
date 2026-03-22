@@ -9,11 +9,9 @@ using Umbraco.Community.CSPManager.Services;
 using uSync.BackOffice.Configuration;
 using uSync.BackOffice.Services;
 
-using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
-
 namespace Umbraco.Community.CSPManager.uSync.Handlers;
 
-[SyncHandler("CspDefinitionHandler", "CSP", "CspDefinitions", 3000, Icon = "icon-shield", EntityType = CspManagerConstants.EntityTypes.CspPolicy)]
+[SyncHandler("CspDefinitionHandler", "CSP", "CspDefinitions", 3000, Icon = "icon-shield", EntityType = Constants.EntityTypes.CspPolicy)]
 public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition>, ISyncHandler,
 	INotificationAsyncHandler<CspSavedNotification>
 {

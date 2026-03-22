@@ -2,8 +2,6 @@
 using Umbraco.Cms.Core.Models;
 using Umbraco.Community.CSPManager.Models;
 using uSync.Core.Dependency;
-using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
-
 namespace Umbraco.Community.CSPManager.uSync.Sync;
 
 public class CspDependencyChecker : ISyncDependencyChecker<CspDefinition>
@@ -18,7 +16,7 @@ public class CspDependencyChecker : ISyncDependencyChecker<CspDefinition>
 			new uSyncDependency
 			{
 				Name = item.IsBackOffice ? "Backoffice" : "Frontend",
-				Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, item.Id),
+				Udi = Udi.Create(Constants.EntityTypes.CspPolicy, item.Id),
 				Order = DependencyOrders.Languages,
 				Flags = DependencyFlags.None,
 				Level = 0

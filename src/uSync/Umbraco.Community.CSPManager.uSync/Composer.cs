@@ -4,8 +4,6 @@ using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.uSync.Handlers;
 
-using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
-
 namespace Umbraco.Community.CSPManager.uSync;
 
 internal class Composer : IComposer
@@ -15,6 +13,6 @@ internal class Composer : IComposer
 		builder.AdduSync();
 
 		builder.AddNotificationAsyncHandler<CspSavedNotification, CspDefinitionHandler>();
-		UdiParser.RegisterUdiType(CspManagerConstants.EntityTypes.CspPolicy, UdiType.GuidUdi);
+		UdiParser.RegisterUdiType(Constants.EntityTypes.CspPolicy, UdiType.GuidUdi);
 	}
 }
