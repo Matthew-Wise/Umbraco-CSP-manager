@@ -13,7 +13,7 @@ Provides uSync serialization and sync support for CSP Manager configurations.
 
 - Default: `ProjectReference` to CSPManager (instant change flow during development)
 - NuGet pack: `dotnet pack -p:UseProjectReferences=false` switches to `PackageReference`
-- Version override: `-p:CspManagerMinVersion=X.Y.Z` (default: 3.0.0)
+- Version range: `[$(CspManagerMinVersion), 18.0.0)` — accepts any 17.x (default lower bound: `17.0.0-0`)
 
 ## Key Behaviors
 

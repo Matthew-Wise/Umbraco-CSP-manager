@@ -1,6 +1,6 @@
 # Umbraco.Community.CSPManager.uSync
 
-[![Umbraco Version](https://img.shields.io/badge/Umbraco-17.1+-%233544B1?style=flat&logo=umbraco)](#)
+[![Umbraco Version](https://img.shields.io/badge/Umbraco-17+-%233544B1?style=flat&logo=umbraco)](#)
 [![NuGet Version](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager.uSync)](#)
 [![Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.CSPManager.uSync)](#)
 
@@ -9,15 +9,22 @@ uSync support for [Umbraco.Community.CSPManager](https://github.com/Matthew-Wise
 ## Table of Contents
 
 - [Requirements](#requirements)
+- [What This Package Adds](#what-this-package-adds)
 - [Installation](#installation)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Requirements
 
-- Umbraco 17.1+
-- [Umbraco.Community.CSPManager](https://www.nuget.org/packages/Umbraco.Community.CSPManager/) 3.0.0+
-- [uSync.BackOffice](https://www.nuget.org/packages/uSync.BackOffice/) 17.0.2+
+- Umbraco 17+
+- [Umbraco.Community.CSPManager](https://www.nuget.org/packages/Umbraco.Community.CSPManager/) 17+
+- [uSync.BackOffice](https://www.nuget.org/packages/uSync.BackOffice/) 17+
+
+## What This Package Adds
+
+Once installed, uSync will automatically include your CSP definitions in its export/import cycle — syncing CSP configurations across environments alongside your other Umbraco settings.
+
+![uSync synchronization of CSP definitions](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/usync-screen.png "uSync synchronization")
 
 ## Installation
 
@@ -35,13 +42,7 @@ Install-Package Umbraco.Community.CSPManager.uSync
 
 ## Contributing
 
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add/update tests as needed
-5. Submit a pull request
+Contributions are welcome! Please read our [Contributing Guidelines](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/CONTRIBUTING.md) and feel free to submit issues and pull requests.
 
 ## License
 

@@ -24,8 +24,12 @@
   ],
   "Screenshots": [
     {
-      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/management-screen.png",
-      "Caption": "Managment dashboard for CSP"
+      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/push-screen.png",
+      "Caption": "Push CSP policies to a remote environment"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/pull-screen.png",
+      "Caption": "Pull CSP policies from a remote environment"
     }
   ]
 }

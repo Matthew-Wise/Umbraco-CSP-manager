@@ -1,6 +1,6 @@
 # Umbraco.Community.CSPManager.uSync.Complete
 
-[![Umbraco Version](https://img.shields.io/badge/Umbraco-17.1+-%233544B1?style=flat&logo=umbraco)](#)
+[![Umbraco Version](https://img.shields.io/badge/Umbraco-17+-%233544B1?style=flat&logo=umbraco)](#)
 [![NuGet Version](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager.uSync.Complete)](#)
 [![Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.CSPManager.uSync.Complete)](#)
 
@@ -44,15 +44,13 @@ This package extends the base [Umbraco.Community.CSPManager.uSync](https://www.n
 
 These actions are available on both individual CSP policy items and the CSP Manager tree root in the backoffice.
 
+![Push CSP policies to a remote environment](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/push-screen.png "Push CSP policies")
+
+![Pull CSP policies from a remote environment](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/pull-screen.png "Pull CSP policies")
+
 ## Contributing
 
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add/update tests as needed
-5. Submit a pull request
+Contributions are welcome! Please read our [Contributing Guidelines](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/CONTRIBUTING.md) and feel free to submit issues and pull requests.
 
 ## License
 

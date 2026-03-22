@@ -1,12 +1,12 @@
 {
   "id": "Umbraco.Community.CSPManager.uSync.Complete",
-  "name": "uSync CSP Manager Complete",
-  "version": "0.0.0",
+  "name": "Umbraco.Community.CSPManager.uSync.Complete",
+  "version": "17.0.0",
   "allowTelemetry": true,
   "extensions": [
     {
-      "name": "uSync CSP Complete Bundle",
-      "alias": "uSync.CspManager.Complete.Bundle",
+      "name": "Umbraco.Community.CSPManager.uSync.Complete.Bundle",
+      "alias": "Umbraco.Community.CSPManager.uSync.Complete.Bundle",
       "type": "bundle",
       "js": "/App_Plugins/uSyncCspComplete/u-sync-csp-complete.js"
     }

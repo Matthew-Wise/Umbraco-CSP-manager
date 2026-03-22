@@ -1,10 +1,10 @@
 # Umbraco.Community.CSPManager
 
-[![Platform](https://img.shields.io/badge/Umbraco-16.1+-%233544B1?style=flat&logo=umbraco)](https://umbraco.com/products/umbraco-cms/)
+[![Platform](https://img.shields.io/badge/Umbraco-17+-%233544B1?style=flat&logo=umbraco)](https://umbraco.com/products/umbraco-cms/)
 [![Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.CSPManager?color=cc9900)](https://www.nuget.org/packages/Umbraco.Community.CSPManager/)
 [![NuGet](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager?color=0273B3)](https://www.nuget.org/packages/Umbraco.Community.CSPManager)
 [![GitHub license](https://img.shields.io/github/license/Matthew-Wise/Umbraco-CSP-manager?color=8AB803)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/LICENSE)
-[![Build](https://github.com/Matthew-Wise/Umbraco-CSP-manager/actions/workflows/main.yml/badge.svg?event=push)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/.github/workflows/main.yml)
+[![Build](https://github.com/Matthew-Wise/Umbraco-CSP-manager/actions/workflows/csp-manager.yml/badge.svg?event=push)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/.github/workflows/csp-manager.yml)
 
 A comprehensive Content Security Policy (CSP) management package for Umbraco CMS that helps protect your website from XSS attacks and other code injection vulnerabilities. Manage CSP headers for both frontend and backend through an intuitive backoffice interface.
 
@@ -19,16 +19,15 @@ A comprehensive Content Security Policy (CSP) management package for Umbraco CMS
 
 ## Table of Contents
 
-- [Requirements](#requirements)
-- [Installation](#installation)
+- [Installation](#getting-started)
 - [Quick Start](#quick-start)
-- [Policy Management](#csp-management)
-- [Policy Settings](#configuration)
+- [Policy Management](#policy-management)
+- [Policy Settings](#policy-settings)
 - [Evaluation](#evaluation)
 - [Configuration Options](#configuration-options)
 - [Nonce Tag Helper](#nonce-tag-helper)
 - [Advanced Usage](#advanced-usage)
-- [Troubleshooting](#troubleshooting)
+- [uSync Integration](#usync-integration)
 - [Contributing](#contributing)
 
 ## Getting Started
@@ -62,9 +61,13 @@ To add `'strict-dynamic'` to your CSP:
 
 ## Policy Settings
 
+Configure the CSP behaviour for each policy. Options include enabling/disabling the policy, switching to report-only mode, selecting a reporting directive, and specifying a report URI.
+
 ![Policy Settings section](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/settings-screen.png "Policy Settings section")
 
 ## Evaluation
+
+The built-in evaluation tool analyses your current CSP configuration and highlights potential security issues — such as overly permissive sources or directives that could allow XSS attacks. Use it to validate policies before going live.
 
 ![CSP Evaluation section](https://raw.githubusercontent.com/Matthew-Wise/Umbraco-CSP-manager/main/images/evaluate-screen.png "Csp Evaluation section")
 
@@ -84,7 +87,7 @@ You can configure CSP Manager behavior in your `appsettings.json`:
 
 ## Nonce Tag Helper
 
-To use CSP nonce you can make use of the Tag Helper. To find out more about nonce see see [nonce Guide](https://content-security-policy.com/nonce/).
+To use CSP nonce you can make use of the Tag Helper. To find out more about nonce see [nonce Guide](https://content-security-policy.com/nonce/).
 
 First you will need to include the namespace in the `ViewImports.cshtml`
 
@@ -194,6 +197,15 @@ If you encounter issues not covered here:
 1. Check the [GitHub Issues](https://github.com/Matthew-Wise/Umbraco-CSP-manager/issues) page
 2. Review the full documentation (link below)
 3. Create a new issue with detailed information about your problem
+
+## uSync Integration
+
+Sync CSP policies between environments using [uSync](https://github.com/KevinJump/uSync9).
+
+| Package | Purpose |
+|---|---|
+| [Umbraco.Community.CSPManager.uSync](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync/) | Automatically includes CSP definitions in uSync export/import cycles |
+| [Umbraco.Community.CSPManager.uSync.Complete](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync.Complete/) | Adds Push/Pull actions via uSync Publisher for on-demand environment sync |
 
 ## Contributing
 

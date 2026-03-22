@@ -15,8 +15,8 @@
     <PackageVersion Include="uSync.BackOffice" Version="17.0.4" />
     <PackageVersion Include="uSync.Complete" Version="17.1.3" />
     <PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
-    <PackageVersion Include="Umbraco.Community.CSPManager" Version="3.0.0" />
-    <PackageVersion Include="Umbraco.Community.CSPManager.uSync" Version="3.0.0" />
+    <PackageVersion Include="Umbraco.Community.CSPManager" Version="17.0.0-beta.1" />
+    <PackageVersion Include="Umbraco.Community.CSPManager.uSync" Version="17.0.0-beta.1" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="SystemTextJson.JsonDiffPatch.NUnit" Version="2.0.0" />

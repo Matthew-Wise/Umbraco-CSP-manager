@@ -29,9 +29,13 @@ src/
 
 ## CI Release Tags
 
-- CSP Manager: GitHub Release tag format `3.1.0`
-- uSync: tag `usync-3.0.2`
-- uSync Complete: tag `usync-complete-3.0.2`
+All packages use major version aligned to Umbraco (e.g. Umbraco 17 → `17.x.x`).
+
+- CSP Manager: GitHub Release tag `17.0.0` (triggers `csp-manager.yml`)
+- uSync: git tag `usync-17.0.0` (triggers `usync.yml` `release-usync` job)
+- uSync Complete: git tag `usync-complete-17.0.0` (triggers `usync.yml` `release-usync-complete` job)
+
+Each package releases independently. Dependencies use a version range `[17.0.0-0, 18.0.0)` — accepts any 17.x including pre-releases. Only update the lower bound in the `.csproj` when a dependency has a breaking change that requires a newer minimum.
 
 ## Development Principles
 
