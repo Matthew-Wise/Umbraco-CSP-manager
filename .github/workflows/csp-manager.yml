@@ -64,20 +64,20 @@ jobs:
       - name: Run tests
         run: dotnet test ${{env.TESTPROJECT}} -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName" --collect:"XPlat Code Coverage"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results
           path: "${{env.TESTLOGPATH}}${{env.LogFileName}}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: coverage-results
           path: "${{env.TESTLOGPATH}}**/coverage.cobertura.xml"
 
       - name: Upload nuget packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: nuget-packages
           path: ${{env.OUT_FOLDER}}
@@ -125,14 +125,14 @@ jobs:
         run: npx playwright test
 
       - name: Upload Playwright results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: playwright-results
           path: ./src/Umbraco.Community.CSPManager/Client/results/
 
       - name: Upload Playwright traces
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-traces
@@ -150,7 +150,7 @@ jobs:
 
     steps:
       - name: Download nuget packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: nuget-packages
           path: ./build-out/
