@@ -68,6 +68,42 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
+	public async Task GetCspDefinitionAsync_ByKey_WhenDefinitionExists_ReturnsDefinitionWithSources()
+	{
+		var id = Guid.NewGuid();
+		var definition = new CspDefinition
+		{
+			Id = id,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources =
+			[
+				new() { DefinitionId = id, Source = "'self'", Directives = [Constants.Directives.DefaultSource] }
+			]
+		};
+		await _cspService.SaveCspDefinitionAsync(definition, CancellationToken.None);
+
+		var result = await _cspService.GetCspDefinitionAsync(id, CancellationToken.None);
+
+		Assert.That(result, Is.Not.Null);
+		Assert.Multiple(() =>
+		{
+			Assert.That(result.Id, Is.EqualTo(id));
+			Assert.That(result.Enabled, Is.True);
+			Assert.That(result.Sources, Has.Count.EqualTo(1));
+			Assert.That(result.Sources[0].Source, Is.EqualTo("'self'"));
+		});
+	}
+
+	[Test]
+	public async Task GetCspDefinitionAsync_ByKey_WhenDefinitionDoesNotExist_ReturnsNull()
+	{
+		var result = await _cspService.GetCspDefinitionAsync(Guid.NewGuid(), CancellationToken.None);
+
+		Assert.That(result, Is.Null);
+	}
+
+	[Test]
 	public async Task SaveCspDefinitionAsync_UpdatesExistingDefinition()
 	{
 		var originalDefinition = new CspDefinition

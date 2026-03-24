@@ -6,6 +6,71 @@ namespace Umbraco.Community.CSPManager.Tests.Middleware;
 
 internal static class MiddlewareTestCases
 {
+	public static IEnumerable<TestCaseData> CspMiddlewareHeaderContentCases
+	{
+		get
+		{
+			yield return new TestCaseData(
+				"/",
+				new CspDefinition
+				{
+					Id = CspConstants.DefaultFrontEndId,
+					Enabled = true,
+					IsBackOffice = false,
+					Sources = [new CspDefinitionSource { Source = "'self'", Directives = [CspConstants.Directives.DefaultSource] }]
+				},
+				CspConstants.HeaderName,
+				"default-src 'self'")
+			{ TestName = "Frontend enabled - CSP header set with correct value" };
+
+			yield return new TestCaseData(
+				"/umbraco",
+				new CspDefinition
+				{
+					Id = CspConstants.DefaultBackofficeId,
+					Enabled = true,
+					IsBackOffice = true,
+					UpgradeInsecureRequests = true,
+					Sources = [new CspDefinitionSource { Source = "'self'", Directives = [CspConstants.Directives.DefaultSource] }]
+				},
+				CspConstants.HeaderName,
+				"default-src 'self';upgrade-insecure-requests")
+			{ TestName = "UpgradeInsecureRequests - directive included in header" };
+
+			yield return new TestCaseData(
+				"/umbraco",
+				new CspDefinition
+				{
+					Id = CspConstants.DefaultBackofficeId,
+					Enabled = true,
+					IsBackOffice = true,
+					ReportingDirective = CspConstants.ReportingDirectives.ReportTo,
+					ReportUri = "https://report.example.com",
+					Sources = [new CspDefinitionSource { Source = "'self'", Directives = [CspConstants.Directives.DefaultSource] }]
+				},
+				CspConstants.HeaderName,
+				"default-src 'self';report-to https://report.example.com")
+			{ TestName = "ReportingDirective and ReportUri - included in header" };
+
+			yield return new TestCaseData(
+				"/umbraco",
+				new CspDefinition
+				{
+					Id = CspConstants.DefaultBackofficeId,
+					Enabled = true,
+					IsBackOffice = true,
+					Sources =
+					[
+						new CspDefinitionSource { Source = "'self'", Directives = [CspConstants.Directives.DefaultSource] },
+						new CspDefinitionSource { Source = "'self'", Directives = [CspConstants.Directives.DefaultSource] }
+					]
+				},
+				CspConstants.HeaderName,
+				"default-src 'self'")
+			{ TestName = "Duplicate source - deduplicated in header" };
+		}
+	}
+
 	public static IEnumerable<TestCaseData> CspMiddlewareReturnsExpectedCspWhenEnabledCases
 	{
 		get
