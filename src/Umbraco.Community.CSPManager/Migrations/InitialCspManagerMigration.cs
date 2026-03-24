@@ -19,7 +19,7 @@ public sealed class InitialCspManagerMigration : AsyncMigrationBase
 		if (!TableExists(nameof(CspDefinition)))
 		{
 			Create.Table<CspDefinitionSchema>().Do();
-			await Context.Database.InsertAsync<CspDefinition>(new()
+			await Context.Database.InsertAsync<CspDefinitionSchema>(new()
 			{
 				Id = Constants.DefaultBackofficeId,
 				IsBackOffice = true,
