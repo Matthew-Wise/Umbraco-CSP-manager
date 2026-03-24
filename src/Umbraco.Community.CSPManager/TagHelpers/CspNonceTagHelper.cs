@@ -9,6 +9,7 @@ namespace Umbraco.Community.CSPManager.TagHelpers;
 
 [HtmlTargetElement(Constants.TagHelper.ScriptTag, Attributes = CspNonceAttributeName)]
 [HtmlTargetElement(Constants.TagHelper.StyleTag, Attributes = CspNonceAttributeName)]
+[HtmlTargetElement(Constants.TagHelper.LinkTag, Attributes = CspNonceAttributeName)]
 public class CspNonceTagHelper : TagHelper
 {
 	private const string CspNonceAttributeName = "csp-manager-add-nonce";
@@ -57,6 +58,7 @@ public class CspNonceTagHelper : TagHelper
 				contextMarkerKey = Constants.TagHelper.CspManagerScriptNonceSet;
 				break;
 			case Constants.TagHelper.StyleTag:
+			case Constants.TagHelper.LinkTag:
 				nonce = _cspService.GetOrCreateCspStyleNonce(httpContext);
 				contextMarkerKey = Constants.TagHelper.CspManagerStyleNonceSet;
 				break;

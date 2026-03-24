@@ -36,6 +36,8 @@ public static partial class Constants
 
 		public const string StyleTag = "style";
 
+		public const string LinkTag = "link";
+
 		public const string ContextKey = "CspManagerContext";
 
 		public const string CspManagerScriptNonceSet = "CspManagerScriptNonceSet";
