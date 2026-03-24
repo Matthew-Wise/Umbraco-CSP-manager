@@ -58,6 +58,7 @@ public class CspNonceTagHelper : TagHelper
 				contextMarkerKey = Constants.TagHelper.CspManagerScriptNonceSet;
 				break;
 			case Constants.TagHelper.StyleTag:
+			case Constants.TagHelper.LinkTag:
 				nonce = _cspService.GetOrCreateCspStyleNonce(httpContext);
 				contextMarkerKey = Constants.TagHelper.CspManagerStyleNonceSet;
 				break;
