@@ -34,6 +34,9 @@ public class CspDefinition
 
 	public bool UpgradeInsecureRequests { get; set; }
 
+	[NullSetting(NullSetting = NullSettings.Null)]
+	public Guid? DomainKey { get; set; }
+
 	[ResultColumn]
 	[Reference(ReferenceType.Many,
 		ColumnName = nameof(Id),

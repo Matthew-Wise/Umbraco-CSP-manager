@@ -20,6 +20,12 @@ public static partial class Constants
 
 	public const string BackOfficeCacheKey = "csp-backoffice";
 
+	public const string DomainCacheKeyPrefix = "csp-domain-";
+
+	public const string DomainIdMappingCacheKey = "csp-domain-id-mapping";
+
+	public static string DomainCacheKey(Guid domainKey) => $"{DomainCacheKeyPrefix}{domainKey}";
+
 	public const string HeaderName = "Content-Security-Policy";
 
 	public const string ReportOnlyHeaderName = HeaderName + "-Report-Only";

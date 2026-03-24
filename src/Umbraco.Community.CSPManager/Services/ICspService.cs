@@ -29,6 +29,26 @@ public interface ICspService
 	Task<CspDefinition?> GetCspDefinitionAsync(Guid key, CancellationToken cancellationToken);
 
 	/// <summary>
+	/// Retrieves the domain-specific CSP definition from the database.
+	/// </summary>
+	Task<CspDefinition?> GetCspDefinitionForDomainAsync(Guid domainKey, CancellationToken cancellationToken);
+
+	/// <summary>
+	/// Retrieves the domain-specific CSP definition from the runtime cache, loading from the database if not cached.
+	/// </summary>
+	Task<CspDefinition?> GetCachedCspDefinitionForDomainAsync(Guid domainKey, CancellationToken cancellationToken);
+
+	/// <summary>
+	/// Retrieves all domain-specific CSP definitions from the database.
+	/// </summary>
+	Task<List<CspDefinition>> GetAllDomainPoliciesAsync(CancellationToken cancellationToken);
+
+	/// <summary>
+	/// Deletes a domain-specific CSP definition. Global policies (frontend/backoffice) cannot be deleted.
+	/// </summary>
+	Task DeleteCspDefinitionAsync(Guid id, CancellationToken cancellationToken);
+
+	/// <summary>
 	/// Retrieves the CSP definition from the runtime cache, loading from the database if not cached.
 	/// </summary>
 	/// <param name="isBackOfficeRequest">

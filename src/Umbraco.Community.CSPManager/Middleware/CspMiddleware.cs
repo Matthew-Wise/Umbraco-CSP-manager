@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Web;
 using Umbraco.Community.CSPManager.Extensions;
 using Umbraco.Community.CSPManager.Logging;
 using Umbraco.Community.CSPManager.Models;
@@ -35,6 +36,8 @@ public class CspMiddleware
 	private readonly ICspService _cspService;
 	private readonly IEventAggregator _eventAggregator;
 	private readonly ILogger<CspMiddleware> _logger;
+	private readonly IUmbracoContextAccessor _umbracoContextAccessor;
+	private readonly IDomainKeyResolver _domainKeyResolver;
 	private CspManagerOptions _cspOptions;
 
 	/// <summary>
@@ -52,13 +55,17 @@ public class CspMiddleware
 		ICspService cspService,
 		IEventAggregator eventAggregator,
 		IOptionsMonitor<CspManagerOptions> cspOptions,
-		ILogger<CspMiddleware> logger)
+		ILogger<CspMiddleware> logger,
+		IUmbracoContextAccessor umbracoContextAccessor,
+		IDomainKeyResolver domainKeyResolver)
 	{
 		_next = next;
 		_runtimeState = runtimeState;
 		_cspService = cspService;
 		_eventAggregator = eventAggregator;
 		_logger = logger;
+		_umbracoContextAccessor = umbracoContextAccessor;
+		_domainKeyResolver = domainKeyResolver;
 
 		cspOptions.OnChange(config =>
 		{
@@ -98,7 +105,14 @@ public class CspMiddleware
 					return;
 				}
 
-				var definition = await _cspService.GetCachedCspDefinitionAsync(isBackOfficeRequest, context.RequestAborted);
+				CspDefinition? definition = null;
+
+				if (!isBackOfficeRequest)
+				{
+					definition = await TryGetDomainDefinitionAsync(context.RequestAborted);
+				}
+
+				definition ??= await _cspService.GetCachedCspDefinitionAsync(isBackOfficeRequest, context.RequestAborted);
 				await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
 
 				if (definition is not { Enabled: true })
@@ -190,5 +204,30 @@ public class CspMiddleware
 		{
 			csp[directive] = $"{existingValue} 'nonce-{nonce}'";
 		}
+	}
+
+	private async Task<CspDefinition?> TryGetDomainDefinitionAsync(CancellationToken cancellationToken)
+	{
+		if (!_umbracoContextAccessor.TryGetUmbracoContext(out var umbracoContext))
+		{
+			return null;
+		}
+
+		var domainId = umbracoContext.PublishedRequest?.Domain?.Id;
+		if (domainId is null)
+		{
+			return null;
+		}
+
+		var domainKey = await _domainKeyResolver.ResolveKeyAsync(domainId.Value, cancellationToken);
+		if (domainKey is null)
+		{
+			return null;
+		}
+
+		var definition = await _cspService.GetCachedCspDefinitionForDomainAsync(domainKey.Value, cancellationToken);
+
+		// Only use the domain policy if it exists and is enabled; otherwise fall through to global frontend
+		return definition is { Enabled: true } ? definition : null;
 	}
 }
