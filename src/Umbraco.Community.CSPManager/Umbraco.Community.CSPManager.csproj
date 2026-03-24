@@ -22,6 +22,9 @@
     <PackageReference Include="Umbraco.Cms.Web.Website" />
     <PackageReference Include="Umbraco.Cms.Api.Management" />
     <InternalsVisibleTo Include="Umbraco.Community.CSPManager.Tests" />
+    <!-- Required for Moq to proxy internal types at runtime. Moq generates classes in a dynamic
+         assembly named DynamicProxyGenAssembly2 — without this, mocking fails on any internal type. -->
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
   <ItemGroup>
     <ClientAssetsInputs Include="Client\**" Exclude="$(DefaultItemExcludes)" />

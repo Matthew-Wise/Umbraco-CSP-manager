@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,11 +42,17 @@ public class CspMiddlewareTests
 			UmbConstants.Configuration.ConfigUnattended + ":" + nameof(UnattendedSettings.InstallUnattended)] = "true";
 		_cspService = Mock.Of<ICspService>();
 		_eventAggregator = Mock.Of<IEventAggregator>();
+		_host = BuildTestHost();
+	}
 
+	private IHost BuildTestHost(
+		Action<IServiceCollection> extraServices = null,
+		Action<IApplicationBuilder> extraApp = null)
+	{
 		var runtimeState = Mock.Of<IRuntimeState>(x => x.Level == RuntimeLevel.Run);
 		var runtime = Mock.Of<IRuntime>(x => x.State == runtimeState);
 
-		_host = new HostBuilder()
+		return new HostBuilder()
 			.ConfigureWebHost(webBuilder =>
 			{
 				webBuilder
@@ -61,10 +68,12 @@ public class CspMiddlewareTests
 						services.AddTransient(sp => new UmbracoRequestPaths(
 							TestHelper.GetHostingEnvironment(),
 							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
+						extraServices?.Invoke(services);
 					})
 					.Configure(app =>
 					{
 						app.UseMiddleware<CspMiddleware>();
+						extraApp?.Invoke(app);
 					})
 					.ConfigureAppConfiguration((context, configBuilder) =>
 					{
@@ -72,7 +81,8 @@ public class CspMiddlewareTests
 						configBuilder.Sources.Clear();
 						configBuilder.AddInMemoryCollection(InMemoryConfiguration);
 					});
-			}).ConfigureUmbracoDefaults()
+			})
+			.ConfigureUmbracoDefaults()
 			.Start();
 	}
 
@@ -113,6 +123,92 @@ public class CspMiddlewareTests
 		{
 			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
 		}
+	}
+
+	[Test]
+	[TestCaseSource(typeof(MiddlewareTestCases), nameof(MiddlewareTestCases.CspMiddlewareHeaderContentCases))]
+	public async Task CspMiddleware_ReturnsExpectedCspHeaderContent(string uri, CspDefinition definition, string expectedHeaderName, string expectedHeaderValue)
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+
+		var response = await _host.GetTestClient().GetAsync(uri);
+
+		Assert.That(response.Headers.Contains(expectedHeaderName), Is.True);
+		var headerValue = response.Headers.GetValues(expectedHeaderName).FirstOrDefault();
+		Assert.That(headerValue, Is.EqualTo(expectedHeaderValue));
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithDisableBackOfficeHeader_DoesNotSetHeaderForBackofficeRequest()
+	{
+		var definition = new CspDefinition { Enabled = true, IsBackOffice = true, Sources = Constants.DefaultBackOfficeCsp };
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.Configure<CspManagerOptions>(o => o.DisableBackOfficeHeader = true));
+
+		var response = await host.GetTestClient().GetAsync("/umbraco");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
+		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithScriptNonceSetInItems_InjectsNonceIntoScriptSrc()
+	{
+		const string testNonce = "test-nonce-abc123";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.ScriptSource] }]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetOrCreateCspNonce(It.IsAny<HttpContext>()))
+			.Returns(testNonce);
+
+		using var host = BuildTestHost(extraApp: app =>
+		{
+			app.Use(async (ctx, next) =>
+			{
+				ctx.Items[Constants.TagHelper.CspManagerScriptNonceSet] = true;
+				await next(ctx);
+			});
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain($"'nonce-{testNonce}'"));
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenServiceThrows_RequestCompletesWithoutCspHeader()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		// Exception is swallowed in OnStarting — request completes without throwing
+		var response = await _host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
+		});
 	}
 
 	[TearDown]
