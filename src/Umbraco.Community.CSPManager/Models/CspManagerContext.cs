@@ -2,6 +2,5 @@
 
 public class CspManagerContext
 {
-	public string? StyleNonce { get; set; } = null;
-	public string? ScriptNonce { get; set; } = null;
+	public string? Nonce { get; set; } = null;
 }
