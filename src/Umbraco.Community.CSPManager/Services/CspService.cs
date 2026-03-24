@@ -102,7 +102,7 @@ internal sealed class CspService : ICspService
 		return definition;
 	}
 
-	public string GetOrCreateCspScriptNonce(HttpContext context)
+	public string GetOrCreateCspNonce(HttpContext context)
 	{
 		var cspManagerContext = context.GetOrCreateCspManagerContext();
 
@@ -111,35 +111,14 @@ internal sealed class CspService : ICspService
 			return string.Empty;
 		}
 
-		if (!string.IsNullOrEmpty(cspManagerContext.ScriptNonce))
+		if (!string.IsNullOrEmpty(cspManagerContext.Nonce))
 		{
-			return cspManagerContext.ScriptNonce;
+			return cspManagerContext.Nonce;
 		}
 
 		var nonce = GenerateCspNonceValue();
 
-		cspManagerContext.ScriptNonce = nonce;
-
-		return nonce;
-	}
-
-	public string GetOrCreateCspStyleNonce(HttpContext context)
-	{
-		var cspManagerContext = context.GetOrCreateCspManagerContext();
-
-		if (cspManagerContext == null)
-		{
-			return string.Empty;
-		}
-
-		if (!string.IsNullOrEmpty(cspManagerContext.StyleNonce))
-		{
-			return cspManagerContext.StyleNonce;
-		}
-
-		var nonce = GenerateCspNonceValue();
-
-		cspManagerContext.StyleNonce = nonce;
+		cspManagerContext.Nonce = nonce;
 
 		return nonce;
 	}

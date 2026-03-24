@@ -47,25 +47,22 @@ public class CspNonceTagHelper : TagHelper
 		}
 
 		var httpContext = ViewContext.HttpContext;
-		string nonce;
-		string contextMarkerKey;
 		var tag = output.TagName;
 
-		switch (tag)
+		string contextMarkerKey = tag switch
 		{
-			case Constants.TagHelper.ScriptTag:
-				nonce = _cspService.GetOrCreateCspScriptNonce(httpContext);
-				contextMarkerKey = Constants.TagHelper.CspManagerScriptNonceSet;
-				break;
-			case Constants.TagHelper.StyleTag:
-			case Constants.TagHelper.LinkTag:
-				nonce = _cspService.GetOrCreateCspStyleNonce(httpContext);
-				contextMarkerKey = Constants.TagHelper.CspManagerStyleNonceSet;
-				break;
-			default:
-				_logger.LogWarning("CSP Nonce used on an invalid tag {Tag}", tag);
-				return;
+			Constants.TagHelper.ScriptTag => Constants.TagHelper.CspManagerScriptNonceSet,
+			Constants.TagHelper.StyleTag or Constants.TagHelper.LinkTag => Constants.TagHelper.CspManagerStyleNonceSet,
+			_ => string.Empty
+		};
+
+		if (string.IsNullOrEmpty(contextMarkerKey))
+		{
+			_logger.LogWarning("CSP Nonce used on an invalid tag {Tag}", tag);
+			return;
 		}
+
+		var nonce = _cspService.GetOrCreateCspNonce(httpContext);
 
 
 		httpContext.Items[contextMarkerKey] = true;

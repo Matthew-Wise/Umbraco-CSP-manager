@@ -161,12 +161,12 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
-	public void GetCspScriptNonce_WithValidContext_ReturnsNonce()
+	public void GetOrCreateCspNonce_WithValidContext_ReturnsNonce()
 	{
 		var context = new DefaultHttpContext();
 
-		var nonce1 = _cspService.GetOrCreateCspScriptNonce(context);
-		var nonce2 = _cspService.GetOrCreateCspScriptNonce(context);
+		var nonce1 = _cspService.GetOrCreateCspNonce(context);
+		var nonce2 = _cspService.GetOrCreateCspNonce(context);
 
 		Assert.Multiple(() =>
 		{
@@ -174,33 +174,6 @@ public class CspServiceTests : UmbracoIntegrationTest
 			Assert.That(nonce2, Is.EqualTo(nonce1));
 			Assert.That(nonce1, Has.Length.EqualTo(24));
 		});
-	}
-
-	[Test]
-	public void GetCspStyleNonce_WithValidContext_ReturnsNonce()
-	{
-		var context = new DefaultHttpContext();
-
-		var nonce1 = _cspService.GetOrCreateCspStyleNonce(context);
-		var nonce2 = _cspService.GetOrCreateCspStyleNonce(context);
-
-		Assert.Multiple(() =>
-		{
-			Assert.That(nonce1, Is.Not.Null.And.Not.Empty);
-			Assert.That(nonce2, Is.EqualTo(nonce1));
-			Assert.That(nonce1, Has.Length.EqualTo(24));
-		});
-	}
-
-	[Test]
-	public void GetCspScriptNonce_AndGetCspStyleNonce_ReturnDifferentNonces()
-	{
-		var context = new DefaultHttpContext();
-
-		var scriptNonce = _cspService.GetOrCreateCspScriptNonce(context);
-		var styleNonce = _cspService.GetOrCreateCspStyleNonce(context);
-
-		Assert.That(scriptNonce, Is.Not.EqualTo(styleNonce));
 	}
 
 	[Test]

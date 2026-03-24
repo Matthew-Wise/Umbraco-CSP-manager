@@ -59,7 +59,7 @@ public interface ICspService
 	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Gets or creates a cryptographically secure nonce for script elements.
+	/// Gets or creates a cryptographically secure nonce for use in CSP directives.
 	/// </summary>
 	/// <param name="context">The current HTTP context.</param>
 	/// <returns>
@@ -67,22 +67,8 @@ public interface ICspService
 	/// </returns>
 	/// <remarks>
 	/// The nonce is generated using <see cref="System.Security.Cryptography.RandomNumberGenerator"/>
-	/// and is stored in the HTTP context for reuse within the same request. This ensures
-	/// all script elements in a single request use the same nonce value.
+	/// and is stored in the HTTP context for reuse within the same request. The same nonce value
+	/// is used for both script-src and style-src directives.
 	/// </remarks>
-	string GetOrCreateCspScriptNonce(HttpContext context);
-
-	/// <summary>
-	/// Gets or creates a cryptographically secure nonce for style elements.
-	/// </summary>
-	/// <param name="context">The current HTTP context.</param>
-	/// <returns>
-	/// A Base64-encoded 128-bit nonce value, or an empty string if the context is unavailable.
-	/// </returns>
-	/// <remarks>
-	/// The nonce is generated using <see cref="System.Security.Cryptography.RandomNumberGenerator"/>
-	/// and is stored in the HTTP context for reuse within the same request. This ensures
-	/// all style elements in a single request use the same nonce value.
-	/// </remarks>
-	string GetOrCreateCspStyleNonce(HttpContext context);
+	string GetOrCreateCspNonce(HttpContext context);
 }
