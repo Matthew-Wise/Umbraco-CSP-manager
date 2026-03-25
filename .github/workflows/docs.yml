@@ -21,20 +21,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
+      - uses: ruby/setup-ruby@v1
         with:
-          source: ./docs
-          destination: ./_site
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: docs
+
+      - name: Build Jekyll site
+        run: bundle exec jekyll build
+        working-directory: docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
 
   deploy:
     environment:
