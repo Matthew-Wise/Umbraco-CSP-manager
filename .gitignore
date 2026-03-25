@@ -369,3 +369,4 @@ src/**/App_Plugins/UmbracoCommunityCSPManager/
 # uSync built client output
 **/App_Plugins/uSyncCspComplete/
 .claude/settings.local.json
+.claude/worktrees
