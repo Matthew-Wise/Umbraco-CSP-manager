@@ -1,0 +1,151 @@
+<style>
+  .theme-toggle-wrap {
+    padding: 1rem 1rem 0.5rem;
+    border-top: 1px solid var(--border-color, #e3e5eb);
+    margin-top: 0.5rem;
+  }
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: 1px solid var(--border-color, #e3e5eb);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-family: inherit;
+    color: inherit;
+    width: 100%;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    position: relative;
+  }
+
+  .theme-toggle:hover {
+    border-color: #283a97;
+    background: rgba(40, 58, 151, 0.05);
+  }
+
+  .theme-toggle__track {
+    width: 28px;
+    height: 16px;
+    background: #e3e5eb;
+    border-radius: 999px;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.25s ease;
+  }
+
+  .theme-toggle__track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #283a97;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .theme-toggle[data-theme="dark"] .theme-toggle__track {
+    background: #283a97;
+  }
+
+  .theme-toggle[data-theme="dark"] .theme-toggle__track::after {
+    transform: translateX(12px);
+    background: #ffffff;
+  }
+
+  .theme-toggle__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+  }
+
+  .theme-toggle__icon--sun { display: flex; }
+  .theme-toggle__icon--moon { display: none; }
+
+  .theme-toggle[data-theme="dark"] .theme-toggle__icon--sun { display: none; }
+  .theme-toggle[data-theme="dark"] .theme-toggle__icon--moon { display: flex; }
+
+  .theme-toggle__label {
+    flex: 1;
+    text-align: left;
+    letter-spacing: 0.01em;
+    opacity: 0.8;
+  }
+</style>
+
+<div class="theme-toggle-wrap">
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+    <span class="theme-toggle__track"></span>
+    <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </span>
+    <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </span>
+    <span class="theme-toggle__label">Light mode</span>
+  </button>
+</div>
+
+<script>
+  (function () {
+    if (window.__jtdThemeReady) { return; }
+    window.__jtdThemeReady = true;
+
+    const STORAGE_KEY = 'jtd-theme';
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const initialTheme = localStorage.getItem(STORAGE_KEY) || (systemDark.matches ? 'dark' : 'light');
+
+    function syncButtons(theme) {
+      document.querySelectorAll('.theme-toggle').forEach(function (btn) {
+        btn.setAttribute('data-theme', theme);
+        btn.querySelector('.theme-toggle__label').textContent = theme === 'dark' ? 'Dark mode' : 'Light mode';
+      });
+    }
+
+    function apply(theme) {
+      window.__jtdCurrentTheme = theme;
+      jtd.setTheme(theme);
+      syncButtons(theme);
+    }
+
+    jtd.setTheme(initialTheme);
+    window.__jtdCurrentTheme = initialTheme;
+    document.addEventListener('DOMContentLoaded', function () { syncButtons(initialTheme); });
+
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.theme-toggle');
+      if (!btn) { return; }
+      const next = btn.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(STORAGE_KEY, next);
+      apply(next);
+    });
+
+    systemDark.addEventListener('change', function (e) {
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        apply(e.matches ? 'dark' : 'light');
+      }
+    });
+  })();
+</script>
