@@ -270,6 +270,191 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
+	public async Task GetCspDefinitionForDomainAsync_WhenDomainPolicyExists_ReturnsDefinitionWithSources()
+	{
+		var domainKey = Guid.NewGuid();
+		var id = Guid.NewGuid();
+		var definition = new CspDefinition
+		{
+			Id = id,
+			Enabled = true,
+			IsBackOffice = false,
+			DomainKey = domainKey,
+			Sources = [new() { DefinitionId = id, Source = "'self'", Directives = [Constants.Directives.DefaultSource] }]
+		};
+		await _cspService.SaveCspDefinitionAsync(definition, CancellationToken.None);
+
+		var result = await _cspService.GetCspDefinitionForDomainAsync(domainKey, CancellationToken.None);
+
+		Assert.That(result, Is.Not.Null);
+		Assert.Multiple(() =>
+		{
+			Assert.That(result.Id, Is.EqualTo(id));
+			Assert.That(result.DomainKey, Is.EqualTo(domainKey));
+			Assert.That(result.Sources, Has.Count.EqualTo(1));
+		});
+	}
+
+	[Test]
+	public async Task GetCspDefinitionForDomainAsync_WhenNoPolicyExists_ReturnsNull()
+	{
+		var result = await _cspService.GetCspDefinitionForDomainAsync(Guid.NewGuid(), CancellationToken.None);
+
+		Assert.That(result, Is.Null);
+	}
+
+	[Test]
+	public async Task GetCspDefinitionAsync_Frontend_DoesNotReturnDomainPolicies()
+	{
+		// Save a domain policy — should not appear as global frontend
+		var domainKey = Guid.NewGuid();
+		var domainDefinition = new CspDefinition
+		{
+			Id = Guid.NewGuid(),
+			Enabled = true,
+			IsBackOffice = false,
+			DomainKey = domainKey,
+			Sources = []
+		};
+		await _cspService.SaveCspDefinitionAsync(domainDefinition, CancellationToken.None);
+
+		var result = await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+
+		Assert.That(result.DomainKey, Is.Null, "Global frontend definition must not be a domain policy");
+		Assert.That(result.Id, Is.EqualTo(Constants.DefaultFrontEndId));
+	}
+
+	[Test]
+	public async Task GetAllDomainPoliciesAsync_ReturnsOnlyDomainPolicies()
+	{
+		var domainKey = Guid.NewGuid();
+		var domainDef = new CspDefinition { Id = Guid.NewGuid(), Enabled = true, IsBackOffice = false, DomainKey = domainKey, Sources = [] };
+		var globalFrontendDef = new CspDefinition { Id = Constants.DefaultFrontEndId, Enabled = true, IsBackOffice = false, Sources = [] };
+		var globalBackofficeDef = new CspDefinition { Id = Constants.DefaultBackofficeId, Enabled = true, IsBackOffice = true, Sources = [] };
+		await _cspService.SaveCspDefinitionAsync(domainDef, CancellationToken.None);
+		await _cspService.SaveCspDefinitionAsync(globalFrontendDef, CancellationToken.None);
+		await _cspService.SaveCspDefinitionAsync(globalBackofficeDef, CancellationToken.None);
+
+		var result = await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None);
+
+		Assert.That(result, Has.Count.EqualTo(1));
+		Assert.That(result[0].DomainKey, Is.EqualTo(domainKey));
+	}
+
+	[Test]
+	public async Task GetAllDomainPoliciesAsync_WhenNoDomainPolicies_ReturnsEmptyList()
+	{
+		var result = await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None);
+
+		Assert.That(result, Is.Empty);
+	}
+
+	[Test]
+	public async Task DeleteCspDefinitionAsync_DeletesDomainPolicy()
+	{
+		var domainKey = Guid.NewGuid();
+		var id = Guid.NewGuid();
+		var definition = new CspDefinition
+		{
+			Id = id,
+			Enabled = true,
+			IsBackOffice = false,
+			DomainKey = domainKey,
+			Sources = [new() { DefinitionId = id, Source = "'self'", Directives = [Constants.Directives.DefaultSource] }]
+		};
+		await _cspService.SaveCspDefinitionAsync(definition, CancellationToken.None);
+
+		await _cspService.DeleteCspDefinitionAsync(id, CancellationToken.None);
+
+		var result = await _cspService.GetCspDefinitionForDomainAsync(domainKey, CancellationToken.None);
+		Assert.That(result, Is.Null);
+	}
+
+	[Test]
+	public async Task DeleteCspDefinitionAsync_WithGlobalBackofficeId_ThrowsInvalidOperationException()
+	{
+		Assert.ThrowsAsync<InvalidOperationException>(
+			() => _cspService.DeleteCspDefinitionAsync(Constants.DefaultBackofficeId, CancellationToken.None));
+	}
+
+	[Test]
+	public async Task DeleteCspDefinitionAsync_WithGlobalFrontEndId_ThrowsInvalidOperationException()
+	{
+		Assert.ThrowsAsync<InvalidOperationException>(
+			() => _cspService.DeleteCspDefinitionAsync(Constants.DefaultFrontEndId, CancellationToken.None));
+	}
+
+	[Test]
+	public async Task DeleteCspDefinitionAsync_WithNonExistentId_DoesNotThrow()
+	{
+		Assert.DoesNotThrowAsync(
+			() => _cspService.DeleteCspDefinitionAsync(Guid.NewGuid(), CancellationToken.None));
+	}
+
+	[Test]
+	public async Task DeleteCspDefinitionAsync_PublishesCspSavedNotification()
+	{
+		var notificationPublished = false;
+		var mockEventAggregator = Mock.Of<IEventAggregator>();
+		Mock.Get(mockEventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspSavedNotification>(), It.IsAny<CancellationToken>()))
+			.Callback<INotification, CancellationToken>((_, _) => notificationPublished = true)
+			.Returns(Task.CompletedTask);
+
+		var service = new CspService(mockEventAggregator, ScopeProvider, AppCaches, NullLogger<CspService>.Instance);
+		var domainKey = Guid.NewGuid();
+		var id = Guid.NewGuid();
+		var definition = new CspDefinition { Id = id, Enabled = true, IsBackOffice = false, DomainKey = domainKey, Sources = [] };
+		await service.SaveCspDefinitionAsync(definition, CancellationToken.None);
+
+		await service.DeleteCspDefinitionAsync(id, CancellationToken.None);
+
+		Assert.That(notificationPublished, Is.True);
+	}
+
+	[Test]
+	public async Task GetCachedCspDefinitionForDomainAsync_CachesResult()
+	{
+		var domainKey = Guid.NewGuid();
+		var id = Guid.NewGuid();
+		var definition = new CspDefinition { Id = id, Enabled = true, IsBackOffice = false, DomainKey = domainKey, Sources = [] };
+		await _cspService.SaveCspDefinitionAsync(definition, CancellationToken.None);
+
+		var httpContextAccessor = GetRequiredService<IHttpContextAccessor>();
+		var requestCache = new HttpContextRequestAppCache(httpContextAccessor);
+		var realCache = AppCaches.Create(requestCache).RuntimeCache;
+		var factoryCallCount = 0;
+		var spyCache = Mock.Of<IAppPolicyCache>();
+
+		Mock.Get(spyCache)
+			.Setup(x => x.Get(It.IsAny<string>()))
+			.Returns((string key) => realCache.Get(key));
+		Mock.Get(spyCache)
+			.Setup(x => x.Insert(It.IsAny<string>(), It.IsAny<Func<object>>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>()))
+			.Callback((string key, Func<object> factory, TimeSpan? _, bool _) =>
+			{
+				realCache.Insert(key, () =>
+				{
+					factoryCallCount++;
+					return factory();
+				});
+			});
+
+		var spyCaches = new AppCaches(spyCache, requestCache, new IsolatedCaches(_ => spyCache));
+		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCaches, NullLogger<CspService>.Instance);
+
+		var result1 = await spyService.GetCachedCspDefinitionForDomainAsync(domainKey, CancellationToken.None);
+		var result2 = await spyService.GetCachedCspDefinitionForDomainAsync(domainKey, CancellationToken.None);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(result1, Is.Not.Null);
+			Assert.That(result2, Is.Not.Null);
+			Assert.That(factoryCallCount, Is.EqualTo(1), "Factory should only be called once - second call should use cache");
+		});
+	}
+
+	[Test]
 	public async Task Integration_SaveAndRetrieveDefinition()
 	{
 		var definitionId = Guid.NewGuid();

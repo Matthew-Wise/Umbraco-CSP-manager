@@ -237,6 +237,49 @@ public class CspApiDefinitionValidationTests
 		Assert.That(results.FirstOrDefault()?.ErrorMessage, Does.Contain("exceeds maximum length"));
 	}
 
+	[Test]
+	public void Validate_WithDomainKeyAndAnyGuid_ReturnsNoErrors()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Guid.NewGuid(),
+			DomainKey = Guid.NewGuid(),
+			IsBackOffice = false
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Is.Empty);
+	}
+
+	[Test]
+	public void Validate_WithDomainKeyAndIsBackOffice_ReturnsError()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Guid.NewGuid(),
+			DomainKey = Guid.NewGuid(),
+			IsBackOffice = true
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.That(results.FirstOrDefault()?.ErrorMessage, Is.EqualTo("Domain policies cannot be backoffice policies"));
+		Assert.That(results.FirstOrDefault()?.MemberNames, Contains.Item("IsBackOffice"));
+	}
+
+	[Test]
+	public void Validate_WithoutDomainKeyAndRandomGuid_ReturnsInvalidId()
+	{
+		var definition = new CspApiDefinition { Id = Guid.NewGuid(), DomainKey = null };
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.That(results.FirstOrDefault()?.ErrorMessage, Is.EqualTo("Invalid Id"));
+	}
+
 	private static List<ValidationResult> ValidateModel(CspApiDefinition definition)
 	{
 		var validationContext = new ValidationContext(definition);

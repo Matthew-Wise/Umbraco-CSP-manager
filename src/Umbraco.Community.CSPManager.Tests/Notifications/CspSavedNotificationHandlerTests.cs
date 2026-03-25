@@ -81,6 +81,43 @@ public class CspSavedNotificationHandlerTests
 		Assert.That(_serverMessenger.PayloadRefreshCount, Is.Zero);
 	}
 
+	[Test]
+	public void Handle_DomainSave_ClearsDomainCacheKey()
+	{
+		var domainKey = Guid.NewGuid();
+		var notification = new CspSavedNotification(new CspDefinition { DomainKey = domainKey, IsBackOffice = false });
+		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Single);
+
+		_handler.Handle(notification);
+
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.DomainCacheKey(domainKey)), Times.Once);
+	}
+
+	[Test]
+	public void Handle_DomainSave_DoesNotClearGlobalCaches()
+	{
+		var domainKey = Guid.NewGuid();
+		var notification = new CspSavedNotification(new CspDefinition { DomainKey = domainKey, IsBackOffice = false });
+		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Single);
+
+		_handler.Handle(notification);
+
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.BackOfficeCacheKey), Times.Never);
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.FrontEndCacheKey), Times.Never);
+	}
+
+	[Test]
+	public void Handle_DomainSave_WhenSchedulingPublisher_TriggersDistributedRefresh()
+	{
+		var domainKey = Guid.NewGuid();
+		var notification = new CspSavedNotification(new CspDefinition { DomainKey = domainKey, IsBackOffice = false });
+		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.SchedulingPublisher);
+
+		_handler.Handle(notification);
+
+		Assert.That(_serverMessenger.PayloadRefreshCount, Is.EqualTo(1));
+	}
+
 	private class SpyServerMessenger : IServerMessenger
 	{
 		public int PayloadRefreshCount { get; private set; }
