@@ -1,0 +1,34 @@
+theme: just-the-docs
+
+title: CSP Manager for Umbraco
+description: A comprehensive Content Security Policy management package for Umbraco CMS
+baseurl: "/Umbraco-CSP-manager"
+url: "https://matthew-wise.github.io"
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+
+logo: "/assets/images/icon.png"
+
+color_scheme: umbraco
+
+search_enabled: true
+
+gh_edit_link: true
+gh_edit_link_text: "Edit this page on GitHub"
+gh_edit_repository: "https://github.com/Matthew-Wise/Umbraco-CSP-manager"
+gh_edit_branch: "main"
+gh_edit_source: docs
+gh_edit_view_mode: "edit"
+
+# Exclude NuGet READMEs and local dev files from the site
+exclude:
+  - README_nuget.md
+  - README_nuget_usync.md
+  - README_nuget_complete.md
+  - Gemfile
+  - Gemfile.lock
+  - CLAUDE.md

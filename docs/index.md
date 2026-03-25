@@ -1,4 +1,9 @@
-# Umbraco.Community.CSPManager
+---
+title: Home
+nav_order: 1
+---
+
+# CSP Manager for Umbraco
 
 [![Platform](https://img.shields.io/badge/Umbraco-17+-%233544B1?style=flat&logo=umbraco)](https://umbraco.com/products/umbraco-cms/)
 [![Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.CSPManager?color=cc9900)](https://www.nuget.org/packages/Umbraco.Community.CSPManager/)
@@ -6,11 +11,12 @@
 [![GitHub license](https://img.shields.io/github/license/Matthew-Wise/Umbraco-CSP-manager?color=8AB803)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/LICENSE)
 [![Build](https://github.com/Matthew-Wise/Umbraco-CSP-manager/actions/workflows/csp-manager.yml/badge.svg?event=push)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/.github/workflows/csp-manager.yml)
 
-A comprehensive Content Security Policy (CSP) management package for Umbraco CMS that helps protect your website from XSS attacks and other code injection vulnerabilities. Manage CSP headers for both frontend and backend through an intuitive backoffice interface.
+A Content Security Policy management package for Umbraco CMS. Manage CSP headers for your frontend and backoffice through the Umbraco backoffice.
 
-## Documentation
+[Get Started](getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[View on GitHub](https://github.com/Matthew-Wise/Umbraco-CSP-manager){: .btn .fs-5 .mb-4 .mb-md-0 }
 
-**Full documentation is available at [matthew-wise.github.io/Umbraco-CSP-manager](https://matthew-wise.github.io/Umbraco-CSP-manager/)**
+---
 
 ## Features
 
@@ -22,23 +28,10 @@ A comprehensive Content Security Policy (CSP) management package for Umbraco CMS
 - **Notification Events** — Extend behaviour with `CspWritingNotification` and `CspSavedNotification`
 - **uSync Integration** — Sync CSP policies across environments using uSync
 
-## Installation
+## Packages
 
-```bash
-dotnet add package Umbraco.Community.CSPManager
-```
-
-## uSync Integration
-
-| Package | Purpose |
-|---|---|
-| [Umbraco.Community.CSPManager.uSync](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync/) | Automatically includes CSP definitions in uSync export/import cycles |
-| [Umbraco.Community.CSPManager.uSync.Complete](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync.Complete/) | Adds Push/Pull actions via uSync Publisher for on-demand environment sync |
-
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/CONTRIBUTING.md) and feel free to submit issues and pull requests.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/LICENSE) file for details.
+| Package | NuGet | Purpose |
+|---|---|---|
+| [Umbraco.Community.CSPManager](https://www.nuget.org/packages/Umbraco.Community.CSPManager/) | [![NuGet](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager?color=0273B3)](https://www.nuget.org/packages/Umbraco.Community.CSPManager) | Main CSP management package |
+| [Umbraco.Community.CSPManager.uSync](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync/) | [![NuGet](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager.uSync?color=0273B3)](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync) | uSync export/import integration |
+| [Umbraco.Community.CSPManager.uSync.Complete](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync.Complete/) | [![NuGet](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager.uSync.Complete?color=0273B3)](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync.Complete) | uSync Publisher push/pull support |
