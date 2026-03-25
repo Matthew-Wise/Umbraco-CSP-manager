@@ -1,12 +1,6 @@
 name: Docs Build
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'docs/**'
-      - '.github/workflows/docs-build.yml'
   pull_request:
     branches:
       - main
