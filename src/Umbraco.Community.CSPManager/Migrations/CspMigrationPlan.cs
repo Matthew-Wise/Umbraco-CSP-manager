@@ -15,5 +15,6 @@ public sealed class CspMigrationPlan : PackageMigrationPlan
 		To<ReportingMigration>(ReportingMigration.MigrationKey);
 		To<MaxSourceLengthMigration>(MaxSourceLengthMigration.MigrationKey);
 		To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey);
+		To<DomainPolicyMigration>(DomainPolicyMigration.MigrationKey);
 	}
 }

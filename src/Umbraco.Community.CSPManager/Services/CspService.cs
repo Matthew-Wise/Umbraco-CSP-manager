@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NPoco.Expressions;
@@ -90,7 +90,7 @@ internal sealed class CspService : ICspService
 
 		using var scope = _scopeProvider.CreateScope();
 
-		CspDefinition definition = await GetDefinitionAsync(scope, isBackOfficeRequest, cancellationToken)
+		CspDefinition definition = await GetGlobalDefinitionAsync(scope, isBackOfficeRequest, cancellationToken)
 			?? new CspDefinition
 			{
 				Id = isBackOfficeRequest ? Constants.DefaultBackofficeId : Constants.DefaultFrontEndId,
@@ -100,6 +100,93 @@ internal sealed class CspService : ICspService
 
 		scope.Complete();
 		return definition;
+	}
+
+	public async Task<CspDefinition?> GetCspDefinitionForDomainAsync(Guid domainKey, CancellationToken cancellationToken)
+	{
+		using var scope = _scopeProvider.CreateScope();
+
+		var definitionSql = scope.SqlContext.Sql()
+			.SelectAll()
+			.From<CspDefinition>()
+			.Where<CspDefinition>(x => x.DomainKey == domainKey && x.IsBackOffice == false);
+
+		var definition = await scope.Database.FirstOrDefaultAsync<CspDefinition>(definitionSql, cancellationToken);
+
+		if (definition is not null)
+		{
+			var sourcesSql = scope.SqlContext.Sql()
+				.SelectAll()
+				.From<CspDefinitionSource>()
+				.Where<CspDefinitionSource>(x => x.DefinitionId == definition.Id);
+			definition.Sources = await scope.Database.FetchAsync<CspDefinitionSource>(sourcesSql, cancellationToken);
+		}
+
+		scope.Complete();
+		return definition;
+	}
+
+	public async Task<CspDefinition?> GetCachedCspDefinitionForDomainAsync(Guid domainKey, CancellationToken cancellationToken)
+	{
+		var cacheKey = Constants.DomainCacheKey(domainKey);
+
+		return await _runtimeCache.GetCacheItemAsync(cacheKey, async () =>
+			await GetCspDefinitionForDomainAsync(domainKey, cancellationToken),
+			timeout: null);
+	}
+
+	public async Task<List<CspDefinition>> GetAllDomainPoliciesAsync(CancellationToken cancellationToken)
+	{
+		using var scope = _scopeProvider.CreateScope();
+
+		var definitionSql = scope.SqlContext.Sql()
+			.SelectAll()
+			.From<CspDefinition>()
+			.WhereNotNull<CspDefinition>(x => x.DomainKey);
+
+		var definitions = await scope.Database.FetchAsync<CspDefinition>(definitionSql, cancellationToken);
+
+		foreach (var definition in definitions)
+		{
+			var sourcesSql = scope.SqlContext.Sql()
+				.SelectAll()
+				.From<CspDefinitionSource>()
+				.Where<CspDefinitionSource>(x => x.DefinitionId == definition.Id);
+			definition.Sources = await scope.Database.FetchAsync<CspDefinitionSource>(sourcesSql, cancellationToken);
+		}
+
+		scope.Complete();
+		return definitions;
+	}
+
+	public async Task DeleteCspDefinitionAsync(Guid id, CancellationToken cancellationToken)
+	{
+		if (id == Constants.DefaultBackofficeId || id == Constants.DefaultFrontEndId)
+		{
+			throw new InvalidOperationException("Global CSP policies cannot be deleted.");
+		}
+
+		using var scope = _scopeProvider.CreateScope();
+
+		var definition = await scope.Database.FirstOrDefaultAsync<CspDefinition>(
+			scope.SqlContext.Sql().SelectAll().From<CspDefinition>().Where<CspDefinition>(x => x.Id == id),
+			cancellationToken);
+
+		if (definition is null)
+		{
+			scope.Complete();
+			return;
+		}
+
+		await scope.Database.DeleteManyAsync<CspDefinitionSource>()
+			.Where(s => s.DefinitionId == id)
+			.Execute(cancellationToken);
+
+		await scope.Database.DeleteAsync(definition, cancellationToken);
+
+		scope.Complete();
+
+		await _eventAggregator.PublishAsync(new CspSavedNotification(definition), cancellationToken);
 	}
 
 	public string GetOrCreateCspNonce(HttpContext context)
@@ -125,7 +212,7 @@ internal sealed class CspService : ICspService
 
 	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken)
 	{
-		var context = definition.IsBackOffice ? "BackOffice" : "Frontend";
+		var context = definition.IsBackOffice ? "BackOffice" : definition.DomainKey.HasValue ? $"Domain:{definition.DomainKey}" : "Frontend";
 		Log.SavingCspDefinition(_logger, definition.Id, context);
 
 		try
@@ -172,12 +259,14 @@ internal sealed class CspService : ICspService
 
 	// Two queries instead of a single join because FetchOneToMany has no async variant.
 	// The extra round-trip is acceptable here since results are cached and cache misses are rare.
-	private static async Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice, CancellationToken cancellationToken)
+	// The AND DomainKey IS NULL clause ensures global policies are not confused with domain-specific ones.
+	private static async Task<CspDefinition?> GetGlobalDefinitionAsync(IScope scope, bool isBackOffice, CancellationToken cancellationToken)
 	{
 		var definitionSql = scope.SqlContext.Sql()
 			.SelectAll()
 			.From<CspDefinition>()
-			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice);
+			.Where<CspDefinition>(x => x.IsBackOffice == isBackOffice)
+			.WhereNull<CspDefinition>(x => x.DomainKey);
 
 		var definition = await scope.Database.FirstOrDefaultAsync<CspDefinition>(definitionSql, cancellationToken);
 

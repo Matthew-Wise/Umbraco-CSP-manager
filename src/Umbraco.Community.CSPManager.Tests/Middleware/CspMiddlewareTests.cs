@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
@@ -12,6 +13,7 @@ using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Routing;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Tests.Integration.Implementations;
 using Umbraco.Community.CSPManager.Middleware;
 using Umbraco.Community.CSPManager.Models;
@@ -68,6 +70,8 @@ public class CspMiddlewareTests
 						services.AddTransient(sp => new UmbracoRequestPaths(
 							TestHelper.GetHostingEnvironment(),
 							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
+						services.AddSingleton(_ => Mock.Of<IUmbracoContextAccessor>());
+						services.AddSingleton(_ => Mock.Of<IDomainKeyResolver>());
 						extraServices?.Invoke(services);
 					})
 					.Configure(app =>
@@ -209,6 +213,195 @@ public class CspMiddlewareTests
 			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
 			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
 		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithDomainPolicy_UsesDomainPolicyInsteadOfGlobal()
+	{
+		var domainGuid = Guid.NewGuid();
+		var domainDefinition = new CspDefinition
+		{
+			Id = Guid.NewGuid(),
+			Enabled = true,
+			IsBackOffice = false,
+			DomainKey = domainGuid,
+			Sources = [new CspDefinitionSource { Source = "domain-only.example.com", Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var mockResolver = new Mock<IDomainKeyResolver>();
+		mockResolver.Setup(x => x.ResolveKeyAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(domainGuid);
+
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionForDomainAsync(domainGuid, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(domainDefinition);
+
+		using var host = BuildTestHost(extraServices: s =>
+		{
+			s.Replace(ServiceDescriptor.Singleton<IDomainKeyResolver>(_ => mockResolver.Object));
+			s.Replace(ServiceDescriptor.Singleton<IUmbracoContextAccessor>(_ => CreateContextAccessorWithDomain(domainId: 1)));
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain("domain-only.example.com"));
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithDomainPolicyDisabled_FallsBackToGlobal()
+	{
+		var domainGuid = Guid.NewGuid();
+		var disabledDomainDefinition = new CspDefinition
+		{
+			Id = Guid.NewGuid(),
+			Enabled = false,
+			IsBackOffice = false,
+			DomainKey = domainGuid,
+			Sources = [new CspDefinitionSource { Source = "domain-only.example.com", Directives = [Constants.Directives.DefaultSource] }]
+		};
+		var globalDefinition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "global.example.com", Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var mockResolver = new Mock<IDomainKeyResolver>();
+		mockResolver.Setup(x => x.ResolveKeyAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(domainGuid);
+
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionForDomainAsync(domainGuid, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(disabledDomainDefinition);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(false, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(globalDefinition);
+
+		using var host = BuildTestHost(extraServices: s =>
+		{
+			s.Replace(ServiceDescriptor.Singleton<IDomainKeyResolver>(_ => mockResolver.Object));
+			s.Replace(ServiceDescriptor.Singleton<IUmbracoContextAccessor>(_ => CreateContextAccessorWithDomain(domainId: 1)));
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain("global.example.com"));
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithDomainButNoDomainPolicy_FallsBackToGlobal()
+	{
+		var domainGuid = Guid.NewGuid();
+		var globalDefinition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "global.example.com", Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var mockResolver = new Mock<IDomainKeyResolver>();
+		mockResolver.Setup(x => x.ResolveKeyAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(domainGuid);
+
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionForDomainAsync(domainGuid, It.IsAny<CancellationToken>()))
+			.ReturnsAsync((CspDefinition?)null);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(false, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(globalDefinition);
+
+		using var host = BuildTestHost(extraServices: s =>
+		{
+			s.Replace(ServiceDescriptor.Singleton<IDomainKeyResolver>(_ => mockResolver.Object));
+			s.Replace(ServiceDescriptor.Singleton<IUmbracoContextAccessor>(_ => CreateContextAccessorWithDomain(domainId: 1)));
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain("global.example.com"));
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithDomainButNoResolvedKey_FallsBackToGlobal()
+	{
+		var globalDefinition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "global.example.com", Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var mockResolver = new Mock<IDomainKeyResolver>();
+		mockResolver.Setup(x => x.ResolveKeyAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((Guid?)null);
+
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(false, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(globalDefinition);
+
+		using var host = BuildTestHost(extraServices: s =>
+		{
+			s.Replace(ServiceDescriptor.Singleton<IDomainKeyResolver>(_ => mockResolver.Object));
+			s.Replace(ServiceDescriptor.Singleton<IUmbracoContextAccessor>(_ => CreateContextAccessorWithDomain(domainId: 1)));
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain("global.example.com"));
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithNoPublishedRequestDomain_FallsBackToGlobal()
+	{
+		var globalDefinition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "global.example.com", Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		// UmbracoContext exists but PublishedRequest.Domain is null
+		var mockPublishedRequest = Mock.Of<IPublishedRequest>(r => r.Domain == null);
+		var mockUmbracoContext = Mock.Of<IUmbracoContext>(c => c.PublishedRequest == mockPublishedRequest);
+		var mockAccessor = new Mock<IUmbracoContextAccessor>();
+		IUmbracoContext ctxOut = mockUmbracoContext;
+		mockAccessor.Setup(x => x.TryGetUmbracoContext(out ctxOut)).Returns(true);
+
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(false, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(globalDefinition);
+
+		using var host = BuildTestHost(extraServices: s =>
+		{
+			s.Replace(ServiceDescriptor.Singleton<IUmbracoContextAccessor>(_ => mockAccessor.Object));
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain("global.example.com"));
+	}
+
+	private static IUmbracoContextAccessor CreateContextAccessorWithDomain(int domainId)
+	{
+		var domain = new Domain(domainId, "example.com", 100, null, false, 0);
+		var domainAndUri = new DomainAndUri(domain, new Uri("https://example.com"));
+		var mockPublishedRequest = Mock.Of<IPublishedRequest>(r => r.Domain == domainAndUri);
+		var mockUmbracoContext = Mock.Of<IUmbracoContext>(c => c.PublishedRequest == mockPublishedRequest);
+
+		var mockAccessor = new Mock<IUmbracoContextAccessor>();
+		IUmbracoContext ctxOut = mockUmbracoContext;
+		mockAccessor.Setup(x => x.TryGetUmbracoContext(out ctxOut)).Returns(true);
+		return mockAccessor.Object;
 	}
 
 	[TearDown]

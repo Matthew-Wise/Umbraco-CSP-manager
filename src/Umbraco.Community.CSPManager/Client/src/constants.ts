@@ -26,6 +26,7 @@ export const CspConstants = {
 		conditions: {
 			sectionAlias: 'Umb.Condition.SectionAlias',
 			workspaceAlias: 'Umb.Condition.WorkspaceAlias',
+			entityUnique: 'Umb.Condition.Entity.Unique',
 		},
 	},
 	icons: {

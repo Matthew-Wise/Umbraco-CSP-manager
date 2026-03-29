@@ -10,6 +10,7 @@ on:
       - 'src/Umbraco.Community.CSPManager/**'
       - 'src/Umbraco.Community.CSPManager.Tests/**'
       - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
+      - 'src/Umbraco.Community.CSPManager.TestSite/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
       - '.github/workflows/csp-manager.yml'
@@ -20,6 +21,7 @@ on:
       - 'src/Umbraco.Community.CSPManager/**'
       - 'src/Umbraco.Community.CSPManager.Tests/**'
       - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
+      - 'src/Umbraco.Community.CSPManager.TestSite/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
       - '.github/workflows/csp-manager.yml'
@@ -62,23 +64,79 @@ jobs:
       - name: Run tests
         run: dotnet test ${{env.TESTPROJECT}} -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName" --collect:"XPlat Code Coverage"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results
           path: "${{env.TESTLOGPATH}}${{env.LogFileName}}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: coverage-results
           path: "${{env.TESTLOGPATH}}**/coverage.cobertura.xml"
 
       - name: Upload nuget packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: nuget-packages
           path: ${{env.OUT_FOLDER}}
+
+  playwright:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: './src/Umbraco.Community.CSPManager/Client/package.json'
+          cache: 'npm'
+          cache-dependency-path: './src/Umbraco.Community.CSPManager/Client/package-lock.json'
+
+      - name: Install npm dependencies
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+        run: npm run build
+
+      - name: Run Playwright tests
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+        env:
+          CI: true
+          URL: https://localhost:44370
+          UMBRACO_USER_LOGIN: admin@example.com
+          UMBRACO_USER_PASSWORD: "1234567890"
+        run: npx playwright test
+
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@v5
+        if: success() || failure()
+        with:
+          name: playwright-results
+          path: ./src/Umbraco.Community.CSPManager/Client/results/
+
+      - name: Upload Playwright traces
+        uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: playwright-traces
+          path: ./src/Umbraco.Community.CSPManager/Client/test-results/
 
   release:
     needs: build
@@ -92,7 +150,7 @@ jobs:
 
     steps:
       - name: Download nuget packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: nuget-packages
           path: ./build-out/

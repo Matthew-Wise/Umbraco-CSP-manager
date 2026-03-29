@@ -76,8 +76,9 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 
 		var backoffice = await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
 		var frontend = await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
+		var domainPolicies = await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None);
 		Log.GetChildItemsResult(logger, backoffice.Id, frontend.Id);
-		return [backoffice, frontend];
+		return [backoffice, frontend, .. domainPolicies];
 	}
 
 	/// <summary>
@@ -90,5 +91,6 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 	protected override async Task<CspDefinition?> GetFromServiceAsync(CspDefinition? item)
 		=> item is null ? null : await _cspService.GetCspDefinitionAsync(item.Id, CancellationToken.None);
 
-	protected override string GetItemName(CspDefinition item) => item.IsBackOffice ? "Backoffice" : "Frontend";
+	protected override string GetItemName(CspDefinition item) =>
+		item.DomainKey.HasValue ? $"Domain-{item.DomainKey.Value}" : (item.IsBackOffice ? "Backoffice" : "Frontend");
 }

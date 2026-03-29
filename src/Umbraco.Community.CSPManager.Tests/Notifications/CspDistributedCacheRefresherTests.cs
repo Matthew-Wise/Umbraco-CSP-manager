@@ -80,6 +80,7 @@ public class CspDistributedCacheRefresherTests
 
 		_runtimeCache.Verify(c => c.ClearByKey(Constants.BackOfficeCacheKey), Times.Once);
 		_runtimeCache.Verify(c => c.ClearByKey(Constants.FrontEndCacheKey), Times.Once);
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.DomainCacheKeyPrefix), Times.Once);
 	}
 
 	[Test]
@@ -90,5 +91,40 @@ public class CspDistributedCacheRefresherTests
 		_refresher.RefreshAll();
 
 		_runtimeCache.Verify(c => c.ClearByKey(It.IsAny<string>()), Times.Never);
+	}
+
+	[Test]
+	public void Refresh_AsSubscriber_WithDomainPayload_ClearsDomainCache()
+	{
+		var domainKey = Guid.NewGuid();
+		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Subscriber);
+		var payload = new[] { new CspSavedNotification(new CspDefinition { DomainKey = domainKey, IsBackOffice = false }) };
+
+		_refresher.Refresh(payload);
+
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.DomainCacheKey(domainKey)), Times.Once);
+	}
+
+	[Test]
+	public void Refresh_AsSubscriber_WithDomainPayload_DoesNotClearGlobalCaches()
+	{
+		var domainKey = Guid.NewGuid();
+		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Subscriber);
+		var payload = new[] { new CspSavedNotification(new CspDefinition { DomainKey = domainKey, IsBackOffice = false }) };
+
+		_refresher.Refresh(payload);
+
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.BackOfficeCacheKey), Times.Never);
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.FrontEndCacheKey), Times.Never);
+	}
+
+	[Test]
+	public void RefreshAll_AsSubscriber_AlsoClearsDomainCachePrefix()
+	{
+		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Subscriber);
+
+		_refresher.RefreshAll();
+
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.DomainCacheKeyPrefix), Times.Once);
 	}
 }

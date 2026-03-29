@@ -33,6 +33,15 @@ export default defineConfig({
 		testIdAttribute: "data-mark",
 	},
 
+	webServer: {
+		command:
+			"dotnet run --project ../../Umbraco.Community.CSPManager.TestSite/Umbraco.Community.CSPManager.TestSite.csproj --environment Development --urls https://localhost:44370",
+		url: "https://localhost:44370",
+		reuseExistingServer: !process.env.CI,
+		ignoreHTTPSErrors: true,
+		timeout: 120000,
+	},
+
 	/* Configure projects for major browsers */
 	projects: [
 		{

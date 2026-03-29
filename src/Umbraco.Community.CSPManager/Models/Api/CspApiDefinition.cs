@@ -35,6 +35,22 @@ public sealed class CspApiDefinition : IValidatableObject
 	public bool IsBackOffice { get; set; }
 
 	/// <summary>
+	/// Gets or sets the Umbraco domain Guid Key this policy applies to.
+	/// When set, this is a domain-specific policy; when null, it is a global policy.
+	/// </summary>
+	public Guid? DomainKey { get; set; }
+
+	/// <summary>
+	/// Gets or sets the resolved domain name for display purposes (read-only, populated by the API).
+	/// </summary>
+	public string? DomainName { get; set; }
+
+	/// <summary>
+	/// Gets or sets the Guid key of the root content node the domain is assigned to (read-only, populated by the API).
+	/// </summary>
+	public Guid? RootContentKey { get; set; }
+
+	/// <summary>
 	/// Gets or sets the reporting directive to use (e.g., "report-uri" or "report-to").
 	/// </summary>
 	public string? ReportingDirective { get; set; }
@@ -67,8 +83,15 @@ public sealed class CspApiDefinition : IValidatableObject
 	/// <returns>A collection of validation results.</returns>
 	public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
 	{
-		// Validate Id is one of the known definition IDs
-		if (!Constants.DefaultFrontEndId.Equals(Id) && !Constants.DefaultBackofficeId.Equals(Id))
+		// Domain policies have a DomainKey and can use any GUID; global policies must use the two well-known IDs
+		if (DomainKey.HasValue)
+		{
+			if (IsBackOffice)
+			{
+				yield return new ValidationResult("Domain policies cannot be backoffice policies", [nameof(IsBackOffice)]);
+			}
+		}
+		else if (!Constants.DefaultFrontEndId.Equals(Id) && !Constants.DefaultBackofficeId.Equals(Id))
 		{
 			yield return new ValidationResult("Invalid Id", [nameof(Id)]);
 		}
@@ -191,7 +214,7 @@ public sealed class CspApiDefinition : IValidatableObject
 		return string.Concat(value.AsSpan(0, maxLength - 3), "...");
 	}
 
-	internal static CspApiDefinition FromCspDefinition(CspDefinition definition)
+	internal static CspApiDefinition FromCspDefinition(CspDefinition definition, string? domainName = null, Guid? rootContentKey = null)
 		=> new()
 		{
 			Id = definition.Id,
@@ -201,6 +224,9 @@ public sealed class CspApiDefinition : IValidatableObject
 			IsBackOffice = definition.IsBackOffice,
 			ReportOnly = definition.ReportOnly,
 			ReportUri = definition.ReportUri,
+			DomainKey = definition.DomainKey,
+			DomainName = domainName,
+			RootContentKey = rootContentKey,
 			Sources = definition.Sources.ConvertAll(CspApiDefinitionSource.FromCspDefinitionSource),
 		};
 
@@ -216,6 +242,7 @@ public sealed class CspApiDefinition : IValidatableObject
 			IsBackOffice = IsBackOffice,
 			ReportingDirective = ReportingDirective,
 			ReportUri = ReportUri,
+			DomainKey = DomainKey,
 			Sources = Sources.ConvertAll(CspApiDefinitionSource.ToCspDefinitionSource)
 		};
 }

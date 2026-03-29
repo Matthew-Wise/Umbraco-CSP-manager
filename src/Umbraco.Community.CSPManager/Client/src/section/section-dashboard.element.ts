@@ -45,6 +45,14 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
                 </uui-button>
               </div>
             </uui-card>
+
+            <uui-card>
+              <div class="card-content">
+                <h3>Domain-specific CSP</h3>
+                <p>Create domain-specific policies that override the global Frontend policy for individual domains. Each domain policy starts as a copy of the Frontend policy which you can then customise independently.</p>
+                <p>To add a domain policy, select the <strong>Frontend</strong> node in the tree and use the <strong>+</strong> or <strong>...</strong> menu to choose <em>Add Domain Policy</em>.</p>
+              </div>
+            </uui-card>
           </div>
 
           <div class="help-section">

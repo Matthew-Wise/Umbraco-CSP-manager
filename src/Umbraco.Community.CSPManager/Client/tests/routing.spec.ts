@@ -26,7 +26,7 @@ test.describe("CSP Manager Tree Navigation", () => {
 		await sidebar.locator("uui-menu-item").filter({ hasText: "Back Office" }).click();
 
 		// Verify URL contains the correct path
-		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/backoffice/);
+		await expect(umbracoUi.page).toHaveURL(new RegExp(`/workspace/csp-policy/edit/${CspConstants.policyTypes.backoffice.value}`));
 
 		// Verify workspace loads
 		await expect(umbracoUi.page.locator("umb-csp-management-workspace")).toBeVisible();
@@ -40,7 +40,7 @@ test.describe("CSP Manager Tree Navigation", () => {
 		await sidebar.locator("uui-menu-item").filter({ hasText: "Frontend" }).click();
 
 		// Verify URL contains the correct path
-		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/frontend/);
+		await expect(umbracoUi.page).toHaveURL(new RegExp(`/workspace/csp-policy/edit/${CspConstants.policyTypes.frontend.value}`));
 
 		// Verify workspace loads
 		await expect(umbracoUi.page.locator("umb-csp-management-workspace")).toBeVisible();

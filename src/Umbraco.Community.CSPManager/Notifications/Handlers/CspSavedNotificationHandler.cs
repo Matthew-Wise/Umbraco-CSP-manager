@@ -23,12 +23,22 @@ internal sealed class CspSavedNotificationHandler : INotificationHandler<CspSave
 
 	public void Handle(CspSavedNotification notification)
 	{
-		string cacheKey = notification.CspDefinition.IsBackOffice ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
+		string cacheKey = GetCacheKey(notification.CspDefinition);
 		_runtimeCache.ClearByKey(cacheKey);
 
 		if (_serverRoleAccessor.CurrentServerRole == ServerRole.SchedulingPublisher)
 		{
 			_distributedCache.RefreshByPayload(CspDistributedCacheRefresher.UniqueId, [notification]);
 		}
+	}
+
+	private static string GetCacheKey(Models.CspDefinition definition)
+	{
+		if (definition.DomainKey.HasValue)
+		{
+			return Constants.DomainCacheKey(definition.DomainKey.Value);
+		}
+
+		return definition.IsBackOffice ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
 	}
 }

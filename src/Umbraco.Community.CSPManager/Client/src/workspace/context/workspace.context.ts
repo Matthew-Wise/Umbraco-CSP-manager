@@ -6,6 +6,8 @@ import type { UmbWorkspaceContext, UmbRoutableWorkspaceContext } from '@umbraco-
 import { UmbWorkspaceRouteManager } from '@umbraco-cms/backoffice/workspace';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { UMB_DISCARD_CHANGES_MODAL, umbOpenModal } from '@umbraco-cms/backoffice/modal';
+import { UMB_ACTION_EVENT_CONTEXT } from '@umbraco-cms/backoffice/action';
+import { UmbRequestReloadChildrenOfEntityEvent } from '@umbraco-cms/backoffice/entity-action';
 import type { CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
 import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
@@ -16,6 +18,7 @@ export interface WorkspaceState {
 	persistedDefinition: CspApiDefinition | null;
 	availableDirectives: string[];
 	loading: boolean;
+	isNew?: boolean;
 	error?: UmbError | UmbApiError | UmbCancelError | Error | undefined;
 }
 
@@ -61,6 +64,17 @@ export class UmbCspManagerWorkspaceContext
 		return CspConstants.policyTypes.frontend;
 	}
 
+	isDomainPolicy(): boolean {
+		return (
+			this.#state.getValue().isNew === true ||
+			(this.#policyId != null && !ID_TO_POLICY_TYPE[this.#policyId])
+		);
+	}
+
+	getDomainName(): string | null {
+		return this.#state.getValue().definition?.domainName ?? null;
+	}
+
 	constructor(host: UmbControllerHost) {
 		super(host);
 
@@ -82,13 +96,67 @@ export class UmbCspManagerWorkspaceContext
 					this.#load(unique);
 				},
 			},
+			{
+				path: 'create/:domainKey',
+				component: () => import('../csp-management-workspace.element.js'),
+				setup: (_component, info) => {
+					const domainKey = info.match.params.domainKey;
+					this.#loadNew(domainKey);
+				},
+			},
 		]);
 	}
 
 	async #load(unique: string) {
 		this.#policyId = unique;
-		// Load both in parallel but await completion to avoid race conditions
 		await Promise.all([this.loadDefinition(), this.loadDirectives()]);
+	}
+
+	async #loadNew(domainKey: string) {
+		this.#policyId = null;
+		this.#state.update({ loading: true, error: undefined, isNew: true });
+		this.#allowNavigateAway = false;
+
+		// Load frontend policy as template and domain name in parallel
+		const [definitionResult, domainsResult] = await Promise.all([
+			this.#cspDefinitionContext.load(false),
+			this.#cspDefinitionContext.getDomains(),
+			this.loadDirectives(),
+		]);
+
+		if (definitionResult.error) {
+			this.#state.update({ loading: false, error: definitionResult.error });
+			return;
+		}
+
+		const frontendDef = definitionResult.data;
+		if (!frontendDef) {
+			this.#state.update({ loading: false });
+			return;
+		}
+
+		// Resolve domain name for display
+		const domains = domainsResult.data ?? [];
+		const domain = domains.find((d) => d.key === domainKey);
+
+		// Build a new definition using the frontend policy as a template
+		const newId = crypto.randomUUID();
+		const newDefinition: CspApiDefinition = {
+			...frontendDef,
+			id: newId,
+			domainKey,
+			domainName: domain?.name ?? null,
+			// Fix up source DefinitionId references to point to the new definition
+			sources: (frontendDef.sources ?? []).map((s) => ({ ...s, definitionId: newId })),
+		};
+
+		this.#state.update({
+			definition: newDefinition,
+			persistedDefinition: null, // null = new, not yet saved
+			loading: false,
+			isNew: true,
+			error: undefined,
+		});
 	}
 
 	getIsBackOffice(): boolean {
@@ -98,8 +166,42 @@ export class UmbCspManagerWorkspaceContext
 	async loadDefinition() {
 		this.#state.update({ loading: true, error: undefined });
 		this.#allowNavigateAway = false;
+
+		let result: Awaited<ReturnType<UmbCspDefinitionContext['load']>>;
+
+		if (this.isDomainPolicy() && this.#policyId) {
+			const { data: policies, error } = await this.#cspDefinitionContext.getDomainPolicies();
+			if (error) {
+				this.#state.update({ loading: false, error });
+				return;
+			}
+			const policy = policies?.find((p) => p.id === this.#policyId);
+			if (policy && policy.domainKey) {
+				const { data, error: loadError } = await this.#cspDefinitionContext.loadByDomainKey(policy.domainKey);
+				if (loadError) {
+					this.#state.update({ loading: false, error: loadError });
+					return;
+				}
+				if (data) {
+					this.#state.update({
+						definition: data,
+						persistedDefinition: structuredClone(data),
+						loading: false,
+						error: undefined,
+					});
+				} else {
+					this.#state.update({ loading: false, error: undefined });
+				}
+			} else {
+				this.#state.update({ loading: false, error: undefined });
+			}
+			return;
+		}
+
 		const isBackOffice = this.getIsBackOffice();
-		const { data, error } = await this.#cspDefinitionContext.load(isBackOffice);
+		result = await this.#cspDefinitionContext.load(isBackOffice);
+
+		const { data, error } = result;
 
 		if (error) {
 			this.#state.update({ loading: false, error });
@@ -174,6 +276,41 @@ export class UmbCspManagerWorkspaceContext
 			error: undefined,
 		});
 
+		// If this was a new domain policy, refresh the tree and navigate to the edit route
+		if (currentState.isNew && currentState.definition.id) {
+			this.#policyId = currentState.definition.id;
+			this.#state.update({ isNew: false });
+			this.#allowNavigateAway = true;
+
+			const actionEventContext = await this.getContext(UMB_ACTION_EVENT_CONTEXT);
+			actionEventContext?.dispatchEvent(
+				new UmbRequestReloadChildrenOfEntityEvent({
+					entityType: CspConstants.workspace.entityType,
+					unique: CspConstants.policyTypes.frontend.value,
+				}),
+			);
+
+			history.pushState(
+				{},
+				'',
+				`section/csp-manager/workspace/csp-policy/edit/${currentState.definition.id}`,
+			);
+		}
+
+		return { success: true };
+	}
+
+	async deleteDomainPolicy(): Promise<{ success: boolean; error?: Error }> {
+		const id = this.#policyId;
+		if (!id || !this.isDomainPolicy()) {
+			return { success: false, error: new Error('Not a domain policy') };
+		}
+
+		const { error } = await this.#cspDefinitionContext.deleteDomainPolicy(id);
+		if (error) {
+			return { success: false, error: error as Error };
+		}
+
 		return { success: true };
 	}
 
@@ -186,11 +323,12 @@ export class UmbCspManagerWorkspaceContext
 	}
 
 	/**
-	 * Check if there are unsaved changes by comparing current and persisted definitions
-	 * Uses JSON string comparison for deep equality check
+	 * Check if there are unsaved changes by comparing current and persisted definitions.
+	 * New (unsaved) domain policies always return true.
 	 */
 	hasUnsavedChanges(): boolean {
 		const state = this.#state.getValue();
+		if (state.isNew) return true;
 		if (!state.definition || !state.persistedDefinition) {
 			return false;
 		}

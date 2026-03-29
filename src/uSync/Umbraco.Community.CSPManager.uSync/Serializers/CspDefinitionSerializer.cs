@@ -12,6 +12,8 @@ namespace Umbraco.Community.CSPManager.uSync.Serializers;
 [SyncSerializer("f8c88eea-50c1-4146-95e9-a3c148339aea", "Csp Manager Serializer", CspManagerConstants.EntityTypes.CspPolicy)]
 public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncSerializer<CspDefinition>
 {
+	private const string DomainAliasPrefix = "domain-";
+
 	private readonly ICspService _cspService;
 
 	public CspDefinitionSerializer(
@@ -39,10 +41,20 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			return await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
 		if (alias.Equals("front-end", StringComparison.InvariantCultureIgnoreCase))
 			return await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
+		if (alias.StartsWith(DomainAliasPrefix, StringComparison.InvariantCultureIgnoreCase))
+		{
+			var keyStr = alias[DomainAliasPrefix.Length..];
+			if (Guid.TryParse(keyStr, out var domainKey))
+				return await _cspService.GetCspDefinitionForDomainAsync(domainKey, CancellationToken.None);
+		}
+
 		return null;
 	}
 
-	public override string ItemAlias(CspDefinition item) => item.IsBackOffice ? "backoffice" : "front-end";
+	public override string ItemAlias(CspDefinition item) =>
+		item.DomainKey.HasValue
+			? $"{DomainAliasPrefix}{item.DomainKey.Value}"
+			: item.IsBackOffice ? "backoffice" : "front-end";
 
 	public override Guid ItemKey(CspDefinition item) => item.Id;
 
@@ -55,6 +67,13 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		var alias = node.GetAlias();
 		Log.DeserializeStart(logger, alias, nodeKey);
 		var definition = await FindItemAsync(nodeKey);
+
+		var infoNode = node.Element("Info");
+		if (infoNode is null)
+		{
+			return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "No Info node");
+		}
+
 		if (definition is null)
 		{
 			if (nodeKey == CspManagerConstants.DefaultBackofficeId || nodeKey == CspManagerConstants.DefaultFrontEndId)
@@ -67,15 +86,24 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			}
 			else
 			{
-				// assuming the two CspDefinition's exist - as we can't create them here?
-				return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "Cannot find CSPDefinition");
+				// Check if this is a domain policy (has a DomainKey in the Info node)
+				var domainKeyStr = infoNode.Element("DomainKey").ValueOrDefault(string.Empty);
+				if (!string.IsNullOrEmpty(domainKeyStr) && Guid.TryParse(domainKeyStr, out var domainKey))
+				{
+					// Check if a policy for this domain already exists (idempotency: prefer matching by DomainKey)
+					var existingByDomain = await _cspService.GetCspDefinitionForDomainAsync(domainKey, CancellationToken.None);
+					definition = existingByDomain ?? new CspDefinition
+					{
+						Id = nodeKey,
+						DomainKey = domainKey,
+						IsBackOffice = false
+					};
+				}
+				else
+				{
+					return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "Cannot find CSPDefinition");
+				}
 			}
-		}
-
-		var infoNode = node.Element("Info");
-		if (infoNode is null)
-		{
-			return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "No Info node");
 		}
 
 		var details = new List<uSyncChange>();
@@ -156,14 +184,22 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			new XAttribute(uSyncConstants.Xml.Key, ItemKey(item)),
 			new XAttribute(uSyncConstants.Xml.Alias, alias));
 
-		var info = new XElement("Info",
+		var infoElements = new List<object>
+		{
 			new XElement("IsBackOffice", item.IsBackOffice),
 			new XElement("Enabled", item.Enabled),
 			new XElement("ReportOnly", item.ReportOnly),
 			new XElement("ReportUri", item.ReportUri ?? string.Empty),
 			new XElement("ReportingDirective", item.ReportingDirective ?? string.Empty),
 			new XElement("UpgradeInsecureRequests", item.UpgradeInsecureRequests)
-		);
+		};
+
+		if (item.DomainKey.HasValue)
+		{
+			infoElements.Add(new XElement("DomainKey", item.DomainKey.Value));
+		}
+
+		var info = new XElement("Info", infoElements.ToArray());
 
 		node.Add(info);
 		node.Add(SerializeSources(item));

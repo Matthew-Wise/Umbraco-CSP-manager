@@ -36,14 +36,13 @@ public class CspDistributedCacheRefresher
 		{
 			foreach (var payload in payloads)
 			{
-				var cacheKey = payload.CspDefinition.IsBackOffice
-					? Constants.BackOfficeCacheKey
-					: Constants.FrontEndCacheKey;
+				var cacheKey = GetCacheKey(payload.CspDefinition);
 				Log.ClearingCspCache(_logger, cacheKey);
 				_runtimeCache.ClearByKey(cacheKey);
 			}
 		}
 	}
+
 	public override void RefreshAll()
 	{
 		if (_serverRoleAccessor.CurrentServerRole == ServerRole.Subscriber)
@@ -51,6 +50,17 @@ public class CspDistributedCacheRefresher
 			Log.ClearingAllCspCaches(_logger);
 			_runtimeCache.ClearByKey(Constants.BackOfficeCacheKey);
 			_runtimeCache.ClearByKey(Constants.FrontEndCacheKey);
+			_runtimeCache.ClearByKey(Constants.DomainCacheKeyPrefix);
 		}
+	}
+
+	private static string GetCacheKey(Models.CspDefinition definition)
+	{
+		if (definition.DomainKey.HasValue)
+		{
+			return Constants.DomainCacheKey(definition.DomainKey.Value);
+		}
+
+		return definition.IsBackOffice ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
 	}
 }

@@ -39,4 +39,31 @@ export const manifests: Array<UmbExtensionManifest> = [
 			hideTreeRoot: true,
 		},
 	},
+	// Modal for selecting a domain when adding a domain policy
+	{
+		type: 'modal',
+		alias: 'Umbraco.Community.CSPManager.Modal.AddDomainPolicy',
+		name: 'Add Domain Policy Modal',
+		element: () => import('./add-domain-policy-modal.element.js'),
+	},
+	// Entity action: Add Domain Policy — only visible on the Frontend policy node
+	{
+		type: 'entityAction',
+		kind: 'default',
+		alias: `${CspConstants.alias}.EntityAction.AddDomainPolicy`,
+		name: 'Add Domain Policy',
+		weight: 100,
+		api: () => import('./add-domain-policy.action.js'),
+		forEntityTypes: [CspConstants.workspace.entityType],
+		meta: {
+			icon: 'icon-add',
+			label: 'Add Domain Policy',
+		},
+		conditions: [
+			{
+				alias: CspConstants.umbraco.conditions.entityUnique,
+				match: CspConstants.policyTypes.frontend.value,
+			},
+		],
+	},
 ];

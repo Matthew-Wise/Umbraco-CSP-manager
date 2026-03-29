@@ -27,6 +27,12 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	};
 
 	@state()
+	private _isDomainPolicy: boolean = false;
+
+	@state()
+	private _isNew: boolean = false;
+
+	@state()
 	private _invalidSources: Array<string> = [];
 
 	@state()
@@ -45,6 +51,8 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 
 			this.observe(context.state, (state) => {
 				this._workspaceState = state;
+				this._isNew = state.isNew === true;
+				this._isDomainPolicy = context.isDomainPolicy();
 				if (state.error) {
 					this._invalidSources = state.error.cause as string[];
 				} else {
@@ -232,6 +240,30 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		}
 
 		return html`
+			${this._isDomainPolicy
+				? html`
+					<uui-box class="domain-info-box">
+						<div class="domain-info-content">
+							<p>
+								${this._isNew
+									? 'This is a new domain-specific policy based on a copy of the Frontend policy. Make your changes and click Save to create it.'
+									: 'This is a domain-specific policy that overrides the global Frontend policy for this domain.'}
+							</p>
+							${this._workspaceState.definition?.rootContentKey
+								? html`
+									<uui-button
+										look="secondary"
+										href="/umbraco/section/content/workspace/document/edit/${this._workspaceState.definition.rootContentKey}"
+										label="Open content item">
+										<uui-icon name="icon-document"></uui-icon>
+										Open content item
+									</uui-button>
+								`
+								: ''}
+						</div>
+					</uui-box>
+				`
+				: ''}
 			<uui-box headline="Directives">
 				<uui-form-layout-item>
 					<uui-label slot="label" for="insecure-requests">Upgrade Insecure Requests</uui-label>
@@ -369,6 +401,23 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 			}
 			uui-box {
 				margin-bottom: var(--uui-size-layout-1);
+			}
+
+			.domain-info-box {
+				border-left: 3px solid var(--uui-color-focus);
+			}
+
+			.domain-info-content {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--uui-size-space-4);
+			}
+
+			.domain-info-content p {
+				margin: 0;
+				color: var(--uui-color-text-alt);
+				flex: 1;
 			}
 
 			.empty-state {

@@ -1,7 +1,7 @@
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 
-builder.Configuration.AddJsonFile($"appSettings.{builder.Environment.EnvironmentName}.json");
+builder.Configuration.AddJsonFile($"appSettings.{builder.Environment.EnvironmentName}.json", optional: true);
 
 builder.CreateUmbracoBuilder()
 	.AddBackOffice()
