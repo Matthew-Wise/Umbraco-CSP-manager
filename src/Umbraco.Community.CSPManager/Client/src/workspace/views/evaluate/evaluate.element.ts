@@ -86,7 +86,14 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 		const parsed = new CspParser(csp).csp;
 		const results = new CspEvaluator(parsed).evaluate();
 
-		return results.reduce((acc: GroupedFindings, finding: Finding) => {
+		// Deduplicate findings - csp_evaluator triplicates entries when
+		// script-src-attr/elem fall back to script-src
+		const uniqueResults = results.filter(
+			(finding: Finding, index: number, arr: Finding[]) =>
+				arr.findIndex((f: Finding) => f.equals(finding)) === index
+		);
+
+		return uniqueResults.reduce((acc: GroupedFindings, finding: Finding) => {
 			const directive = finding.directive;
 
 			if (!acc[directive]) {
@@ -125,13 +132,19 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 
 		const rawCsp = this.#getCspString();
 		const findings = this.#getFindings(rawCsp);
+		const hasFindings = Object.keys(findings).length > 0;
 		return html`
 			<uui-box headline="Evaluate">
 				<div class="csp-container">
 					<span>${rawCsp}</span>
 				</div>
 				<div>
-					${Object.entries(findings).map(([directive, group]) => {
+					${!hasFindings
+						? html`<div class="no-findings">
+								<uui-icon name="icon-check"></uui-icon>
+								<span>No issues found</span>
+							</div>`
+						: Object.entries(findings).map(([directive, group]) => {
 						const highestSeverityInfo = getSeverityInfo(group.highestSeverity);
 						return html`
 							<div class="directive-item">
@@ -162,6 +175,7 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 													<span class="severity-text">${severityInfo.text}</span>
 												</div>
 												<div class="finding-description">${finding.description}</div>
+												${finding.value ? html`<div class="finding-value">${finding.value}</div>` : ''}
 											</div>
 										`;
 									})}
@@ -176,7 +190,16 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 
 	static styles = [
 		css`
-			.csp-container {
+			.no-findings {
+					display: flex;
+					align-items: center;
+					gap: 0.5rem;
+					padding: var(--uui-size-4);
+					color: #28a745;
+					--uui-icon-color: #28a745;
+				}
+
+				.csp-container {
 				justify-content: center;
 				display: flex;
 
