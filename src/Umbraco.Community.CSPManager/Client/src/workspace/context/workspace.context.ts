@@ -72,6 +72,8 @@ export class UmbCspManagerWorkspaceContext
 
 		// Listen for navigation events to show discard changes modal
 		window.addEventListener('willchangestate', this.#onWillNavigate);
+		// Listen for external saves (e.g. import action) to reload definition
+		window.addEventListener('csp:definition-saved', this.#onDefinitionSaved as EventListener);
 
 		this.routes.setRoutes([
 			{
@@ -237,8 +239,15 @@ export class UmbCspManagerWorkspaceContext
 		return true;
 	};
 
+	#onDefinitionSaved = (e: CustomEvent<{ unique: string }>) => {
+		if (e.detail.unique === this.#policyId) {
+			this.loadDefinition();
+		}
+	};
+
 	override destroy(): void {
 		window.removeEventListener('willchangestate', this.#onWillNavigate);
+		window.removeEventListener('csp:definition-saved', this.#onDefinitionSaved as EventListener);
 		super.destroy();
 	}
 }
