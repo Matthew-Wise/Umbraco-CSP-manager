@@ -92,6 +92,16 @@ npm run test:ui       # Playwright UI mode for debugging
 npm run test:headed   # See the browser during tests
 ```
 
+## Testing Requirements
+
+All pull requests for new features or bug fixes **must** include appropriate tests:
+
+- **Backend changes** should include NUnit tests in `src/Umbraco.Community.CSPManager.Tests/`
+- **Frontend changes** should include Playwright E2E tests in `src/Umbraco.Community.CSPManager/Client/tests/`
+- Tests must pass locally before submitting — CI will also run them on every PR
+
+PRs that introduce new functionality without tests will not be merged.
+
 ## Submitting a Pull Request
 
 1. Create a feature branch from `main`
