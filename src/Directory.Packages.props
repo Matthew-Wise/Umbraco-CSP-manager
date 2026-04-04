@@ -5,11 +5,11 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Umbraco.Cms" Version="17.2.2" />
-    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="17.2.2" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="17.2.2" />
-    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="17.2.2" />
-    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="17.2.2" />
+    <PackageVersion Include="Umbraco.Cms" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="17.3.0" />
     <PackageVersion Include="uSync" Version="17.0.4" />
     <PackageVersion Include="uSync.BackOffice" Version="17.0.4" />
     <PackageVersion Include="uSync.Complete" Version="17.1.3" />
@@ -25,6 +25,6 @@
     <PackageVersion Include="NUnit" Version="3.14.0" />
     <PackageVersion Include="NUnit.Analyzers" Version="4.12.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
-    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.2.2" />
+    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.3.0" />
   </ItemGroup>
 </Project>
