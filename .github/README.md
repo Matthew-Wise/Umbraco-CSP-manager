@@ -5,6 +5,7 @@
 [![NuGet](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager?color=0273B3)](https://www.nuget.org/packages/Umbraco.Community.CSPManager)
 [![GitHub license](https://img.shields.io/github/license/Matthew-Wise/Umbraco-CSP-manager?color=8AB803)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/LICENSE)
 [![Build](https://github.com/Matthew-Wise/Umbraco-CSP-manager/actions/workflows/csp-manager.yml/badge.svg?event=push)](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/.github/workflows/csp-manager.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11084/badge)](https://www.bestpractices.dev/projects/11084)
 
 A comprehensive Content Security Policy (CSP) management package for Umbraco CMS that helps protect your website from XSS attacks and other code injection vulnerabilities. Manage CSP headers for both frontend and backend through an intuitive backoffice interface.
 
