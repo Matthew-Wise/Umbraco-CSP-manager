@@ -2,8 +2,8 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Json;
 using Umbraco.Community.CSPManager.Models.Api;
-using UmbConstants = Umbraco.Cms.Core.Constants;
 using DefinitionsControllerType = Umbraco.Community.CSPManager.Controllers.DefinitionsController;
+using UmbConstants = Umbraco.Cms.Core.Constants;
 
 namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitionsController;
 
