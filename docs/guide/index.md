@@ -9,5 +9,6 @@ has_children: true
 This section covers day-to-day usage of CSP Manager — how to manage policies, configure settings, and use the evaluation tools.
 
 - [Policy Management](policy-management) — Add and manage CSP sources and their directives
+- [Importing Policies](importing-policies) — Import a raw CSP policy string to replace all sources
 - [Policy Settings](policy-settings) — Configure report-only mode, reporting endpoints, and upgrade insecure requests
 - [Evaluation Tool](evaluation) — Analyse your policy for security weaknesses before going live
