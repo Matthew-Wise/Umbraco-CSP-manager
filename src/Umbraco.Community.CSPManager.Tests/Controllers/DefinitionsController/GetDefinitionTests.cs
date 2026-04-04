@@ -1,14 +1,14 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using System.Net;
 using System.Text.Json.JsonDiffPatch.Nunit;
-using Umbraco.Community.CSPManager.Controllers;
+using DefinitionsControllerType = Umbraco.Community.CSPManager.Controllers.DefinitionsController;
 using UmbConstants = Umbraco.Cms.Core.Constants;
 
-namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitonsController;
+namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitionsController;
 
-internal class GetDefinitionTests : CspManagementApiTest<DefinitionsController>
+internal class GetDefinitionTests : CspManagementApiTest<DefinitionsControllerType>
 {
-	protected override Expression<Func<DefinitionsController, object>> MethodSelector => x => x.GetDefinition(true, default);
+	protected override Expression<Func<DefinitionsControllerType, object>> MethodSelector => x => x.GetDefinition(true, default);
 
 	[Test]
 	public async Task GetDefinition_WithOutSectionAcess_Returns_Forbidden()

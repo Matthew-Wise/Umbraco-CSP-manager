@@ -1,15 +1,15 @@
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Json;
-using Umbraco.Community.CSPManager.Controllers;
 using Umbraco.Community.CSPManager.Models.Api;
+using DefinitionsControllerType = Umbraco.Community.CSPManager.Controllers.DefinitionsController;
 using UmbConstants = Umbraco.Cms.Core.Constants;
 
-namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitonsController;
+namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitionsController;
 
-internal class SaveDefinitionsAuthorizationTests : CspManagementApiTest<DefinitionsController>
+internal class SaveDefinitionsAuthorizationTests : CspManagementApiTest<DefinitionsControllerType>
 {
-	protected override Expression<Func<DefinitionsController, object>> MethodSelector => x => x.SaveDefinition(default!, default);
+	protected override Expression<Func<DefinitionsControllerType, object>> MethodSelector => x => x.SaveDefinition(default!, default);
 
 	[Test]
 	public async Task SaveDefinition_WithOutSectionAcess_Returns_Forbidden()

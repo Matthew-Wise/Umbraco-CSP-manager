@@ -1,17 +1,17 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Migrations;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Infrastructure.Migrations.Upgrade;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
-using Umbraco.Community.CSPManager.Migrations;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Services;
+using Umbraco.Community.CSPManager.Tests.Helpers;
 
 namespace Umbraco.Community.CSPManager.Tests.Services;
 
@@ -24,18 +24,23 @@ public class CspServiceTests : UmbracoIntegrationTest
 		builder.AddComposers();
 	}
 
+	protected override void SetUpTestConfiguration(IConfigurationBuilder configBuilder)
+	{
+		base.SetUpTestConfiguration(configBuilder);
+		// Umbraco 17.3 runs package migrations via a background service when PackageMigrationsUnattended=true,
+		// which conflicts with the manual migration execution in SetUp. Disable it so tests manage their own migrations.
+		configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+		{
+			["Umbraco:CMS:Unattended:PackageMigrationsUnattended"] = "false"
+		});
+	}
+
 	private ICspService _cspService;
 
 	[SetUp]
 	public async Task SetUp()
 	{
-		var upgrader = new Upgrader(new CspMigrationPlan());
-		var result = await upgrader.ExecuteAsync(GetRequiredService<IMigrationPlanExecutor>(), ScopeProvider, GetRequiredService<IKeyValueService>()).ConfigureAwait(false);
-		if (!result.Successful)
-		{
-			await TestContext.Out.WriteLineAsync(result.Exception.Message);
-		}
-		Assert.That(result.Successful, Is.True);
+		await CspTestMigrationHelper.RunMigrationsAsync(GetRequiredService<IMigrationPlanExecutor>(), ScopeProvider, GetRequiredService<IKeyValueService>());
 		_cspService = GetRequiredService<ICspService>();
 	}
 

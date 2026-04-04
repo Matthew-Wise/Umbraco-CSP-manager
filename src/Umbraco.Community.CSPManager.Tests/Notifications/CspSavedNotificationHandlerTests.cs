@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Sync;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Notifications.Handlers;
+using Umbraco.Community.CSPManager.Tests.Helpers;
 
 namespace Umbraco.Community.CSPManager.Tests.Notifications;
 
@@ -81,33 +82,4 @@ public class CspSavedNotificationHandlerTests
 		Assert.That(_serverMessenger.PayloadRefreshCount, Is.Zero);
 	}
 
-	private class SpyServerMessenger : IServerMessenger
-	{
-		public int PayloadRefreshCount { get; private set; }
-
-		public void QueueRefresh<TPayload>(ICacheRefresher refresher, TPayload[] payload)
-			=> PayloadRefreshCount++;
-
-		public void QueueRefresh<T>(ICacheRefresher refresher, Func<T, int> getNumericId, params T[] instances) { }
-		public void QueueRefresh<T>(ICacheRefresher refresher, Func<T, Guid> getGuidId, params T[] instances) { }
-		public void QueueRemove<T>(ICacheRefresher refresher, Func<T, int> getNumericId, params T[] instances) { }
-		public void QueueRemove(ICacheRefresher refresher, params int[] numericIds) { }
-		public void QueueRefresh(ICacheRefresher refresher, params int[] numericIds) { }
-		public void QueueRefresh(ICacheRefresher refresher, params Guid[] guidIds) { }
-		public void QueueRefreshAll(ICacheRefresher refresher) { }
-		public void Sync() { }
-		public void SendMessages() { }
-		public void PerformRefresh(ICacheRefresher refresher, string jsonPayload) { }
-		public void PerformRemove(ICacheRefresher refresher, string jsonPayload) { }
-	}
-
-	private class StubCacheRefresher : ICacheRefresher
-	{
-		public Guid RefresherUniqueId => CspDistributedCacheRefresher.UniqueId;
-		public string Name => "Stub";
-		public void RefreshAll() { }
-		public void Refresh(int id) { }
-		public void Remove(int id) { }
-		public void Refresh(Guid id) { }
-	}
 }
