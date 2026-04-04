@@ -2,14 +2,14 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.JsonDiffPatch.Nunit;
-using Umbraco.Community.CSPManager.Controllers;
 using Umbraco.Community.CSPManager.Models.Api;
+using DefinitionsControllerType = Umbraco.Community.CSPManager.Controllers.DefinitionsController;
 
-namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitonsController;
+namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitionsController;
 
-internal class SaveDefinitionsValidationTests : CspManagementApiTest<DefinitionsController>
+internal class SaveDefinitionsValidationTests : CspManagementApiTest<DefinitionsControllerType>
 {
-	protected override Expression<Func<DefinitionsController, object>> MethodSelector => x => x.SaveDefinition(default!, default);
+	protected override Expression<Func<DefinitionsControllerType, object>> MethodSelector => x => x.SaveDefinition(default!, default);
 
 	private static int _testCounter = 0;
 

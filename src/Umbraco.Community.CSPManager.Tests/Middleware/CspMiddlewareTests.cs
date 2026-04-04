@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -69,6 +70,15 @@ public class CspMiddlewareTests
 							TestHelper.GetHostingEnvironment(),
 							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
 						extraServices?.Invoke(services);
+						services.Configure<ImagingSettings>(options =>
+						{
+							if (options.HMACSecretKey.Length == 0)
+							{
+								byte[] secret = new byte[64];
+								RandomNumberGenerator.Fill(secret);
+								options.HMACSecretKey = secret;
+							}
+						});
 					})
 					.Configure(app =>
 					{
