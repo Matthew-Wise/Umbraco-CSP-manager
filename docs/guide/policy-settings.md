@@ -1,7 +1,7 @@
 ---
 title: Policy Settings
 parent: User Guide
-nav_order: 2
+nav_order: 3
 ---
 
 # Policy Settings

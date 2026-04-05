@@ -1,5 +1,5 @@
 $color-scheme: dark;
-$link-color: #8b9aff;
+$link-color: #50d4fd;
 $btn-primary-color: #283a97;
 $body-background-color: #1d1d1d;
 $body-heading-color: #ffffff;
@@ -10,6 +10,21 @@ $search-background-color: #2a2a2a;
 $table-background-color: #2a2a2a;
 $code-background-color: #2a2a2a;
 $feedback-color: #2a2a2a;
+
+$nav-child-link-color: #bebbbf;
+
+/* Secondary button — transparent background with cyan border/text */
+.btn:not(.btn-primary) {
+  background-color: transparent;
+  border-color: #50d4fd;
+  color: #50d4fd;
+
+  &:hover {
+    background-color: #50d4fd;
+    border-color: #50d4fd;
+    color: #1d1d1d;
+  }
+}
 
 /* Syntax highlighting — VS Code Dark+ inspired */
 /* All foreground colours verified ≥ 4.5:1 contrast on #2a2a2a (WCAG AA) */
