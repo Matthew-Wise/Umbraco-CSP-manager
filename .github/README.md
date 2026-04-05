@@ -17,6 +17,7 @@ A comprehensive Content Security Policy (CSP) management package for Umbraco CMS
 
 - **Frontend & Backend CSP Management** — Configure separate Content Security Policies for your website frontend and Umbraco backoffice
 - **Intuitive Backoffice Interface** — Easy-to-use management screens within the Umbraco backoffice
+- **Policy Import** — Paste an existing CSP header value to import it directly into the backoffice
 - **CSP Evaluation Tools** — Test and validate your Content Security Policies before deployment
 - **Nonce Support** — Built-in tag helpers for script, style, and link nonces
 - **Flexible Configuration** — Customize CSP directives to match your website's requirements
