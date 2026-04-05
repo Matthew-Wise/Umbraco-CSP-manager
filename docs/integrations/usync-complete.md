@@ -31,10 +31,10 @@ Once installed, Push and Pull entity actions become available in the CSP Manager
 
 **Push** — sends the selected CSP policy from your current environment to a remote Umbraco instance:
 
-![Push CSP policies to a remote environment](../assets/images/screenshots/push-screen.png "Push CSP policies")
+![Push CSP policies to a remote environment](../assets/images/screenshots/push-screen.png "Push CSP policies"){: width="3840" height="2160" }
 
 **Pull** — fetches a CSP policy from a remote Umbraco instance into your current environment:
 
-![Pull CSP policies from a remote environment](../assets/images/screenshots/pull-screen.png "Pull CSP policies")
+![Pull CSP policies from a remote environment](../assets/images/screenshots/pull-screen.png "Pull CSP policies"){: width="3840" height="2160" }
 
 These actions are available on both individual CSP policy items and the CSP Manager tree root.

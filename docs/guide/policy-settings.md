@@ -8,7 +8,7 @@ nav_order: 3
 
 Each policy (frontend and backoffice) has settings that control how the CSP header is sent.
 
-![Policy Settings section](../assets/images/screenshots/settings-screen.png "Policy Settings section")
+![Policy Settings section](../assets/images/screenshots/settings-screen.png "Policy Settings section"){: width="3840" height="2160" }
 
 ## Enabled
 

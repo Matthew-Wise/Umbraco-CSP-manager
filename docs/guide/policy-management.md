@@ -17,7 +17,7 @@ Navigate to the **CSP Management section** in the Umbraco backoffice sidebar to 
 
 The UI groups configuration by source first, then lets you select which directives apply to each source. This approach means the same source can cover multiple directives, and different sources can target the same directive.
 
-![Policy management screen](../assets/images/screenshots/management-screen.png "CSP Management section")
+![Policy management screen](../assets/images/screenshots/management-screen.png "CSP Management section"){: width="3840" height="2160" }
 
 To add a new source:
 1. Click **Add source**

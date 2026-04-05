@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-nav_order: 8
+nav_order: 7
 ---
 
 # Troubleshooting
@@ -30,7 +30,7 @@ See [Policy Settings](guide/policy-settings) for details on report-only configur
 
 **Solution**: Add the following line to your `_ViewImports.cshtml`:
 
-```csharp
+```cshtml
 @addTagHelper *, Umbraco.Community.CSPManager
 ```
 

@@ -10,7 +10,7 @@ nav_order: 1
 
 Once installed, uSync automatically includes your CSP definitions in its export/import cycle — syncing CSP configurations alongside your other Umbraco settings.
 
-![uSync synchronization of CSP definitions](../assets/images/screenshots/usync-screen.png "uSync synchronization")
+![uSync synchronization of CSP definitions](../assets/images/screenshots/usync-screen.png "uSync synchronization"){: width="3840" height="2160" }
 
 ## Requirements
 
