@@ -1,7 +1,7 @@
 ---
 title: Caching & Nonces
 parent: Advanced
-nav_order: 3
+nav_order: 2
 ---
 
 # Caching & Nonces

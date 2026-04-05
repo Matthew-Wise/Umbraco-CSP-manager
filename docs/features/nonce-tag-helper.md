@@ -17,7 +17,7 @@ Nonces require a unique value per request. If your pages are served through a CD
 
 Add the tag helper namespace to your `_ViewImports.cshtml`:
 
-```csharp
+```cshtml
 @addTagHelper *, Umbraco.Community.CSPManager
 ```
 

@@ -8,7 +8,7 @@ nav_order: 4
 
 The built-in evaluation tool analyses your current CSP configuration and highlights potential security issues — such as overly permissive sources or directives that could allow XSS attacks.
 
-![CSP Evaluation section](../assets/images/screenshots/evaluate-screen.png "CSP Evaluation section")
+![CSP Evaluation section](../assets/images/screenshots/evaluate-screen.png "CSP Evaluation section"){: width="3840" height="2160" }
 
 ## Using the Evaluation Tool
 
