@@ -95,11 +95,17 @@ jobs:
         with:
           subject-path: '${{ env.OUT_FOLDER }}*.nupkg'
 
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: MattWise
+
       - name: Publish to NuGet
         run: |
           for package in ${{ env.OUT_FOLDER }}*.nupkg; do
             echo "Publishing $package"
-            dotnet nuget push "$package" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+            dotnet nuget push "$package" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
 
   release-usync-complete:
@@ -136,9 +142,15 @@ jobs:
         with:
           subject-path: '${{ env.OUT_FOLDER }}*.nupkg'
 
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: MattWise
+
       - name: Publish to NuGet
         run: |
           for package in ${{ env.OUT_FOLDER }}*.nupkg; do
             echo "Publishing $package"
-            dotnet nuget push "$package" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+            dotnet nuget push "$package" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
