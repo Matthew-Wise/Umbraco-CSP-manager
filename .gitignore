@@ -370,3 +370,7 @@ src/**/App_Plugins/UmbracoCommunityCSPManager/
 **/App_Plugins/uSyncCspComplete/
 .claude/worktrees
 /.playwright-mcp
+
+# Local NuGet test packages and scratch test sites
+/local-packages/
+/test-sites/
