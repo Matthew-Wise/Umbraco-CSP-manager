@@ -50,10 +50,10 @@ jobs:
           cache-dependency-path: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package-lock.json'
 
       - name: Build & Pack uSync
-        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=0.0.0-ci.${{ github.run_number }} --output ${{ env.OUT_FOLDER }}
+        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=0.0.0 --output ${{ env.OUT_FOLDER }}
 
       - name: Build & Pack uSync Complete
-        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=0.0.0-ci.${{ github.run_number }} -p:USyncMinVersion=0.0.0-ci.${{ github.run_number }} --output ${{ env.OUT_FOLDER }}
+        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=0.0.0 --output ${{ env.OUT_FOLDER }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

@@ -11,6 +11,7 @@ permissions:
 jobs:
   report:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'
     steps:
     - uses: dorny/test-reporter@v2
       with:
