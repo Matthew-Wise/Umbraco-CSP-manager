@@ -15,7 +15,7 @@
     "@jumoo/usync-publisher-assets": "^17.0.0",
     "@umbraco-cms/backoffice": "^*",
     "typescript": "^5.8.3",
-    "vite": "^6.3.4"
+    "vite": "^6.4.2"
   },
   "overrides": {
     "dompurify": ">=3.3.2"
