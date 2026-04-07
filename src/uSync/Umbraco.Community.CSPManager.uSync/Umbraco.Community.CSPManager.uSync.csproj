@@ -19,7 +19,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CspManagerMinVersion Condition="'$(CspManagerMinVersion)' == ''">17.0.0-0</CspManagerMinVersion>
     <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
   </PropertyGroup>
 
@@ -28,7 +27,7 @@
     <ProjectReference Include="..\..\Umbraco.Community.CSPManager\Umbraco.Community.CSPManager.csproj"
                       Condition="'$(UseProjectReferences)' == 'true'" />
     <PackageReference Include="Umbraco.Community.CSPManager"
-                      VersionOverride="[$(CspManagerMinVersion), 18.0.0)"
+                      VersionOverride="[17.0.0-alpha, 18.0.0)"
                       Condition="'$(UseProjectReferences)' != 'true'">
       <ExcludeAssets>buildTransitive;build</ExcludeAssets>
     </PackageReference>
