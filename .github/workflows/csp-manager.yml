@@ -26,6 +26,7 @@ on:
 
 jobs:
   build:
+    if: github.event_name != 'release' || !startsWith(github.event.release.tag_name, 'usync-')
     permissions:
       contents: read
       pull-requests: write
