@@ -36,6 +36,8 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 
 	public async Task HandleAsync(CspSavedNotification notification, CancellationToken cancellationToken)
 	{
+		if (!ShouldProcessEvent()) return;
+
 		try
 		{
 			var handlerFolders = GetDefaultHandlerFolders();
