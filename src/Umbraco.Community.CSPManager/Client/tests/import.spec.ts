@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "@umbraco/playwright-testhelpers";
-import { CspTestHelpers, CspApiHelpers, TestCspStrings, EntityActions } from "./helpers";
+import { CspTestHelpers, CspDefinitionBuilder, TestCspStrings, EntityActions } from "./helpers";
 import { CspConstants } from "../src/constants";
 
 test.beforeEach(async ({ umbracoUi }) => {
@@ -100,25 +100,33 @@ test.describe("Import Modal UI", () => {
 });
 
 test.describe("Import Full Flow", () => {
-	test.afterEach(async ({ umbracoApi }) => {
-		await new CspApiHelpers(umbracoApi).resetDefinition("frontend");
-	});
-
 	test("Importing a CSP policy closes modal and navigates to the workspace", async ({
 		umbracoUi,
+		page,
 	}) => {
 		const csp = new CspTestHelpers(umbracoUi);
-		await csp.openImportModal("frontend");
-		const modal = csp.importModal();
+		try {
+			await csp.openImportModal("frontend");
+			const modal = csp.importModal();
 
-		await modal.locator("uui-textarea").locator("textarea").fill(TestCspStrings.threeSourceImport);
-		await modal.getByRole("button", { name: "Parse" }).click();
-		await modal.getByRole("button", { name: "Import" }).click();
+			await modal.locator("uui-textarea").locator("textarea").fill(TestCspStrings.threeSourceImport);
+			await modal.getByRole("button", { name: "Parse" }).click();
+			await modal.getByRole("button", { name: "Import" }).click();
 
-		await expect(modal).not.toBeVisible();
-		await expect(csp.workspace()).toBeVisible();
-		await expect(umbracoUi.page).toHaveURL(
-			new RegExp(CspConstants.policyTypes.frontend.value),
-		);
+			await expect(modal).not.toBeVisible();
+			await expect(csp.workspace()).toBeVisible();
+			await expect(umbracoUi.page).toHaveURL(
+				new RegExp(CspConstants.policyTypes.frontend.value),
+			);
+		} finally {
+			// Reset via page.request so browser cookies are used for auth.
+			// umbracoApi cannot be used here as it requires a Bearer token from
+			// localStorage which Umbraco v17 does not store there.
+			const definition = CspDefinitionBuilder.for("frontend").build();
+			await page.request.post(
+				`${process.env.URL ?? "https://localhost:44370"}/umbraco/csp/api/v1/Definitions/save`,
+				{ data: definition, ignoreHTTPSErrors: true },
+			);
+		}
 	});
 });

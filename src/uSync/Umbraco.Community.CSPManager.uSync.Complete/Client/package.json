@@ -18,7 +18,8 @@
     "vite": "^6.4.2"
   },
   "overrides": {
-    "dompurify": ">=3.3.2"
+    "dompurify": ">=3.4.0",
+    "uuid": ">=14.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["esbuild"]
