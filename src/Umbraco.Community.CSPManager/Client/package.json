@@ -37,7 +37,8 @@
 		"csp_evaluator": "^1.1.5"
 	},
 	"overrides": {
-		"dompurify": "^3.2.4"
+		"dompurify": ">=3.4.0",
+		"uuid": ">=14.0.0"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
