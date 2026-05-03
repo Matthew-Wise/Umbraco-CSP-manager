@@ -49,6 +49,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package-lock.json'
 
+      - name: Install uSync Complete client dependencies
+        run: npm ci
+        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
+
+      - name: Build uSync Complete client
+        run: npm run build
+        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
+
       - name: Build & Pack uSync
         run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=0.0.0 --output ${{ env.OUT_FOLDER }}
 
@@ -133,6 +141,21 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package.json'
+          cache: 'npm'
+          cache-dependency-path: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package-lock.json'
+
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
+
+      - name: Build client
+        run: npm run build
+        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
 
       - name: Build & Pack
         run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=${{ steps.version.outputs.version }} -p:UseProjectReferences=false --output ${{ env.OUT_FOLDER }}
