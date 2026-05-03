@@ -57,6 +57,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './src/Umbraco.Community.CSPManager/Client/package-lock.json'
 
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+
+      - name: Build client
+        run: npm run build
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+
       - name: Build & Pack
         run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION --output ${{env.OUT_FOLDER}}
 
