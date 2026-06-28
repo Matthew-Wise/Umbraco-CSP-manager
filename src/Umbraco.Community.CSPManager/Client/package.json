@@ -22,7 +22,7 @@
 		"npm": ">=10.9"
 	},
 	"devDependencies": {
-		"@hey-api/openapi-ts": "^0.95.0",
+		"@hey-api/openapi-ts": "^0.97.0",
 		"@playwright/test": "^1.56.1",
 		"@types/node": "^22.0.0",
 		"@umbraco-cms/backoffice": "^17.3.0",
