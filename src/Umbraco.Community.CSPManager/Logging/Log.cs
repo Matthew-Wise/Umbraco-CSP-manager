@@ -22,6 +22,37 @@ internal static partial class Log
 		Message = "Failed to construct CSP header for {Path}")]
 	public static partial void CspHeaderConstructionFailed(ILogger logger, PathString path, Exception ex);
 
+	[LoggerMessage(
+		EventId = 2,
+		Level = LogLevel.Debug,
+		Message = "CSP Header definition disabled for {DefinitionId}")]
+	public static partial void CspDefinitionDisabled(ILogger logger, Guid? definitionId);
+
+
+	[LoggerMessage(
+		EventId = 3,
+		Level = LogLevel.Debug,
+		Message = "Back-office CSP header disabled via config")]
+	public static partial void CspBackOfficeDisabled(ILogger logger);
+
+	[LoggerMessage(
+		EventId = 4,
+		Level = LogLevel.Debug,
+		Message = "CSP header is empty for {DefinitionId}")]
+	public static partial void CspHeaderEmpty(ILogger logger, Guid definitionId);
+
+	[LoggerMessage(
+		EventId = 5,
+		Level = LogLevel.Debug,
+		Message = "CSP OnStarting callback fired for {Path}")]
+	public static partial void CspOnStartingFired(ILogger logger, PathString path);
+
+	[LoggerMessage(
+		EventId = 6,
+		Level = LogLevel.Debug,
+		Message = "CSP header {HeaderName} applied for {DefinitionId} ({Length} chars)")]
+	public static partial void CspHeaderApplied(ILogger logger, string headerName, Guid definitionId, int length);
+
 	// ===========================================
 	// Service Events (100-199)
 	// ===========================================

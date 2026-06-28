@@ -90,11 +90,14 @@ public class CspMiddleware
 		{
 			try
 			{
+				Log.CspOnStartingFired(_logger, context.Request.Path);
+
 				var isBackOfficeRequest = context.Request.IsBackOfficeRequest() ||
 					context.Request.Path.StartsWithSegments("/umbraco");
 
 				if (isBackOfficeRequest && _cspOptions.DisableBackOfficeHeader)
 				{
+					Log.CspBackOfficeDisabled(_logger);
 					return;
 				}
 
@@ -103,6 +106,7 @@ public class CspMiddleware
 
 				if (definition is not { Enabled: true })
 				{
+					Log.CspDefinitionDisabled(_logger, definition?.Id);
 					return;
 				}
 
@@ -111,10 +115,16 @@ public class CspMiddleware
 
 				if (!string.IsNullOrWhiteSpace(cspValue))
 				{
-					context.Response.Headers.Append(definition.ReportOnly ? Constants.ReportOnlyHeaderName : Constants.HeaderName, cspValue);
+					var headerName = definition.ReportOnly ? Constants.ReportOnlyHeaderName : Constants.HeaderName;
+					context.Response.Headers.Append(headerName, cspValue);
+					Log.CspHeaderApplied(_logger, headerName, definition.Id, cspValue.Length);
+				}
+				else
+				{
+					Log.CspHeaderEmpty(_logger, definition.Id);
 				}
 			}
-			catch (Exception ex)
+			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
 				// CSP header injection should never break the request.
 				// Log the error and continue without the CSP header.
