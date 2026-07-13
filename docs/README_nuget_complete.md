@@ -1,6 +1,6 @@
 # Umbraco.Community.CSPManager.uSync.Complete
 
-[![Umbraco Version](https://img.shields.io/badge/Umbraco-17+-%233544B1?style=flat&logo=umbraco)](#)
+[![Umbraco Version](https://img.shields.io/badge/Umbraco-18+-%233544B1?style=flat&logo=umbraco)](#)
 [![NuGet Version](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager.uSync.Complete)](#)
 [![Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.CSPManager.uSync.Complete)](#)
 
@@ -10,7 +10,7 @@ uSync Publisher support for [Umbraco.Community.CSPManager](https://github.com/Ma
 
 ## Requirements
 
-- Umbraco 17.1+
+- Umbraco 18+
 - [Umbraco.Community.CSPManager](https://www.nuget.org/packages/Umbraco.Community.CSPManager/)
 - [Umbraco.Community.CSPManager.uSync](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync/)
 - [uSync.Complete](https://www.nuget.org/packages/uSync.Complete/)

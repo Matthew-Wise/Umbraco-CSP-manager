@@ -2,10 +2,11 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Validation.AspNetCore;
+using Umbraco.Cms.Api.Common.OpenApi;
+using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.Community.CSPManager.Authorization;
-using Umbraco.Community.CSPManager.Configuration;
 using Umbraco.Community.CSPManager.Middleware;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Notifications.Handlers;
@@ -23,7 +24,9 @@ public static class UmbracoBuilderExtensions
 			return builder;
 		}
 
-		builder.Services.ConfigureOptions<ConfigCspApiSwaggerGenOptions>();
+		builder.AddBackOfficeOpenApiDocument(Constants.ApiName, document => document
+			.WithTitle("CSP Management Api")
+			.WithBackOfficeAuthentication());
 		builder.Services.Configure<CspManagerOptions>(builder.Config.GetSection(Constants.OptionsName));
 
 		builder.Services.AddTransient<ICspService, CspService>();

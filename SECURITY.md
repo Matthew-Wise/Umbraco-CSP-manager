@@ -4,6 +4,7 @@
 
 | Version | Supported |
 |---------|-----------|
+| 18.x    | Yes       |
 | 17.x    | Yes       |
 | < 17    | No        |
 

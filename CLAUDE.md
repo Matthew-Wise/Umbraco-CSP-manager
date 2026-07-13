@@ -22,20 +22,20 @@ src/
 
 ## Tech Stack
 
-- Backend: .NET 10, Umbraco 17+, NPoco ORM
+- Backend: .NET 10, Umbraco 18+, NPoco ORM
 - Frontend: Lit 3.x, Vite 7.x, Node 22+
 - Testing: NUnit (backend), Playwright (frontend)
 - API: OpenAPI code generation via @hey-api/openapi-ts
 
 ## CI Release Tags
 
-All packages use major version aligned to Umbraco (e.g. Umbraco 17 → `17.x.x`).
+All packages use major version aligned to Umbraco (e.g. Umbraco 18 → `18.x.x`).
 
-- CSP Manager: GitHub Release tag `17.0.0` (triggers `csp-manager.yml`)
-- uSync: git tag `usync-17.0.0` (triggers `usync.yml` `release-usync` job)
-- uSync Complete: git tag `usync-complete-17.0.0` (triggers `usync.yml` `release-usync-complete` job)
+- CSP Manager: GitHub Release tag `18.0.0` (triggers `csp-manager.yml`)
+- uSync: git tag `usync-18.0.0` (triggers `usync.yml` `release-usync` job)
+- uSync Complete: git tag `usync-complete-18.0.0` (triggers `usync.yml` `release-usync-complete` job)
 
-Each package releases independently. Dependencies use a version range `[17.0.0-0, 18.0.0)` — accepts any 17.x including pre-releases. Only update the lower bound in the `.csproj` when a dependency has a breaking change that requires a newer minimum.
+Each package releases independently. Dependencies use a version range `[18.0.0, 19.0.0)` — accepts any 18.x. Only update the lower bound in the `.csproj` when a dependency has a breaking change that requires a newer minimum.
 
 ## Development Principles
 

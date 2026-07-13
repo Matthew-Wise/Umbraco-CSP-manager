@@ -1,7 +1,7 @@
 {
   "id": "Umbraco.Community.CSPManager.uSync.Complete",
   "name": "Umbraco.Community.CSPManager.uSync.Complete",
-  "version": "17.0.0",
+  "version": "18.0.0",
   "allowTelemetry": true,
   "extensions": [
     {

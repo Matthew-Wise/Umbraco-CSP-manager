@@ -7,7 +7,7 @@ nav_order: 1
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11084/badge){: height="20" }](https://www.bestpractices.dev/projects/11084)
 [![Build](https://github.com/Matthew-Wise/Umbraco-CSP-manager/actions/workflows/csp-manager.yml/badge.svg?event=push){: height="20" }](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/.github/workflows/csp-manager.yml)
-[![Platform](https://img.shields.io/badge/Umbraco-17+-%233544B1?style=flat&logo=umbraco){: height="20" }](https://umbraco.com/products/umbraco-cms/)
+[![Platform](https://img.shields.io/badge/Umbraco-18+-%233544B1?style=flat&logo=umbraco){: height="20" }](https://umbraco.com/products/umbraco-cms/)
 [![GitHub license](https://img.shields.io/github/license/Matthew-Wise/Umbraco-CSP-manager?color=8AB803){: height="20" }](https://github.com/Matthew-Wise/Umbraco-CSP-manager/blob/main/LICENSE)
 [![NuGet](https://img.shields.io/nuget/vpre/Umbraco.Community.CSPManager?color=0273B3){: height="20" }](https://www.nuget.org/packages/Umbraco.Community.CSPManager)
 [![Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.CSPManager?color=cc9900){: height="20" }](https://www.nuget.org/packages/Umbraco.Community.CSPManager/)

@@ -31,7 +31,7 @@ The package registers itself automatically via Umbraco's composer pattern — no
 
 ## Requirements
 
-- Umbraco 17+
+- Umbraco 18+
 - .NET 10+
 
 ## Next Steps

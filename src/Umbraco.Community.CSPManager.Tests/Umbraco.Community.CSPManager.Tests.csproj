@@ -52,7 +52,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Update="$(NuGetPackageRoot)\umbraco.cms.tests.integration\17.0.0\contentFiles\any\net10.0\appsettings.Tests.json">
+    <Content Update="$(NuGetPackageRoot)\umbraco.cms.tests.integration\18.0.2\contentFiles\any\net10.0\appsettings.Tests.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
