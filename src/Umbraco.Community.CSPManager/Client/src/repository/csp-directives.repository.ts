@@ -12,7 +12,7 @@ export class UmbCspDirectivesRepository extends UmbRepositoryBase {
    * Get all available CSP directives
    */
   async getAll() {
-    const { data, error } = await tryExecute(this, Directives.getUmbracoCspApiV1Directives(), {
+    const { data, error } = await tryExecute(this, Directives.getDirectives(), {
 			disableNotifications: false,
 		});
 
