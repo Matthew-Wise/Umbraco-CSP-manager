@@ -12,7 +12,7 @@ This allows you to push or pull CSP policies directly between live Umbraco envir
 
 ## Requirements
 
-- Umbraco 17.1+
+- Umbraco 18+
 - [Umbraco.Community.CSPManager](https://www.nuget.org/packages/Umbraco.Community.CSPManager/)
 - [Umbraco.Community.CSPManager.uSync](https://www.nuget.org/packages/Umbraco.Community.CSPManager.uSync/)
 - [uSync.Complete](https://www.nuget.org/packages/uSync.Complete/)

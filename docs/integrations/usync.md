@@ -14,7 +14,7 @@ Once installed, uSync automatically includes your CSP definitions in its export/
 
 ## Requirements
 
-- Umbraco 17+
+- Umbraco 18+
 - [Umbraco.Community.CSPManager](https://www.nuget.org/packages/Umbraco.Community.CSPManager/) 17+
 - [uSync.BackOffice](https://www.nuget.org/packages/uSync.BackOffice/) 17+
 

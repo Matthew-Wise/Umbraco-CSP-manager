@@ -30,7 +30,7 @@
     <ProjectReference Include="..\Umbraco.Community.CSPManager.uSync\Umbraco.Community.CSPManager.uSync.csproj"
                       Condition="'$(UseProjectReferences)' == 'true'" />
     <PackageReference Include="Umbraco.Community.CSPManager.uSync"
-                      VersionOverride="[17.0.0, 18.0.0)"
+                      VersionOverride="[18.0.0, 19.0.0)"
                       Condition="'$(UseProjectReferences)' != 'true'" />
   </ItemGroup>
 

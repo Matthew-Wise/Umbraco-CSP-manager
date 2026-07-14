@@ -14,7 +14,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	async get(isBackOffice: boolean) {
 		const { data, error } = await tryExecute(
 			this,
-			Definitions.getUmbracoCspApiV1Definitions({
+			Definitions.getDefinitions({
 				query: { isBackOffice },
 			}),
 			{ disableNotifications: false }
@@ -33,7 +33,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	async save(definition: CspApiDefinition) {
 		const { data, error } = await tryExecute(
 			this,
-			Definitions.postUmbracoCspApiV1DefinitionsSave({
+			Definitions.postDefinitionsSave({
 				body: definition,
 			}),
 			{ disableNotifications: false }

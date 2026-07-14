@@ -5,7 +5,7 @@
 - `npm run build:ts` - TypeScript checking only (fast, use during development)
 - `npm run build` - Full build (TypeScript + Vite bundling)
 - `npm run dev` - Dev server with hot reload
-- `npm run generate-client` - Regenerate OpenAPI client from backend swagger
+- `npm run generate-client` - Regenerate OpenAPI client from the backend OpenAPI document
 
 ## Testing
 
@@ -22,7 +22,7 @@
 - Repository pattern: repositories handle API calls, contexts manage state
 - `src/api/` is auto-generated from OpenAPI spec - do not edit manually
 
-## Umbraco v17 Patterns
+## Umbraco v18 Patterns
 
 ### Context Tokens - always use `UmbContextToken` with two parameters:
 
@@ -38,7 +38,7 @@ new UmbContextToken<MyContext>('ContextAlias', 'unique.api.alias')
 ### HTTP Client - must include credentials for cookie auth:
 
 ```typescript
-credentials: 'include'  // Required for v17 authentication
+credentials: 'include'  // Required for v18 authentication
 ```
 
 ## Key Files

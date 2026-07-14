@@ -6,7 +6,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 
 export default defineConfig({
-	input: 'https://localhost:44370/umbraco/swagger/csp/swagger.json',
+	input: 'https://localhost:44370/umbraco/openapi/csp.json',
 	output: {
 		format: 'prettier',
 		lint: 'eslint',

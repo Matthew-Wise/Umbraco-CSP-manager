@@ -43,6 +43,8 @@ export class CspTreeDataSource {
 			data: {
 				items,
 				total: items.length,
+				totalBefore: 0,
+				totalAfter: 0,
 			},
 		};
 	}
@@ -53,6 +55,8 @@ export class CspTreeDataSource {
 			data: {
 				items: [],
 				total: 0,
+				totalBefore: 0,
+				totalAfter: 0,
 			},
 		};
 	}

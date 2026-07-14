@@ -53,6 +53,12 @@ internal static partial class Log
 		Message = "CSP header {HeaderName} applied for {DefinitionId} ({Length} chars)")]
 	public static partial void CspHeaderApplied(ILogger logger, string headerName, Guid definitionId, int length);
 
+	[LoggerMessage(
+		EventId = 7,
+		Level = LogLevel.Warning,
+		Message = "A CSP nonce was requested via tag helper but '{Directive}' is not configured in definition {DefinitionId}; the nonce was not added to the CSP header")]
+	public static partial void CspNonceDirectiveMissing(ILogger logger, string directive, Guid definitionId);
+
 	// ===========================================
 	// Service Events (100-199)
 	// ===========================================

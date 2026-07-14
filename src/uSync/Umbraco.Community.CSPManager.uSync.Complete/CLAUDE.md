@@ -20,7 +20,7 @@ Extends the base uSync integration with Push/Pull capabilities for cross-environ
 
 - Default: `ProjectReference` to CSPManager.uSync (dev)
 - NuGet pack: `dotnet pack -p:UseProjectReferences=false` switches to `PackageReference`
-- Version range: `[$(USyncMinVersion), 18.0.0)` — accepts any 17.x (default lower bound: `17.0.0-0`)
+- Version range: `[18.0.0, 19.0.0)` — accepts any 18.x
 
 ## Test Sites
 

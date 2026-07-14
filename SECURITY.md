@@ -2,10 +2,10 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 17.x    | Yes       |
-| < 17    | No        |
+Package major versions track the Umbraco major they target (e.g. 18.x targets Umbraco 18).
+Each package major is supported for as long as its corresponding Umbraco version is supported by Umbraco HQ, per
+[Umbraco's long-term support and end-of-life schedule](https://umbraco.com/products/knowledge-center/long-term-support-and-end-of-life/).
+Once an Umbraco version reaches end-of-life, the matching package versions are no longer supported.
 
 ## Reporting a Vulnerability
 
