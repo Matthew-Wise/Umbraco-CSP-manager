@@ -5,8 +5,12 @@
 | Version | Supported |
 |---------|-----------|
 | 18.x    | Yes       |
-| 17.x    | Yes       |
+| 17.x    | Yes — for as long as Umbraco 17 is under Umbraco HQ's LTS support (end-of-life 27 November 2028) |
 | < 17    | No        |
+
+Package major versions track the Umbraco major they target, and support follows
+[Umbraco's long-term support and end-of-life schedule](https://umbraco.com/products/knowledge-center/long-term-support-and-end-of-life/)
+for that Umbraco version.
 
 ## Reporting a Vulnerability
 
