@@ -254,6 +254,51 @@ public class CspMiddlewareTests
 	}
 
 	[Test]
+	public async Task CspMiddleware_WithScriptNonceSetButNoScriptSrcDirective_LogsWarningAndOmitsNonce()
+	{
+		const string testNonce = "test-nonce-abc123";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			UpgradeInsecureRequests = true,
+			Sources = []
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetOrCreateCspNonce(It.IsAny<HttpContext>()))
+			.Returns(testNonce);
+
+		var logger = new Mock<ILogger<CspMiddleware>>();
+		logger.Setup(x => x.IsEnabled(LogLevel.Warning)).Returns(true);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.AddSingleton(logger.Object),
+			extraApp: app =>
+			{
+				app.Use(async (ctx, next) =>
+				{
+					ctx.Items[Constants.TagHelper.CspManagerScriptNonceSet] = true;
+					await next(ctx);
+				});
+			});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Not.Contain("nonce"));
+		logger.Verify(x => x.Log(
+			LogLevel.Warning,
+			It.Is<EventId>(e => e.Name == "CspNonceDirectiveMissing"),
+			It.IsAny<It.IsAnyType>(),
+			null,
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+	}
+
+	[Test]
 	public async Task CspMiddleware_WhenServiceThrows_RequestCompletesWithoutCspHeader()
 	{
 		Mock.Get(_cspService)
