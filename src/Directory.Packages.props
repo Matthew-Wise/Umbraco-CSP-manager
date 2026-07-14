@@ -12,7 +12,7 @@
     <PackageVersion Include="Umbraco.Cms.Web.Website" Version="18.0.2" />
     <PackageVersion Include="uSync" Version="18.0.2" />
     <PackageVersion Include="uSync.BackOffice" Version="18.0.2" />
-    <PackageVersion Include="uSync.Complete" Version="18.0.1" />
+    <PackageVersion Include="uSync.Complete" Version="18.0.2" />
     <PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
     <PackageVersion Include="Umbraco.Community.CSPManager" Version="18.0.0" />
     <PackageVersion Include="Umbraco.Community.CSPManager.uSync" Version="18.0.0" />
