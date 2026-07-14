@@ -187,18 +187,29 @@ public class CspMiddleware
 		if (scriptNonceSet || styleNonceSet)
 		{
 			var nonce = _cspService.GetOrCreateCspNonce(httpContext);
-			if (scriptNonceSet) AddNonceToDirective(csp, Constants.Directives.ScriptSource, nonce);
-			if (styleNonceSet) AddNonceToDirective(csp, Constants.Directives.StyleSource, nonce);
+			if (scriptNonceSet) AddNonceToDirective(csp, Constants.Directives.ScriptSource, nonce, definition.Id);
+			if (styleNonceSet) AddNonceToDirective(csp, Constants.Directives.StyleSource, nonce, definition.Id);
 		}
 
 		return csp;
 	}
 
-	private static void AddNonceToDirective(Dictionary<string, string> csp, string directive, string nonce)
+	private void AddNonceToDirective(Dictionary<string, string> csp, string directive, string nonce, Guid definitionId)
 	{
-		if (!string.IsNullOrWhiteSpace(nonce) && csp.TryGetValue(directive, out var existingValue))
+		if (string.IsNullOrWhiteSpace(nonce))
+		{
+			return;
+		}
+
+		if (csp.TryGetValue(directive, out var existingValue))
 		{
 			csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+		}
+		else
+		{
+			// The nonce only augments directives the user has configured; adding
+			// script-src/style-src from scratch would block every other source.
+			Log.CspNonceDirectiveMissing(_logger, directive, definitionId);
 		}
 	}
 }
