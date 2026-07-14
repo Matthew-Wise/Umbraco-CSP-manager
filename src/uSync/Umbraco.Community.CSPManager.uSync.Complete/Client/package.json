@@ -12,7 +12,7 @@
     "npm": ">=10.9"
   },
   "devDependencies": {
-    "@jumoo/usync-publisher-assets": "^17.0.0",
+    "@jumoo/usync-publisher-assets": "^18.0.1",
     "@umbraco-cms/backoffice": "^18.0.2",
     "typescript": "^5.8.3",
     "vite": "^8.0.16"
