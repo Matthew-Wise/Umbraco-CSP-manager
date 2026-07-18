@@ -27,15 +27,46 @@ src/
 - Testing: NUnit (backend), Playwright (frontend)
 - API: OpenAPI code generation via @hey-api/openapi-ts
 
-## CI Release Tags
+## Releasing
 
 All packages use major version aligned to Umbraco (e.g. Umbraco 18 → `18.x.x`).
 
-- CSP Manager: GitHub Release tag `18.0.0` (triggers `csp-manager.yml`)
-- uSync: git tag `usync-18.0.0` (triggers `usync.yml` `release-usync` job)
-- uSync Complete: git tag `usync-complete-18.0.0` (triggers `usync.yml` `release-usync-complete` job)
+Single entry point: **Actions → Release → Run workflow** (`release.yml`). Pick the
+`package` (`all` / `csp-manager` / `usync` / `usync-complete`) and a `version`
+(e.g. `18.0.0` or `18.0.0-beta-1`). Each package is packed, pushed to NuGet, and
+gets its own tag + titled GitHub Release:
 
-Each package releases independently. Dependencies use a version range `[18.0.0, 19.0.0)` — accepts any 18.x. Only update the lower bound in the `.csproj` when a dependency has a breaking change that requires a newer minimum.
+- CSP Manager → tag `csp-manager-<version>`, release "CSP Manager <version>"
+- uSync → tag `usync-<version>`, release "uSync <version>"
+- uSync Complete → tag `usync-complete-<version>`, release "uSync Complete <version>"
+
+`all` packs in dependency order (main → uSync → uSync.Complete) against a local
+NuGet feed, so a brand-new version resolves without waiting for nuget.org indexing.
+Each package still releases independently — patch one without re-releasing the others
+by selecting just that package.
+
+`csp-manager.yml` / `usync.yml` now only run build + test on push/PR. They pack a
+unique prerelease version `0.0.0-ci.<run_number>` and upload the `.nupkg`s as
+artifacts (`nuget-packages` / `uSync Build Output`) so a build can be tested before
+merge — the unique version stops NuGet serving a stale cached `0.0.0`:
+
+```
+gh run download <run-id> -n nuget-packages
+dotnet nuget add source ./<downloaded-folder> -n pr-test
+dotnet add package Umbraco.Community.CSPManager -v 0.0.0-ci.<run_number> --prerelease
+```
+
+**Dependency range:** the supporting packages declare `[18.0.0, 19.0.0)` for their
+internal CSP Manager dependencies, assembled in `src/Directory.Build.props` from
+`CspManagerDependencyFloor` (`18.0.0`) and `CspManagerDependencyCeiling` (`19.0.0`).
+Bump the floor only on a breaking change that requires a newer minimum. The release
+workflow overrides the floor to the exact version for prerelease builds (e.g.
+`[18.0.0-beta-1, 19.0.0)`) — no manual csproj edits for betas. Floor/ceiling are
+separate (no commas) because .NET's `-p:` parser splits property values on commas.
+
+**NuGet trusted publishing:** each package's policy must reference workflow
+`release.yml` (environments `nuget-csp` / `nuget-usync` / `nuget-usync-complete`
+are unchanged).
 
 ## Development Principles
 

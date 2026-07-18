@@ -1,5 +1,8 @@
 name: uSync Build
 
+# Build + pack validation for the uSync packages on push/PR.
+# Releases are handled by release.yml (Actions -> Release -> Run workflow).
+
 on:
   push:
     branches:
@@ -9,9 +12,6 @@ on:
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
       - '.github/workflows/usync.yml'
-    tags:
-      - 'usync-*'
-      - 'usync-complete-*'
   pull_request:
     branches:
       - main
@@ -25,6 +25,7 @@ env:
   USYNC_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync/Umbraco.Community.CSPManager.uSync.csproj"
   COMPLETE_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Umbraco.Community.CSPManager.uSync.Complete.csproj"
   OUT_FOLDER: ./build-out/
+  BUILD_VERSION: "0.0.0-ci.${{ github.run_number }}"
 
 jobs:
   build:
@@ -58,122 +59,13 @@ jobs:
         working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
 
       - name: Build & Pack uSync
-        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=0.0.0 --output ${{ env.OUT_FOLDER }}
+        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=$BUILD_VERSION --output ${{ env.OUT_FOLDER }}
 
       - name: Build & Pack uSync Complete
-        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=0.0.0 --output ${{ env.OUT_FOLDER }}
+        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=$BUILD_VERSION --output ${{ env.OUT_FOLDER }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: uSync Build Output
           path: ${{ env.OUT_FOLDER }}
-
-  release-usync:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/usync-') && !startsWith(github.ref, 'refs/tags/usync-complete-')
-    runs-on: ubuntu-latest
-    environment: nuget-usync
-    permissions:
-      id-token: write
-      attestations: write
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Extract version from tag
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/usync-}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Build & Pack
-        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=${{ steps.version.outputs.version }} -p:UseProjectReferences=false --output ${{ env.OUT_FOLDER }}
-
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: '${{ env.OUT_FOLDER }}*.nupkg'
-
-      - name: NuGet login
-        uses: NuGet/login@v1
-        id: nuget-login
-        with:
-          user: MattWise
-
-      - name: Publish to NuGet
-        run: |
-          for package in ${{ env.OUT_FOLDER }}*.nupkg; do
-            echo "Publishing $package"
-            dotnet nuget push "$package" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-          done
-
-  release-usync-complete:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/usync-complete-')
-    runs-on: ubuntu-latest
-    environment: nuget-usync-complete
-    permissions:
-      id-token: write
-      attestations: write
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Extract version from tag
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/usync-complete-}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package.json'
-          cache: 'npm'
-          cache-dependency-path: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package-lock.json'
-
-      - name: Install client dependencies
-        run: npm ci
-        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
-
-      - name: Build client
-        run: npm run build
-        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
-
-      - name: Build & Pack
-        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=${{ steps.version.outputs.version }} -p:UseProjectReferences=false --output ${{ env.OUT_FOLDER }}
-
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: '${{ env.OUT_FOLDER }}*.nupkg'
-
-      - name: NuGet login
-        uses: NuGet/login@v1
-        id: nuget-login
-        with:
-          user: MattWise
-
-      - name: Publish to NuGet
-        run: |
-          for package in ${{ env.OUT_FOLDER }}*.nupkg; do
-            echo "Publishing $package"
-            dotnet nuget push "$package" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-          done

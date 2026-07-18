@@ -8,6 +8,18 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- Version range the supporting packages (uSync, uSync.Complete) declare for their
+         internal CSP Manager dependencies. Single source of truth: bump the floor only
+         when a dependency has a breaking change that requires a newer minimum.
+         Floor + ceiling are kept as separate properties (no commas) so the release
+         workflow can override them on the command line — .NET's -p: parser splits
+         values on commas, so the assembled range can't be passed directly. The
+         workflow sets a prerelease floor (e.g. 18.0.0-beta-1) for prerelease builds. -->
+    <CspManagerDependencyFloor Condition="'$(CspManagerDependencyFloor)' == ''">18.0.0</CspManagerDependencyFloor>
+    <CspManagerDependencyCeiling Condition="'$(CspManagerDependencyCeiling)' == ''">19.0.0</CspManagerDependencyCeiling>
+    <CspManagerDependencyRange>[$(CspManagerDependencyFloor),$(CspManagerDependencyCeiling))</CspManagerDependencyRange>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\images\icon.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
