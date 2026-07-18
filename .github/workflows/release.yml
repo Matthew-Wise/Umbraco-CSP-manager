@@ -42,7 +42,6 @@ jobs:
       contents: read
     outputs:
       prerelease: ${{ steps.meta.outputs.prerelease }}
-      matrix: ${{ steps.meta.outputs.matrix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -80,19 +79,6 @@ jobs:
           echo "floor=$FLOOR" >> "$GITHUB_OUTPUT"
           echo "ceiling=$CEILING" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION | Dependency range: [$FLOOR,$CEILING)"
-
-          # Emit the publish matrix — only the selected package(s). Each entry drives
-          # one leg of the single publish job (its own environment, tag, release title).
-          CSP='{"artifact":"package-csp","environment":"nuget-csp","tag_prefix":"csp-manager","title":"CSP Manager"}'
-          USYNC='{"artifact":"package-usync","environment":"nuget-usync","tag_prefix":"usync","title":"uSync"}'
-          COMPLETE='{"artifact":"package-complete","environment":"nuget-usync-complete","tag_prefix":"usync-complete","title":"uSync Complete"}'
-          case "${{ inputs.package }}" in
-            all)            ENTRIES="$CSP,$USYNC,$COMPLETE" ;;
-            csp-manager)    ENTRIES="$CSP" ;;
-            usync)          ENTRIES="$USYNC" ;;
-            usync-complete) ENTRIES="$COMPLETE" ;;
-          esac
-          echo "matrix={\"include\":[$ENTRIES]}" >> "$GITHUB_OUTPUT"
 
       # --- CSP Manager (main) ---
       - name: Pack CSP Manager
@@ -154,56 +140,73 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
-  # One publish job, fanned out over the selected packages via a dynamic matrix.
-  # Each leg keeps its own environment (so its NuGet trusted-publishing policy is
-  # unchanged) and creates a package-scoped tag + titled GitHub Release only after
-  # a successful push. fail-fast: false so one package failing doesn't cancel the
-  # others mid-release.
+  # One publish job per package. Each keeps its own environment (so its NuGet
+  # trusted-publishing policy is unchanged) and delegates the download -> attest
+  # -> push -> tag/release steps to the shared ./.github/actions/publish-package
+  # composite, so the logic lives in one place.
   # ---------------------------------------------------------------------------
-  publish:
+  publish-csp:
     needs: build
+    if: inputs.package == 'all' || inputs.package == 'csp-manager'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
-    environment: ${{ matrix.environment }}
+    environment: nuget-csp
     permissions:
       id-token: write
       attestations: write
       contents: write
     steps:
-      - name: Download package
-        uses: actions/download-artifact@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Publish CSP Manager
+        uses: ./.github/actions/publish-package
         with:
-          name: ${{ matrix.artifact }}
-          path: ./build-out/
+          artifact: package-csp
+          version: ${{ inputs.version }}
+          tag-prefix: csp-manager
+          title: CSP Manager
+          prerelease: ${{ needs.build.outputs.prerelease }}
+          github-token: ${{ github.token }}
 
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+  publish-usync:
+    needs: build
+    if: inputs.package == 'all' || inputs.package == 'usync'
+    runs-on: ubuntu-latest
+    environment: nuget-usync
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Publish uSync
+        uses: ./.github/actions/publish-package
         with:
-          subject-path: './build-out/*.nupkg'
+          artifact: package-usync
+          version: ${{ inputs.version }}
+          tag-prefix: usync
+          title: uSync
+          prerelease: ${{ needs.build.outputs.prerelease }}
+          github-token: ${{ github.token }}
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+  publish-complete:
+    needs: build
+    if: inputs.package == 'all' || inputs.package == 'usync-complete'
+    runs-on: ubuntu-latest
+    environment: nuget-usync-complete
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Publish uSync Complete
+        uses: ./.github/actions/publish-package
         with:
-          dotnet-version: 10.0.x
-
-      - name: NuGet login
-        uses: NuGet/login@v1
-        id: nuget-login
-        with:
-          user: MattWise
-
-      - name: Publish to NuGet
-        run: dotnet nuget push ./build-out/*.nupkg --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-
-      - name: Tag and create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${{ matrix.tag_prefix }}-${{ inputs.version }}" \
-            --repo "${{ github.repository }}" \
-            --target "${{ github.sha }}" \
-            --title "${{ matrix.title }} ${{ inputs.version }}" \
-            --generate-notes \
-            ${{ needs.build.outputs.prerelease == 'true' && '--prerelease' || '' }}
+          artifact: package-complete
+          version: ${{ inputs.version }}
+          tag-prefix: usync-complete
+          title: uSync Complete
+          prerelease: ${{ needs.build.outputs.prerelease }}
+          github-token: ${{ github.token }}

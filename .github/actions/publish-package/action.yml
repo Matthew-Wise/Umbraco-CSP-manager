@@ -1,0 +1,72 @@
+name: Publish package
+description: >-
+  Download a packed NuGet artifact, attest its provenance, publish it to
+  NuGet.org via trusted publishing, then create a package-scoped git tag and a
+  titled GitHub Release. Runs inline in the calling job, so it inherits that
+  job's environment and id-token permissions (keeping the NuGet trusted-publishing
+  OIDC context unchanged vs. a per-package job).
+
+inputs:
+  artifact:
+    description: Name of the uploaded package artifact to publish.
+    required: true
+  version:
+    description: Version being released (e.g. 18.0.0-beta-1).
+    required: true
+  tag-prefix:
+    description: Package-scoped git tag prefix (e.g. csp-manager -> csp-manager-18.0.0).
+    required: true
+  title:
+    description: Display name used in the GitHub Release title (e.g. "CSP Manager").
+    required: true
+  prerelease:
+    description: Set to true to mark the GitHub Release as a pre-release.
+    required: true
+  github-token:
+    description: Token used to create the tag and GitHub Release.
+    required: true
+  nuget-user:
+    description: NuGet.org user for trusted-publishing login.
+    required: false
+    default: MattWise
+
+runs:
+  using: composite
+  steps:
+    - name: Download package
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact }}
+        path: ./build-out/
+
+    - name: Attest build provenance
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: './build-out/*.nupkg'
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: NuGet login
+      uses: NuGet/login@v1
+      id: nuget-login
+      with:
+        user: ${{ inputs.nuget-user }}
+
+    - name: Publish to NuGet
+      shell: bash
+      run: dotnet nuget push ./build-out/*.nupkg --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+    - name: Tag and create GitHub Release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        gh release create "${{ inputs.tag-prefix }}-${{ inputs.version }}" \
+          --repo "${{ github.repository }}" \
+          --target "${{ github.sha }}" \
+          --title "${{ inputs.title }} ${{ inputs.version }}" \
+          --generate-notes \
+          ${{ inputs.prerelease == 'true' && '--prerelease' || '' }}
