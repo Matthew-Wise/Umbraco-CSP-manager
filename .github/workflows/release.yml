@@ -1,0 +1,210 @@
+name: Release
+
+# One button to release any (or all) of the three packages.
+#   Actions -> Release -> Run workflow -> pick package + version.
+#
+# Each package is versioned, tagged and released independently, so a patch to
+# one package never forces a re-release of the others. When "all" is selected
+# the packages are packed in dependency order (main -> uSync -> uSync.Complete)
+# against a local NuGet feed, so a brand-new version resolves without waiting
+# for nuget.org indexing (and without hand-editing prerelease ranges).
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package(s) to release'
+        type: choice
+        default: all
+        options:
+          - all
+          - csp-manager
+          - usync
+          - usync-complete
+      version:
+        description: 'Version, e.g. 18.0.0 or 18.0.0-beta-1'
+        type: string
+        required: true
+
+env:
+  MAIN_PROJECT: "./src/Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj"
+  USYNC_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync/Umbraco.Community.CSPManager.uSync.csproj"
+  COMPLETE_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Umbraco.Community.CSPManager.uSync.Complete.csproj"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build + pack everything selected, in dependency order, into per-package
+  # artifacts. No environment / no secrets here — this job never publishes.
+  # ---------------------------------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: './src/Umbraco.Community.CSPManager/Client/package.json'
+          cache: 'npm'
+          cache-dependency-path: |
+            ./src/Umbraco.Community.CSPManager/Client/package-lock.json
+            ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package-lock.json
+
+      - name: Compute release metadata
+        id: meta
+        run: |
+          VERSION="${{ inputs.version }}"
+          MAJOR="${VERSION%%.*}"
+          CEILING="$((MAJOR + 1)).0.0"
+          if [[ "$VERSION" == *-* ]]; then
+            # Prerelease: floor at the exact version so dependents (and consumers)
+            # resolve the prerelease, not an older stable in the same major.
+            FLOOR="$VERSION"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            # Stable: float across the whole major line.
+            FLOOR="${MAJOR}.0.0"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "floor=$FLOOR" >> "$GITHUB_OUTPUT"
+          echo "ceiling=$CEILING" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION | Dependency range: [$FLOOR,$CEILING)"
+
+      # --- CSP Manager (main) ---
+      - name: Pack CSP Manager
+        if: inputs.package == 'all' || inputs.package == 'csp-manager'
+        run: dotnet pack "$MAIN_PROJECT" -c Release -p:Version=${{ inputs.version }} --output ./build-out/csp
+
+      # --- uSync (depends on main) ---
+      - name: Register CSP Manager as a local feed
+        if: inputs.package == 'all'
+        run: dotnet nuget add source "$(pwd)/build-out/csp" -n local-csp
+
+      - name: Pack uSync
+        if: inputs.package == 'all' || inputs.package == 'usync'
+        run: >-
+          dotnet pack "$USYNC_PROJECT" -c Release
+          -p:Version=${{ inputs.version }}
+          -p:UseProjectReferences=false
+          -p:CspManagerDependencyFloor=${{ steps.meta.outputs.floor }}
+          -p:CspManagerDependencyCeiling=${{ steps.meta.outputs.ceiling }}
+          --output ./build-out/usync
+
+      # --- uSync.Complete (depends on uSync -> main) ---
+      - name: Register uSync as a local feed
+        if: inputs.package == 'all'
+        run: dotnet nuget add source "$(pwd)/build-out/usync" -n local-usync
+
+      - name: Pack uSync Complete
+        if: inputs.package == 'all' || inputs.package == 'usync-complete'
+        run: >-
+          dotnet pack "$COMPLETE_PROJECT" -c Release
+          -p:Version=${{ inputs.version }}
+          -p:UseProjectReferences=false
+          -p:CspManagerDependencyFloor=${{ steps.meta.outputs.floor }}
+          -p:CspManagerDependencyCeiling=${{ steps.meta.outputs.ceiling }}
+          --output ./build-out/complete
+
+      - name: Upload CSP Manager package
+        if: inputs.package == 'all' || inputs.package == 'csp-manager'
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-csp
+          path: ./build-out/csp/
+          if-no-files-found: error
+
+      - name: Upload uSync package
+        if: inputs.package == 'all' || inputs.package == 'usync'
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-usync
+          path: ./build-out/usync/
+          if-no-files-found: error
+
+      - name: Upload uSync Complete package
+        if: inputs.package == 'all' || inputs.package == 'usync-complete'
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-complete
+          path: ./build-out/complete/
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # One publish job per package. Each keeps its own environment (so its NuGet
+  # trusted-publishing policy is unchanged) and delegates the download -> attest
+  # -> push -> tag/release steps to the shared ./.github/actions/publish-package
+  # composite, so the logic lives in one place.
+  # ---------------------------------------------------------------------------
+  publish-csp:
+    needs: build
+    if: inputs.package == 'all' || inputs.package == 'csp-manager'
+    runs-on: ubuntu-latest
+    environment: nuget-csp
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Publish CSP Manager
+        uses: ./.github/actions/publish-package
+        with:
+          artifact: package-csp
+          version: ${{ inputs.version }}
+          tag-prefix: csp-manager
+          title: CSP Manager
+          prerelease: ${{ needs.build.outputs.prerelease }}
+          github-token: ${{ github.token }}
+
+  publish-usync:
+    needs: build
+    if: inputs.package == 'all' || inputs.package == 'usync'
+    runs-on: ubuntu-latest
+    environment: nuget-usync
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Publish uSync
+        uses: ./.github/actions/publish-package
+        with:
+          artifact: package-usync
+          version: ${{ inputs.version }}
+          tag-prefix: usync
+          title: uSync
+          prerelease: ${{ needs.build.outputs.prerelease }}
+          github-token: ${{ github.token }}
+
+  publish-complete:
+    needs: build
+    if: inputs.package == 'all' || inputs.package == 'usync-complete'
+    runs-on: ubuntu-latest
+    environment: nuget-usync-complete
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Publish uSync Complete
+        uses: ./.github/actions/publish-package
+        with:
+          artifact: package-complete
+          version: ${{ inputs.version }}
+          tag-prefix: usync-complete
+          title: uSync Complete
+          prerelease: ${{ needs.build.outputs.prerelease }}
+          github-token: ${{ github.token }}
