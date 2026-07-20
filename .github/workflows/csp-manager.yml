@@ -13,7 +13,10 @@ on:
       - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
+      - 'global.json'
+      - '.github/actions/**'
       - '.github/workflows/csp-manager.yml'
+      - '.github/workflows/release.yml'
   pull_request:
     branches:
       - main
@@ -23,7 +26,10 @@ on:
       - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
+      - 'global.json'
+      - '.github/actions/**'
       - '.github/workflows/csp-manager.yml'
+      - '.github/workflows/release.yml'
 
 jobs:
   build:

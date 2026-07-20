@@ -62,9 +62,17 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
       run: |
-        gh release create "${{ inputs.tag-prefix }}-${{ inputs.version }}" \
-          --repo "${{ github.repository }}" \
-          --target "${{ github.sha }}" \
-          --title "${{ inputs.title }} ${{ inputs.version }}" \
-          --generate-notes \
-          ${{ inputs.prerelease == 'true' && '--prerelease' || '' }}
+        tag="${{ inputs.tag-prefix }}-${{ inputs.version }}"
+        # Idempotent: the package push above uses --skip-duplicate, so a re-run of an
+        # already-published version must not fail here. Releases are immutable (can't be
+        # edited/recreated), so if one already exists for this tag, treat it as done.
+        if gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+          echo "Release $tag already exists — skipping creation."
+        else
+          gh release create "$tag" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "${{ inputs.title }} ${{ inputs.version }}" \
+            --generate-notes \
+            ${{ inputs.prerelease == 'true' && '--prerelease' || '' }}
+        fi
