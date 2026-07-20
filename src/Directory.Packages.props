@@ -14,8 +14,12 @@
     <PackageVersion Include="uSync.BackOffice" Version="18.0.2" />
     <PackageVersion Include="uSync.Complete" Version="18.0.2" />
     <PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
-    <PackageVersion Include="Umbraco.Community.CSPManager" Version="18.0.0" />
-    <PackageVersion Include="Umbraco.Community.CSPManager.uSync" Version="18.0.0" />
+    <!-- Range (not a pin) so central transitive pinning doesn't force a stable version
+         onto the transitive CSP Manager dependency when packing uSync.Complete against
+         a prerelease. Mirrors the dependency range the packages declare; the release
+         workflow overrides the floor for prerelease builds. See Directory.Build.props. -->
+    <PackageVersion Include="Umbraco.Community.CSPManager" Version="$(CspManagerDependencyRange)" />
+    <PackageVersion Include="Umbraco.Community.CSPManager.uSync" Version="$(CspManagerDependencyRange)" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="SystemTextJson.JsonDiffPatch.NUnit" Version="2.0.0" />
