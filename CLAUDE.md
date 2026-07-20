@@ -45,6 +45,18 @@ NuGet feed, so a brand-new version resolves without waiting for nuget.org indexi
 Each package still releases independently — patch one without re-releasing the others
 by selecting just that package.
 
+**Versions are immutable — never re-release one.** NuGet rejects a duplicate version
+and GitHub releases are immutable, so a published version can't be replaced; to ship a
+change, bump the version (e.g. `18.0.0-beta-1` → `18.0.0-beta-2`). The publish job is
+re-run-safe (NuGet push uses `--skip-duplicate`; the release step skips if the tag
+already exists), so re-running after a *partial* failure completes the missing steps
+without erroring — but it won't overwrite anything already published.
+
+**Deployment environments:** the `workflow_dispatch` runs from `main`, so each
+`nuget-*` environment's protection rules must allow the `main` branch (Settings →
+Environments). The old tag-triggered flow only allowed `usync-*` tags, so this needs
+adding once per environment.
+
 `csp-manager.yml` / `usync.yml` now only run build + test on push/PR. They pack a
 unique prerelease version `0.0.0-ci.<run_number>` and upload the `.nupkg`s as
 artifacts (`nuget-packages` / `uSync Build Output`) so a build can be tested before
