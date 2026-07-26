@@ -26,7 +26,7 @@ internal static partial class Log
 		EventId = 2,
 		Level = LogLevel.Debug,
 		Message = "CSP Header definition disabled for {DefinitionId}")]
-	public static partial void CspDefinitionDisabled(ILogger logger, Guid? definitionId);
+	public static partial void CspDefinitionDisabled(ILogger logger, Guid definitionId);
 
 
 	[LoggerMessage(
@@ -52,6 +52,18 @@ internal static partial class Log
 		Level = LogLevel.Debug,
 		Message = "CSP header {HeaderName} applied for {DefinitionId} ({Length} chars)")]
 	public static partial void CspHeaderApplied(ILogger logger, string headerName, Guid definitionId, int length);
+
+	[LoggerMessage(
+		EventId = 8,
+		Level = LogLevel.Debug,
+		Message = "CSP header skipped for {Path}: the request was cancelled before the header could be applied")]
+	public static partial void CspHeaderCancelled(ILogger logger, PathString path);
+
+	[LoggerMessage(
+		EventId = 9,
+		Level = LogLevel.Debug,
+		Message = "No CSP definition was returned for {Context}; no CSP header was applied")]
+	public static partial void CspDefinitionNotFound(ILogger logger, string context);
 
 	// ===========================================
 	// Service Events (100-199)
