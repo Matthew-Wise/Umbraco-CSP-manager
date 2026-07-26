@@ -267,6 +267,84 @@ public class CspMiddlewareTests
 		});
 	}
 
+	[Test]
+	public async Task CspMiddleware_WhenServiceIsCancelled_RequestCompletesWithoutCspHeader()
+	{
+		// Regression test for #130: a TaskCanceledException escaping the OnStarting callback
+		// was reported by Kestrel as "The response has been aborted due to an unhandled
+		// application exception" instead of being swallowed.
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new TaskCanceledException("Request aborted"));
+
+		var logger = new Mock<ILogger<CspMiddleware>>();
+		logger.Setup(x => x.IsEnabled(LogLevel.Debug)).Returns(true);
+
+		using var host = BuildTestHost(extraServices: s => s.AddSingleton(logger.Object));
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
+		});
+
+		logger.Verify(x => x.Log(
+			LogLevel.Debug,
+			It.Is<EventId>(e => e.Name == "CspHeaderCancelled"),
+			It.IsAny<It.IsAnyType>(),
+			null,
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+	}
+
+	[Test]
+	public async Task CspMiddleware_DoesNotCancelDefinitionLoadWhenClientDisconnects()
+	{
+		// The cached definition is shared process-wide, so a per-request abort token must not
+		// be threaded into the load — one client disconnecting would fault it for everyone.
+		CancellationToken observedToken = new(canceled: true);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.Callback<bool, CancellationToken>((_, token) => observedToken = token)
+			.ReturnsAsync(new CspDefinition { Id = Constants.DefaultFrontEndId, Enabled = false });
+
+		await _host.GetTestClient().GetAsync("/");
+
+		Assert.That(observedToken.CanBeCanceled, Is.False,
+			"The definition load must not be tied to the request lifetime.");
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenDefinitionIsNull_LogsNotFoundRatherThanDisabled()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync((CspDefinition)null);
+
+		var logger = new Mock<ILogger<CspMiddleware>>();
+		logger.Setup(x => x.IsEnabled(LogLevel.Debug)).Returns(true);
+
+		using var host = BuildTestHost(extraServices: s => s.AddSingleton(logger.Object));
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+
+		logger.Verify(x => x.Log(
+			LogLevel.Debug,
+			It.Is<EventId>(e => e.Name == "CspDefinitionNotFound"),
+			It.IsAny<It.IsAnyType>(),
+			null,
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+		logger.Verify(x => x.Log(
+			LogLevel.Debug,
+			It.Is<EventId>(e => e.Name == "CspDefinitionDisabled"),
+			It.IsAny<It.IsAnyType>(),
+			null,
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Never);
+	}
+
 	[TearDown]
 	public async Task TearDownAsync()
 	{
