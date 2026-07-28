@@ -101,12 +101,21 @@ public class CspMiddleware
 					return;
 				}
 
-				var definition = await _cspService.GetCachedCspDefinitionAsync(isBackOfficeRequest, context.RequestAborted);
+				// Deliberately not context.RequestAborted: this call populates a process-wide
+				// cache that other in-flight requests await, so one client disconnecting must
+				// not cancel the load and fault the shared entry for everyone else.
+				var definition = await _cspService.GetCachedCspDefinitionAsync(isBackOfficeRequest, CancellationToken.None);
 				await _eventAggregator.PublishAsync(new CspWritingNotification(definition, context));
 
-				if (definition is not { Enabled: true })
+				if (definition is null)
 				{
-					Log.CspDefinitionDisabled(_logger, definition?.Id);
+					Log.CspDefinitionNotFound(_logger, isBackOfficeRequest ? "BackOffice" : "Frontend");
+					return;
+				}
+
+				if (!definition.Enabled)
+				{
+					Log.CspDefinitionDisabled(_logger, definition.Id);
 					return;
 				}
 
@@ -124,7 +133,14 @@ public class CspMiddleware
 					Log.CspHeaderEmpty(_logger, definition.Id);
 				}
 			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
+			catch (OperationCanceledException)
+			{
+				// The client disconnected before the response started, so there is no response
+				// left to add a header to. Rethrowing from OnStarting would surface as an
+				// unhandled application exception and abort the connection.
+				Log.CspHeaderCancelled(_logger, context.Request.Path);
+			}
+			catch (Exception ex)
 			{
 				// CSP header injection should never break the request.
 				// Log the error and continue without the CSP header.
