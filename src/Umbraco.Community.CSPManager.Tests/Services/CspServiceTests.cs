@@ -10,6 +10,7 @@ using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
+using Umbraco.Community.CSPManager.Notifications.Handlers;
 using Umbraco.Community.CSPManager.Services;
 using Umbraco.Community.CSPManager.Tests.Helpers;
 
@@ -220,43 +221,102 @@ public class CspServiceTests : UmbracoIntegrationTest
 	[Test]
 	public async Task GetCachedCspDefinitionAsync_CachesResult()
 	{
-		// Create a spy cache that counts factory calls
-		var httpContextAccessor = GetRequiredService<IHttpContextAccessor>();
-		var requestCache = new HttpContextRequestAppCache(httpContextAccessor);
-		var realCache = AppCaches.Create(requestCache).RuntimeCache;
-		var factoryCallCount = 0;
-		var spyCache = Mock.Of<IAppPolicyCache>();
+		var caches = AppCaches.Create(NoAppCache.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
 
-		Mock.Get(spyCache)
-			.Setup(x => x.Get(It.IsAny<string>()))
-			.Returns((string key) => realCache.Get(key));
+		var definition1 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
+		var definition2 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
 
-		Mock.Get(spyCache)
-			.Setup(x => x.Insert(It.IsAny<string>(), It.IsAny<Func<object>>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>()))
-			.Callback((string key, Func<object> factory, TimeSpan? _, bool _) =>
-			{
-				// Use real cache but count factory calls
-				realCache.Insert(key, () =>
+		Assert.That(definition1, Is.Not.Null);
+		// A database load builds a new instance, so the same instance twice means the second call
+		// was served from the cache rather than re-queried.
+		Assert.That(definition2, Is.SameAs(definition1));
+	}
+
+	// The entry has to be in the cache before the database load is awaited. If it were added
+	// afterwards, an invalidation raised while the load was in flight would be silently undone by the
+	// late insert - and because these entries never expire, the stale policy would be served until
+	// the site recycled.
+	[Test]
+	public async Task GetCachedCspDefinitionAsync_CachesTheLoadBeforeAwaitingIt()
+	{
+		var caches = AppCaches.Create(NoAppCache.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
+
+		// Not awaited yet: everything up to the first await has run, including the cache insert.
+		var pending = service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+
+		Assert.That(caches.RuntimeCache.Get(Constants.FrontEndCacheKey), Is.Not.Null,
+			"the in-flight load should already be cached");
+
+		await pending;
+	}
+
+	[Test]
+	public async Task GetCachedCspDefinitionAsync_WhenClearedMidLoad_DoesNotReCacheTheStaleLoad()
+	{
+		var caches = AppCaches.Create(NoAppCache.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
+
+		var pending = service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+
+		// A save landing while the load is in flight.
+		caches.RuntimeCache.ClearByKey(Constants.FrontEndCacheKey);
+
+		await pending;
+
+		Assert.That(caches.RuntimeCache.Get(Constants.FrontEndCacheKey), Is.Null,
+			"a load that started before the invalidation must not repopulate the cache");
+	}
+
+	// The integration host registers AppCaches.NoCache, so the service and the saved-notification
+	// handler are wired up here against a shared real cache to exercise the invalidation end to end.
+	[Test]
+	public async Task SaveCspDefinitionAsync_InvalidatesTheCachedDefinition()
+	{
+		var caches = AppCaches.Create(NoAppCache.Instance);
+		var distributedCache = new DistributedCache(
+			new SpyServerMessenger(),
+			new CacheRefresherCollection(() => new ICacheRefresher[] { new StubCacheRefresher() }));
+		var handler = new CspSavedNotificationHandler(caches, distributedCache);
+
+		var eventAggregator = Mock.Of<IEventAggregator>();
+		Mock.Get(eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspSavedNotification>(), It.IsAny<CancellationToken>()))
+			.Callback<CspSavedNotification, CancellationToken>((notification, _) => handler.Handle(notification))
+			.Returns(Task.CompletedTask);
+
+		var service = new CspService(eventAggregator, ScopeProvider, caches, NullLogger<CspService>.Instance);
+
+		await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+		Assert.That(caches.RuntimeCache.Get(Constants.FrontEndCacheKey), Is.Not.Null);
+
+		await service.SaveCspDefinitionAsync(new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources =
+			[
+				new()
 				{
-					factoryCallCount++;
-					return factory();
-				});
-			});
+					DefinitionId = Constants.DefaultFrontEndId,
+					Source = "'self'",
+					Directives = [Constants.Directives.DefaultSource]
+				}
+			]
+		}, CancellationToken.None);
 
+		Assert.That(caches.RuntimeCache.Get(Constants.FrontEndCacheKey), Is.Null,
+			"saving should invalidate the cached definition");
 
-		var spyCaches = new AppCaches(spyCache, requestCache, new IsolatedCaches(_ => spyCache));
-		var spyService = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, spyCaches, NullLogger<CspService>.Instance);
+		var reloaded = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 
-		// Call GetCachedCspDefinition twice
-		var definition1 = await spyService.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
-		var definition2 = await spyService.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
-
-		// Factory should only be called once (first call), second should come from cache
+		Assert.That(reloaded, Is.Not.Null);
 		Assert.Multiple(() =>
 		{
-			Assert.That(definition1, Is.Not.Null);
-			Assert.That(definition2, Is.Not.Null);
-			Assert.That(factoryCallCount, Is.EqualTo(1), "Factory should only be called once - second call should use cache");
+			Assert.That(reloaded.Enabled, Is.True);
+			Assert.That(reloaded.Sources, Has.Count.EqualTo(1));
 		});
 	}
 
