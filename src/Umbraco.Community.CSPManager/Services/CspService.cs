@@ -47,18 +47,40 @@ internal sealed class CspService : ICspService
 		var context = isBackOfficeRequest ? "BackOffice" : "Frontend";
 		var factoryCalled = false;
 
-		var result = await _runtimeCache.GetCacheItemAsync(cacheKey, async () =>
+		// What goes in the cache is the load itself, not its result, and IAppPolicyCache.Get adds it
+		// under a lock before the database round-trip is awaited. That ordering is what makes
+		// invalidation reliable: if a save clears this key while a load is still in flight, the entry
+		// has already been added and removed, so the load cannot write its now-stale result back over
+		// the clear. Awaiting first and inserting afterwards loses that race, and because these
+		// entries never expire the stale policy would then be served until the site recycled.
+		// It also means concurrent requests await one shared load instead of each hitting the database.
+		var load = (Task<CspDefinition>)_runtimeCache.Get(cacheKey, () =>
 		{
 			factoryCalled = true;
-			return await GetCspDefinitionAsync(isBackOfficeRequest, cancellationToken);
-		}, timeout: null);
 
-		if (!factoryCalled && result is not null)
+			// Deliberately not the caller's token: this load is shared by every request waiting on
+			// the same key, so one client disconnecting must not fault it for all the others.
+			return GetCspDefinitionAsync(isBackOfficeRequest, CancellationToken.None);
+		}, timeout: null)!;
+
+		CspDefinition definition;
+		try
 		{
-			Log.CspDefinitionRetrievedFromCache(_logger, result.Id, context);
+			definition = await load.WaitAsync(cancellationToken);
+		}
+		catch (Exception) when (load.IsFaulted)
+		{
+			// A failed load must not stay cached, or every later request replays the same failure.
+			_runtimeCache.Clear(cacheKey);
+			throw;
 		}
 
-		return result;
+		if (!factoryCalled)
+		{
+			Log.CspDefinitionRetrievedFromCache(_logger, definition.Id, context);
+		}
+
+		return definition;
 	}
 
 	public async Task<CspDefinition?> GetCspDefinitionAsync(Guid key, CancellationToken cancellationToken)
@@ -130,12 +152,16 @@ internal sealed class CspService : ICspService
 
 		try
 		{
-			using var scope = _scopeProvider.CreateScope();
+			using (var scope = _scopeProvider.CreateScope())
+			{
+				definition = await SaveDefinitionAsync(scope, definition, cancellationToken);
 
-			definition = await SaveDefinitionAsync(scope, definition, cancellationToken);
+				scope.Complete();
+			}
 
-			scope.Complete();
-
+			// Published after the scope is disposed, because that is when the transaction actually
+			// commits. Invalidating the cache while the write is still uncommitted lets a request
+			// arriving in that window reload the pre-save rows and cache them again.
 			await _eventAggregator.PublishAsync(new CspSavedNotification(definition), cancellationToken);
 
 			Log.CspDefinitionSaved(_logger, definition.Id, definition.Sources.Count);
