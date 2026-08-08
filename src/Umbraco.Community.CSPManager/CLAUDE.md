@@ -13,15 +13,11 @@
 
 - Dual context: separate policies for frontend (`fac780be-...`) and backoffice (`9cbfa28c-...`)
 - Cache-first retrieval with distributed cache invalidation on save
-- Cache invalidation ordering matters and is easy to regress:
-  - `GetCachedCspDefinitionAsync` caches the in-flight `Task`, not the awaited result, so the entry
-    exists before the database load runs. Awaiting first and inserting afterwards lets a load that
-    started before a save write its stale result back over the invalidation — and these entries have
-    no expiry, so the old policy is then served until the site recycles.
-  - `SaveCspDefinitionAsync` publishes `CspSavedNotification` only after the scope is disposed, i.e.
-    after the transaction commits, so nothing can reload pre-save rows into the cache.
-  - Invalidation is broadcast for every server role: a save is handled by whichever server the
-    editor is on, not necessarily the scheduling publisher.
+- Cache invalidation ordering is easy to regress: `GetCachedCspDefinitionAsync` caches the
+  in-flight `Task` (not the awaited result) so a concurrent save can't overwrite an invalidation
+  with a stale result; `SaveCspDefinitionAsync` publishes `CspSavedNotification` only after the
+  scope disposes (post-commit); invalidation broadcasts to every server, not just the scheduling
+  publisher, since a save can land on any of them.
 - Nonce-per-request: cryptographically secure, reused within HTTP context
 - Middleware never breaks requests on failure
 - Composer pattern: `CspManagerComposer` auto-registers via `IComposer`

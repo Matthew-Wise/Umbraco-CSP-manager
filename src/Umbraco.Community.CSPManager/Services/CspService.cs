@@ -47,30 +47,29 @@ internal sealed class CspService : ICspService
 		var context = isBackOfficeRequest ? "BackOffice" : "Frontend";
 		var factoryCalled = false;
 
-		// What goes in the cache is the load itself, not its result, and IAppPolicyCache.Get adds it
-		// under a lock before the database round-trip is awaited. That ordering is what makes
-		// invalidation reliable: if a save clears this key while a load is still in flight, the entry
-		// has already been added and removed, so the load cannot write its now-stale result back over
-		// the clear. Awaiting first and inserting afterwards loses that race, and because these
-		// entries never expire the stale policy would then be served until the site recycled.
-		// It also means concurrent requests await one shared load instead of each hitting the database.
+		// IAppPolicyCache.Get holds a lock while it claims the cache slot, so the Task we return
+		// here is inserted synchronously - before the DB call it wraps has even started - rather
+		// than after it completes like GetCacheItemAsync would. That closes a race where a save's
+		// ClearByKey fires while a load is in flight: the entry it clears actually exists, so the
+		// load can't resurrect stale data by inserting its result afterwards. It also means
+		// concurrent callers for the same key share this one Task instead of each hitting the DB.
 		var load = (Task<CspDefinition>)_runtimeCache.Get(cacheKey, () =>
 		{
 			factoryCalled = true;
 
-			// Deliberately not the caller's token: this load is shared by every request waiting on
-			// the same key, so one client disconnecting must not fault it for all the others.
+			// Not the caller's token: this load is shared by every request waiting on the same key.
 			return GetCspDefinitionAsync(isBackOfficeRequest, CancellationToken.None);
 		}, timeout: null)!;
 
 		CspDefinition definition;
+
 		try
 		{
 			definition = await load.WaitAsync(cancellationToken);
 		}
 		catch (Exception) when (load.IsFaulted)
 		{
-			// A failed load must not stay cached, or every later request replays the same failure.
+			// Don't leave a failed load cached, or every later request replays the same failure.
 			_runtimeCache.Clear(cacheKey);
 			throw;
 		}
@@ -159,9 +158,8 @@ internal sealed class CspService : ICspService
 				scope.Complete();
 			}
 
-			// Published after the scope is disposed, because that is when the transaction actually
-			// commits. Invalidating the cache while the write is still uncommitted lets a request
-			// arriving in that window reload the pre-save rows and cache them again.
+			// Publish after the scope disposes, i.e. after commit - otherwise a request in that
+			// window could reload the pre-save rows and cache them.
 			await _eventAggregator.PublishAsync(new CspSavedNotification(definition), cancellationToken);
 
 			Log.CspDefinitionSaved(_logger, definition.Id, definition.Sources.Count);

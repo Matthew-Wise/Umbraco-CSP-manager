@@ -55,8 +55,6 @@ public class CspSavedNotificationHandlerTests
 		_runtimeCache.Verify(c => c.ClearByKey(Constants.BackOfficeCacheKey), Times.Never);
 	}
 
-	// A save can be handled by any server in a load balanced setup, so the invalidation is broadcast
-	// unconditionally - it is no longer gated on this server being the scheduling publisher.
 	[Test]
 	public void Handle_TriggersDistributedCacheRefresh()
 	{
