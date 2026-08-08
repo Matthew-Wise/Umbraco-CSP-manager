@@ -27,10 +27,8 @@ public class CspDistributedCacheRefresher
 	public override Guid RefresherUniqueId => UniqueId;
 	public override string Name => "CspDistCacheRefresher";
 
-	// Deliberately not filtered by server role. Umbraco delivers a refresh instruction to every
-	// server, including the one that raised it, and a save can be raised on any of them - a
-	// subscriber-only guard meant an instruction arriving at a scheduling publisher was ignored and
-	// that server kept serving the old policy. Clearing an already cleared key is a no-op.
+	// Not filtered by server role: a save can be raised on any server, so a subscriber-only guard
+	// left the raising server's own instruction ignored and serving a stale policy.
 	public override void Refresh(CspSavedNotification[] payloads)
 	{
 		foreach (var payload in payloads)

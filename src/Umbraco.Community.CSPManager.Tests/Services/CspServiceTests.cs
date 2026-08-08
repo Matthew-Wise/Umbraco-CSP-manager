@@ -228,15 +228,10 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var definition2 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
 
 		Assert.That(definition1, Is.Not.Null);
-		// A database load builds a new instance, so the same instance twice means the second call
-		// was served from the cache rather than re-queried.
+		// Same instance implies the second call was served from cache, not re-queried.
 		Assert.That(definition2, Is.SameAs(definition1));
 	}
 
-	// The entry has to be in the cache before the database load is awaited. If it were added
-	// afterwards, an invalidation raised while the load was in flight would be silently undone by the
-	// late insert - and because these entries never expire, the stale policy would be served until
-	// the site recycled.
 	[Test]
 	public async Task GetCachedCspDefinitionAsync_CachesTheLoadBeforeAwaitingIt()
 	{
@@ -269,8 +264,8 @@ public class CspServiceTests : UmbracoIntegrationTest
 			"a load that started before the invalidation must not repopulate the cache");
 	}
 
-	// The integration host registers AppCaches.NoCache, so the service and the saved-notification
-	// handler are wired up here against a shared real cache to exercise the invalidation end to end.
+	// Wires the service and saved-notification handler up against a shared real cache to
+	// exercise the invalidation end to end.
 	[Test]
 	public async Task SaveCspDefinitionAsync_InvalidatesTheCachedDefinition()
 	{
