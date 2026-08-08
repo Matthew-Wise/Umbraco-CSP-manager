@@ -1,5 +1,4 @@
 using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Sync;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Notifications.Handlers;
@@ -11,7 +10,6 @@ namespace Umbraco.Community.CSPManager.Tests.Notifications;
 public class CspSavedNotificationHandlerTests
 {
 	private Mock<IAppPolicyCache> _runtimeCache;
-	private Mock<IServerRoleAccessor> _serverRoleAccessor;
 	private CspSavedNotificationHandler _handler;
 	private SpyServerMessenger _serverMessenger;
 
@@ -19,7 +17,6 @@ public class CspSavedNotificationHandlerTests
 	public void SetUp()
 	{
 		_runtimeCache = new Mock<IAppPolicyCache>();
-		_serverRoleAccessor = new Mock<IServerRoleAccessor>();
 		_serverMessenger = new SpyServerMessenger();
 
 		var cacheRefresherCollection = new CacheRefresherCollection(() => new ICacheRefresher[]
@@ -33,14 +30,13 @@ public class CspSavedNotificationHandlerTests
 			Mock.Of<IRequestCache>(),
 			new IsolatedCaches(_ => NoAppCache.Instance));
 
-		_handler = new CspSavedNotificationHandler(_serverRoleAccessor.Object, appCaches, distributedCache);
+		_handler = new CspSavedNotificationHandler(appCaches, distributedCache);
 	}
 
 	[Test]
 	public void Handle_BackOfficeSave_ClearsBackOfficeCacheKey()
 	{
 		var notification = new CspSavedNotification(new CspDefinition { IsBackOffice = true });
-		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Single);
 
 		_handler.Handle(notification);
 
@@ -52,7 +48,6 @@ public class CspSavedNotificationHandlerTests
 	public void Handle_FrontEndSave_ClearsFrontEndCacheKey()
 	{
 		var notification = new CspSavedNotification(new CspDefinition { IsBackOffice = false });
-		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Single);
 
 		_handler.Handle(notification);
 
@@ -61,25 +56,12 @@ public class CspSavedNotificationHandlerTests
 	}
 
 	[Test]
-	public void Handle_WhenSchedulingPublisher_TriggersDistributedCacheRefresh()
+	public void Handle_TriggersDistributedCacheRefresh()
 	{
 		var notification = new CspSavedNotification(new CspDefinition { IsBackOffice = true });
-		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.SchedulingPublisher);
 
 		_handler.Handle(notification);
 
 		Assert.That(_serverMessenger.PayloadRefreshCount, Is.EqualTo(1));
 	}
-
-	[Test]
-	public void Handle_WhenNotSchedulingPublisher_DoesNotTriggerDistributedCacheRefresh()
-	{
-		var notification = new CspSavedNotification(new CspDefinition { IsBackOffice = true });
-		_serverRoleAccessor.Setup(x => x.CurrentServerRole).Returns(ServerRole.Subscriber);
-
-		_handler.Handle(notification);
-
-		Assert.That(_serverMessenger.PayloadRefreshCount, Is.Zero);
-	}
-
 }

@@ -47,18 +47,39 @@ internal sealed class CspService : ICspService
 		var context = isBackOfficeRequest ? "BackOffice" : "Frontend";
 		var factoryCalled = false;
 
-		var result = await _runtimeCache.GetCacheItemAsync(cacheKey, async () =>
+		// IAppPolicyCache.Get holds a lock while it claims the cache slot, so the Task we return
+		// here is inserted synchronously - before the DB call it wraps has even started - rather
+		// than after it completes like GetCacheItemAsync would. That closes a race where a save's
+		// ClearByKey fires while a load is in flight: the entry it clears actually exists, so the
+		// load can't resurrect stale data by inserting its result afterwards. It also means
+		// concurrent callers for the same key share this one Task instead of each hitting the DB.
+		var load = (Task<CspDefinition>)_runtimeCache.Get(cacheKey, () =>
 		{
 			factoryCalled = true;
-			return await GetCspDefinitionAsync(isBackOfficeRequest, cancellationToken);
-		}, timeout: null);
 
-		if (!factoryCalled && result is not null)
+			// Not the caller's token: this load is shared by every request waiting on the same key.
+			return GetCspDefinitionAsync(isBackOfficeRequest, CancellationToken.None);
+		}, timeout: null)!;
+
+		CspDefinition definition;
+
+		try
 		{
-			Log.CspDefinitionRetrievedFromCache(_logger, result.Id, context);
+			definition = await load.WaitAsync(cancellationToken);
+		}
+		catch (Exception) when (load.IsFaulted)
+		{
+			// Don't leave a failed load cached, or every later request replays the same failure.
+			_runtimeCache.Clear(cacheKey);
+			throw;
 		}
 
-		return result;
+		if (!factoryCalled)
+		{
+			Log.CspDefinitionRetrievedFromCache(_logger, definition.Id, context);
+		}
+
+		return definition;
 	}
 
 	public async Task<CspDefinition?> GetCspDefinitionAsync(Guid key, CancellationToken cancellationToken)
@@ -130,12 +151,15 @@ internal sealed class CspService : ICspService
 
 		try
 		{
-			using var scope = _scopeProvider.CreateScope();
+			using (var scope = _scopeProvider.CreateScope())
+			{
+				definition = await SaveDefinitionAsync(scope, definition, cancellationToken);
 
-			definition = await SaveDefinitionAsync(scope, definition, cancellationToken);
+				scope.Complete();
+			}
 
-			scope.Complete();
-
+			// Publish after the scope disposes, i.e. after commit - otherwise a request in that
+			// window could reload the pre-save rows and cache them.
 			await _eventAggregator.PublishAsync(new CspSavedNotification(definition), cancellationToken);
 
 			Log.CspDefinitionSaved(_logger, definition.Id, definition.Sources.Count);
