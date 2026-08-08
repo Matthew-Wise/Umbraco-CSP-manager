@@ -31,9 +31,11 @@ src/
 
 All packages use major version aligned to Umbraco (e.g. Umbraco 17 → `17.x.x`).
 
-- CSP Manager: GitHub Release tag `17.0.0` (triggers `csp-manager.yml`)
-- uSync: git tag `usync-17.0.0` (triggers `usync.yml` `release-usync` job)
-- uSync Complete: git tag `usync-complete-17.0.0` (triggers `usync.yml` `release-usync-complete` job)
+- CSP Manager: GitHub Release tag `17.0.0` (triggers `release.yml` `release-csp-manager` job)
+- uSync: git tag `usync-17.0.0` (triggers `release.yml` `release-usync` job)
+- uSync Complete: git tag `usync-complete-17.0.0` (triggers `release.yml` `release-usync-complete` job)
+
+All publishing lives in `release.yml` — NuGet's trusted-publishing policies for this repo require the OIDC token-exchange workflow to be named exactly `release.yml`, regardless of branch. `csp-manager.yml`/`usync.yml` are build-only; never add a `dotnet nuget push` step to them.
 
 Each package releases independently. Dependencies use a version range `[17.0.0-0, 18.0.0)` — accepts any 17.x including pre-releases. Only update the lower bound in the `.csproj` when a dependency has a breaking change that requires a newer minimum.
 

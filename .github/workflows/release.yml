@@ -1,0 +1,187 @@
+name: Release
+
+# NuGet's trusted-publishing policies for this repo require the OIDC token
+# exchange to come from a workflow file named exactly "release.yml" (they
+# were repointed here when main moved to a unified pipeline). Publishing
+# from any other filename fails token exchange with a 401 workflow mismatch,
+# so the actual `dotnet nuget push` steps for all three packages live here,
+# even though this branch still triggers/builds each package independently.
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'usync-*'
+      - 'usync-complete-*'
+
+env:
+  PROJECT: "./src/Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj"
+  TESTPROJECT: "./src/Umbraco.Community.CSPManager.Tests/Umbraco.Community.CSPManager.Tests.csproj"
+  USYNC_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync/Umbraco.Community.CSPManager.uSync.csproj"
+  COMPLETE_PROJECT: "./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Umbraco.Community.CSPManager.uSync.Complete.csproj"
+  OUT_FOLDER: ./build-out/
+
+jobs:
+  release-csp-manager:
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'usync-')
+    runs-on: ubuntu-latest
+    environment: nuget-csp
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+
+    env:
+      BUILD_VERSION: ${{ github.event.release.tag_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: './src/Umbraco.Community.CSPManager/Client/package.json'
+          cache: 'npm'
+          cache-dependency-path: './src/Umbraco.Community.CSPManager/Client/package-lock.json'
+
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+
+      - name: Build client
+        run: npm run build
+        working-directory: ./src/Umbraco.Community.CSPManager/Client
+
+      - name: Run tests
+        run: dotnet test $TESTPROJECT -c Release --verbosity normal --filter "Category!=LongRunning"
+
+      - name: Build & Pack
+        run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION --output ${{env.OUT_FOLDER}}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: '${{ env.OUT_FOLDER }}*.nupkg'
+
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: MattWise
+
+      - name: Publish to NuGet
+        run: dotnet nuget push ${{ env.OUT_FOLDER }}*.nupkg --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+
+  release-usync:
+    if: startsWith(github.ref, 'refs/tags/usync-') && !startsWith(github.ref, 'refs/tags/usync-complete-')
+    runs-on: ubuntu-latest
+    environment: nuget-usync
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/usync-}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build & Pack
+        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=${{ steps.version.outputs.version }} -p:UseProjectReferences=false --output ${{ env.OUT_FOLDER }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: '${{ env.OUT_FOLDER }}*.nupkg'
+
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: MattWise
+
+      - name: Publish to NuGet
+        run: |
+          for package in ${{ env.OUT_FOLDER }}*.nupkg; do
+            echo "Publishing $package"
+            dotnet nuget push "$package" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
+  release-usync-complete:
+    if: startsWith(github.ref, 'refs/tags/usync-complete-')
+    runs-on: ubuntu-latest
+    environment: nuget-usync-complete
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/usync-complete-}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package.json'
+          cache: 'npm'
+          cache-dependency-path: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package-lock.json'
+
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
+
+      - name: Build client
+        run: npm run build
+        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
+
+      - name: Build & Pack
+        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=${{ steps.version.outputs.version }} -p:UseProjectReferences=false --output ${{ env.OUT_FOLDER }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: '${{ env.OUT_FOLDER }}*.nupkg'
+
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: MattWise
+
+      - name: Publish to NuGet
+        run: |
+          for package in ${{ env.OUT_FOLDER }}*.nupkg; do
+            echo "Publishing $package"
+            dotnet nuget push "$package" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
