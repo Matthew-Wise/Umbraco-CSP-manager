@@ -224,12 +224,60 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var caches = AppCaches.Create(NoAppCache.Instance);
 		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
 
+		await _cspService.SaveCspDefinitionAsync(new CspDefinition
+		{
+			Id = Constants.DefaultBackofficeId,
+			Enabled = true,
+			IsBackOffice = true,
+			Sources = []
+		}, CancellationToken.None);
+
 		var definition1 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
+		Assert.That(definition1.Enabled, Is.True);
+
+		// Saved through a different CspService/cache instance (_cspService uses the DI-registered
+		// AppCaches), so `service`'s own cache is never invalidated by this - the row it points at
+		// changes underneath it.
+		await _cspService.SaveCspDefinitionAsync(new CspDefinition
+		{
+			Id = Constants.DefaultBackofficeId,
+			Enabled = false,
+			IsBackOffice = true,
+			Sources = []
+		}, CancellationToken.None);
+
 		var definition2 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: true, CancellationToken.None);
 
-		Assert.That(definition1, Is.Not.Null);
-		// Same instance implies the second call was served from cache, not re-queried.
-		Assert.That(definition2, Is.SameAs(definition1));
+		Assert.That(definition2.Enabled, Is.True,
+			"the second call should be served from cache, not reloaded from the database");
+	}
+
+	[Test]
+	public async Task GetCachedCspDefinitionAsync_ReturnsIndependentCopyPerCall()
+	{
+		var caches = AppCaches.Create(NoAppCache.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
+
+		var definition1 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+		definition1.Enabled = true;
+		definition1.Sources.Add(new CspDefinitionSource
+		{
+			DefinitionId = definition1.Id,
+			Source = "mutated-by-caller",
+			Directives = [Constants.Directives.ConnectSource]
+		});
+
+		var definition2 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+
+		// A caller (e.g. a CspWritingNotification handler following the documented pattern of
+		// mutating notification.CspDefinition) must not be able to corrupt what every other
+		// request sharing the cache sees.
+		Assert.Multiple(() =>
+		{
+			Assert.That(definition2, Is.Not.SameAs(definition1));
+			Assert.That(definition2.Enabled, Is.False);
+			Assert.That(definition2.Sources.Select(s => s.Source), Does.Not.Contain("mutated-by-caller"));
+		});
 	}
 
 	[Test]

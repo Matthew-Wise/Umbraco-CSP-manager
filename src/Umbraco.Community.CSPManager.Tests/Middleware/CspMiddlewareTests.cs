@@ -12,6 +12,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Routing;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Integration.Implementations;
@@ -108,6 +109,53 @@ public class CspMiddlewareTests
 		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), verifyCalls);
 		Mock.Get(_eventAggregator).Verify(x => x.PublishAsync(It.IsAny<CspWritingNotification>(),
 			It.IsAny<CancellationToken>()), verifyCalls);
+	}
+
+	// ICspService.GetCachedCspDefinitionAsync returns a defensive copy on every call
+	// (CspService.CloneDefinition) precisely so that CspWritingNotification handlers can freely
+	// mutate notification.CspDefinition - as the documented pattern in
+	// docs/advanced/notification-events.md does - without corrupting what other requests get
+	// served from the shared cache. This test mocks GetCachedCspDefinitionAsync to hand out a
+	// fresh clone per call, matching that contract, and asserts the middleware/notification
+	// pipeline keeps a handler's mutation scoped to its own request.
+	[Test]
+	public async Task CspMiddleware_WritingNotificationHandlerMutatesDefinition_DoesNotLeakIntoUnrelatedRequests()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(() => new CspDefinition
+			{
+				Id = Constants.DefaultFrontEndId,
+				Enabled = true,
+				IsBackOffice = false,
+				Sources = [new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.DefaultSource] }]
+			});
+
+		Mock.Get(_eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspWritingNotification>(), It.IsAny<CancellationToken>()))
+			.Callback<INotification, CancellationToken>((n, _) =>
+			{
+				var notification = (CspWritingNotification)n;
+				if (notification.HttpContext.Request.Path.StartsWithSegments("/api"))
+				{
+					notification.CspDefinition!.Sources.Add(new CspDefinitionSource
+					{
+						Source = "api.example.com",
+						Directives = [Constants.Directives.ConnectSource]
+					});
+				}
+			})
+			.Returns(Task.CompletedTask);
+
+		var apiResponse = await _host.GetTestClient().GetAsync("/api/orders");
+		var apiHeader = apiResponse.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(apiHeader, Does.Contain("api.example.com"));
+
+		var unrelatedResponse = await _host.GetTestClient().GetAsync("/content/page");
+		var unrelatedHeader = unrelatedResponse.Headers.GetValues(Constants.HeaderName).First();
+
+		Assert.That(unrelatedHeader, Does.Not.Contain("api.example.com"),
+			"a handler scoped to /api requests must not leak its source into unrelated requests");
 	}
 
 	[Test]
