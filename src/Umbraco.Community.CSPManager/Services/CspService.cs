@@ -79,8 +79,33 @@ internal sealed class CspService : ICspService
 			Log.CspDefinitionRetrievedFromCache(_logger, definition.Id, context);
 		}
 
-		return definition;
+		// The cached instance is shared by every caller until the next save invalidates it -
+		// CspWritingNotification hands it to consumer code, and the documented pattern for that
+		// notification mutates CspDefinition.Sources directly. Handing out the cached reference
+		// itself would let one handler's mutation leak into every other request sharing the
+		// cache. Returning a defensive copy keeps that mutation scoped to its own request.
+		return CloneDefinition(definition);
 	}
+
+	private static CspDefinition CloneDefinition(CspDefinition definition) => new()
+	{
+		Id = definition.Id,
+		Enabled = definition.Enabled,
+		ReportOnly = definition.ReportOnly,
+		IsBackOffice = definition.IsBackOffice,
+		ReportingDirective = definition.ReportingDirective,
+		ReportUri = definition.ReportUri,
+		UpgradeInsecureRequests = definition.UpgradeInsecureRequests,
+		Sources =
+		[
+			.. definition.Sources.Select(s => new CspDefinitionSource
+			{
+				DefinitionId = s.DefinitionId,
+				Source = s.Source,
+				Directives = [.. s.Directives]
+			})
+		]
+	};
 
 	public async Task<CspDefinition?> GetCspDefinitionAsync(Guid key, CancellationToken cancellationToken)
 	{
