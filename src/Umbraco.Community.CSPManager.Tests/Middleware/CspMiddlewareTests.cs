@@ -253,6 +253,152 @@ public class CspMiddlewareTests
 		Assert.That(headerValue, Does.Contain($"'nonce-{testNonce}'"));
 	}
 
+	// script-src-elem overrides script-src for <script> elements, so a nonce added to script-src
+	// would never be consulted by the browser and every tagged inline script would be blocked.
+	[Test]
+	public async Task CspMiddleware_WithScriptSourceElementConfigured_InjectsNonceIntoScriptSrcElemOnly()
+	{
+		const string testNonce = "test-nonce-abc123";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources =
+			[
+				new CspDefinitionSource
+				{
+					Source = "'self'",
+					Directives = [Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement]
+				}
+			]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetOrCreateCspNonce(It.IsAny<HttpContext>()))
+			.Returns(testNonce);
+
+		using var host = BuildTestHost(extraApp: app =>
+		{
+			app.Use(async (ctx, next) =>
+			{
+				ctx.Items[Constants.TagHelper.CspManagerScriptNonceSet] = true;
+				await next(ctx);
+			});
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.Multiple(() =>
+		{
+			Assert.That(headerValue, Does.Contain($"{Constants.Directives.ScriptSourceElement} 'self' 'nonce-{testNonce}'"));
+			// script-src is left untouched - a second nonce there would make the browser ignore
+			// 'unsafe-inline' for the inline event handlers that fall back to it.
+			Assert.That(CountOccurrences(headerValue, "'nonce-"), Is.EqualTo(1));
+		});
+	}
+
+	// style-src-elem overrides style-src for <style> and <link rel="stylesheet">.
+	[Test]
+	public async Task CspMiddleware_WithStyleSourceElementConfigured_InjectsNonceIntoStyleSrcElemOnly()
+	{
+		const string testNonce = "test-nonce-abc123";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources =
+			[
+				new CspDefinitionSource
+				{
+					Source = "'self'",
+					Directives = [Constants.Directives.StyleSource, Constants.Directives.StyleSourceElement]
+				}
+			]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetOrCreateCspNonce(It.IsAny<HttpContext>()))
+			.Returns(testNonce);
+
+		using var host = BuildTestHost(extraApp: app =>
+		{
+			app.Use(async (ctx, next) =>
+			{
+				ctx.Items[Constants.TagHelper.CspManagerStyleNonceSet] = true;
+				await next(ctx);
+			});
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.Multiple(() =>
+		{
+			Assert.That(headerValue, Does.Contain($"{Constants.Directives.StyleSourceElement} 'self' 'nonce-{testNonce}'"));
+			Assert.That(CountOccurrences(headerValue, "'nonce-"), Is.EqualTo(1));
+		});
+	}
+
+	// script-src-elem present without script-src: the nonce still has to land on the directive the
+	// browser consults, and the "directive missing" warning must not fire.
+	[Test]
+	public async Task CspMiddleware_WithOnlyScriptSourceElementConfigured_InjectsNonceWithoutWarning()
+	{
+		const string testNonce = "test-nonce-abc123";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources =
+			[
+				new CspDefinitionSource
+				{
+					Source = "'self'",
+					Directives = [Constants.Directives.ScriptSourceElement]
+				}
+			]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+		Mock.Get(_cspService)
+			.Setup(x => x.GetOrCreateCspNonce(It.IsAny<HttpContext>()))
+			.Returns(testNonce);
+
+		var logger = new Mock<ILogger<CspMiddleware>>();
+		logger.Setup(x => x.IsEnabled(LogLevel.Warning)).Returns(true);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.AddSingleton(logger.Object),
+			extraApp: app =>
+			{
+				app.Use(async (ctx, next) =>
+				{
+					ctx.Items[Constants.TagHelper.CspManagerScriptNonceSet] = true;
+					await next(ctx);
+				});
+			});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain($"{Constants.Directives.ScriptSourceElement} 'self' 'nonce-{testNonce}'"));
+		logger.Verify(x => x.Log(
+			LogLevel.Warning,
+			It.Is<EventId>(e => e.Name == "CspNonceDirectiveMissing"),
+			It.IsAny<It.IsAnyType>(),
+			null,
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Never);
+	}
+
 	[Test]
 	public async Task CspMiddleware_WithScriptNonceSetButNoScriptSrcDirective_LogsWarningAndOmitsNonce()
 	{
@@ -391,6 +537,20 @@ public class CspMiddlewareTests
 			It.IsAny<It.IsAnyType>(),
 			null,
 			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Never);
+	}
+
+	private static int CountOccurrences(string value, string needle)
+	{
+		var count = 0;
+		var index = value.IndexOf(needle, StringComparison.Ordinal);
+
+		while (index >= 0)
+		{
+			count++;
+			index = value.IndexOf(needle, index + needle.Length, StringComparison.Ordinal);
+		}
+
+		return count;
 	}
 
 	[TearDown]
