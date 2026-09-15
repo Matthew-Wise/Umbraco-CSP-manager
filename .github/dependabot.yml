@@ -46,3 +46,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+
+  # Composite action: Dependabot only scans .github/workflows for the root entry,
+  # so the download-artifact pin in here needs its own entry to stay paired with
+  # the upload-artifact major used by the workflows.
+  - package-ecosystem: github-actions
+    directory: /.github/actions/publish-package
+    schedule:
+      interval: weekly
