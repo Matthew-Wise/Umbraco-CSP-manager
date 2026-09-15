@@ -206,45 +206,49 @@ public class CspMiddleware
 
 			if (scriptNonceSet)
 			{
-				var directive = ResolveNonceDirective(csp, Constants.Directives.ScriptSourceElement, Constants.Directives.ScriptSource);
-				AddNonceToDirective(csp, directive, nonce, definition.Id);
+				AddNonceToDirectives(csp, nonce, definition.Id,
+					Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement);
 			}
 
 			if (styleNonceSet)
 			{
-				var directive = ResolveNonceDirective(csp, Constants.Directives.StyleSourceElement, Constants.Directives.StyleSource);
-				AddNonceToDirective(csp, directive, nonce, definition.Id);
+				AddNonceToDirectives(csp, nonce, definition.Id,
+					Constants.Directives.StyleSource, Constants.Directives.StyleSourceElement);
 			}
 		}
 
 		return csp;
 	}
 
-	// script-src-elem/style-src-elem override script-src/style-src for element-level scripts and
-	// styles, so when one is configured it is the only directive the browser consults for a
-	// <script>/<style>/<link> - a nonce added to the broader directive would be ignored and every
-	// tagged element blocked. Only the directive actually consulted gets the nonce: adding it to
-	// script-src as well would also make the browser ignore 'unsafe-inline' there, silently
-	// breaking the inline event handlers that script-src-attr falls back to.
-	private static string ResolveNonceDirective(Dictionary<string, string> csp, string elementDirective, string fallbackDirective)
-		=> csp.ContainsKey(elementDirective) ? elementDirective : fallbackDirective;
-
-	private void AddNonceToDirective(Dictionary<string, string> csp, string directive, string nonce, Guid definitionId)
+	// A browser that understands script-src-elem/style-src-elem consults it for <script>/<style>/<link>
+	// and ignores script-src/style-src for those elements; a browser that predates it only knows the
+	// broader directive. Putting the nonce on every configured directive in the pair keeps nonced
+	// elements working in both. (A nonce makes 'unsafe-inline' in that directive ignored; sites that
+	// need inline event handlers or style attributes alongside nonces should grant 'unsafe-inline'
+	// via script-src-attr/style-src-attr, which the nonce never touches.)
+	private void AddNonceToDirectives(Dictionary<string, string> csp, string nonce, Guid definitionId, params string[] directives)
 	{
 		if (string.IsNullOrWhiteSpace(nonce))
 		{
 			return;
 		}
 
-		if (csp.TryGetValue(directive, out var existingValue))
+		var added = false;
+
+		foreach (var directive in directives)
 		{
-			csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+			if (csp.TryGetValue(directive, out var existingValue))
+			{
+				csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+				added = true;
+			}
 		}
-		else
+
+		if (!added)
 		{
 			// The nonce only augments directives the user has configured; adding
 			// script-src/style-src from scratch would block every other source.
-			Log.CspNonceDirectiveMissing(_logger, directive, definitionId);
+			Log.CspNonceDirectiveMissing(_logger, string.Join(", ", directives), definitionId);
 		}
 	}
 }
