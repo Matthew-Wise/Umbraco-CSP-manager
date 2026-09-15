@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # NuGet: every project resolves versions through src/Directory.Packages.props
+  # (central package management), so one entry at /src covers the whole solution.
+  - package-ecosystem: nuget
+    directory: /src
+    schedule:
+      interval: weekly
+    groups:
+      umbraco:
+        patterns:
+          - "Umbraco.Cms*"
+      usync:
+        patterns:
+          - "uSync*"
+    ignore:
+      # Major versions are aligned to Umbraco and bumped deliberately.
+      - dependency-name: "Umbraco.Cms*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "uSync*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /src/Umbraco.Community.CSPManager/Client
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+    ignore:
+      - dependency-name: "@umbraco-cms/backoffice"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+    ignore:
+      - dependency-name: "@umbraco-cms/backoffice"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
