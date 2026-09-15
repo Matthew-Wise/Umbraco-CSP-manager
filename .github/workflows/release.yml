@@ -44,7 +44,7 @@ jobs:
       prerelease: ${{ steps.meta.outputs.prerelease }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -154,7 +154,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Publish CSP Manager
         uses: ./.github/actions/publish-package
         with:
@@ -176,7 +176,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Publish uSync
         uses: ./.github/actions/publish-package
         with:
@@ -198,7 +198,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Publish uSync Complete
         uses: ./.github/actions/publish-package
         with:
