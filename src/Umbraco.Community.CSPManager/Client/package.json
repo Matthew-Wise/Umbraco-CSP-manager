@@ -34,7 +34,7 @@
 		"linkifyjs": ">=4.3.2"
 	},
 	"dependencies": {
-		"csp_evaluator": "^1.1.5"
+		"csp_evaluator": "^1.1.8"
 	},
 	"overrides": {
 		"dompurify": ">=3.4.0",
