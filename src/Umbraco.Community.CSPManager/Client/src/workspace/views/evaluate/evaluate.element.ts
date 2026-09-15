@@ -195,8 +195,8 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 					align-items: center;
 					gap: 0.5rem;
 					padding: var(--uui-size-4);
-					color: #28a745;
-					--uui-icon-color: #28a745;
+					color: var(--uui-color-positive);
+					--uui-icon-color: var(--uui-color-positive);
 				}
 
 				.csp-container {
@@ -276,34 +276,35 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 				gap: 0.25rem;
 			}
 
+			/* Severity colours come from the backoffice theme tokens so they hold up in both light and dark themes. */
 			.severity-high,
 			.severity-syntax {
-				background-color: #dc3545;
-				color: white;
+				background-color: var(--uui-color-danger);
+				color: var(--uui-color-danger-contrast);
 			}
 			.severity-medium,
 			.severity-high-possible {
-				background-color: #fd7e14;
-				color: white;
+				background-color: var(--uui-color-warning);
+				color: var(--uui-color-warning-contrast);
 			}
 			.severity-strict-csp,
 			.severity-info {
-				background-color: #17a2b8;
-				color: white;
+				background-color: var(--uui-color-default);
+				color: var(--uui-color-default-contrast);
 			}
 
 			.severity-medium-possible {
-				background-color: #ffc107;
-				color: black;
+				background-color: var(--uui-color-warning-emphasis);
+				color: var(--uui-color-warning-standalone);
 			}
 			.severity-none {
-				background-color: #28a745;
-				color: white;
+				background-color: var(--uui-color-positive);
+				color: var(--uui-color-positive-contrast);
 			}
 
 			.severity-unknown {
-				background-color: #6c757d;
-				color: white;
+				background-color: var(--uui-color-border-standalone);
+				color: var(--uui-color-text);
 			}
 
 			.finding-item {
@@ -321,32 +322,32 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 
 			.finding-item.severity-high,
 			.finding-item.severity-syntax {
-				border-left-color: #dc3545;
-				--uui-icon-color: #dc3545;
+				border-left-color: var(--uui-color-danger);
+				--uui-icon-color: var(--uui-color-danger);
 			}
-			.finding-item.severity-medium-possible,
+			.finding-item.severity-medium,
 			.finding-item.severity-high-possible {
-				border-left-color: #fd7e14;
-				--uui-icon-color: #fd7e14;
+				border-left-color: var(--uui-color-warning);
+				--uui-icon-color: var(--uui-color-warning);
 			}
 			.finding-item.severity-strict-csp,
 			.finding-item.severity-info {
-				border-left-color: #17a2b8;
-				--uui-icon-color: #17a2b8;
+				border-left-color: var(--uui-color-default);
+				--uui-icon-color: var(--uui-color-default);
 			}
 
 			.finding-item.severity-medium-possible {
-				border-left-color: #ffc107;
-				--uui-icon-color: #ffc107;
+				border-left-color: var(--uui-color-warning-standalone);
+				--uui-icon-color: var(--uui-color-warning-standalone);
 			}
 			.finding-item.severity-none {
-				border-left-color: #28a745;
-				--uui-icon-color: #28a745;
+				border-left-color: var(--uui-color-positive);
+				--uui-icon-color: var(--uui-color-positive);
 			}
 
 			.finding-item.severity-unknown {
-				border-left-color: #6c757d;
-				--uui-icon-color: #6c757d;
+				border-left-color: var(--uui-color-border-standalone);
+				--uui-icon-color: var(--uui-color-border-standalone);
 			}
 
 			.finding-header {
