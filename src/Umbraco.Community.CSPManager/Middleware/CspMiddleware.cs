@@ -172,18 +172,28 @@ public class CspMiddleware
 	{
 		var csp = new Dictionary<string, string>(definition.Sources.Count);
 
+		// Dedupe on whole tokens per directive. A substring check against the joined value
+		// would drop "example.com" once "cdn.example.com" is present for the same directive.
+		var emitted = new Dictionary<string, HashSet<string>>();
+
 		foreach (var source in definition.Sources)
 		{
 			foreach (var directive in source.Directives)
 			{
-				if (!csp.TryGetValue(directive, out var existingValue))
+				if (!emitted.TryGetValue(directive, out var tokens))
 				{
-					csp[directive] = source.Source;
+					tokens = new HashSet<string>(StringComparer.Ordinal);
+					emitted[directive] = tokens;
 				}
-				else if (!existingValue.Contains(source.Source))
+
+				if (!tokens.Add(source.Source))
 				{
-					csp[directive] = $"{existingValue} {source.Source}";
+					continue;
 				}
+
+				csp[directive] = csp.TryGetValue(directive, out var existingValue)
+					? $"{existingValue} {source.Source}"
+					: source.Source;
 			}
 		}
 

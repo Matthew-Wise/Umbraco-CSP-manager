@@ -139,8 +139,11 @@ public sealed class CspApiDefinition : IValidatableObject
 			yield break;
 		}
 
-		var sourceSet = new HashSet<string>();
-		var duplicates = new HashSet<string>();
+		// CSP host and keyword matching is case-insensitive, and SQL Server's default collation
+		// treats the (DefinitionId, Source) key the same way, so two sources differing only by
+		// case would collide on save. Treat them as duplicates up front.
+		var sourceSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var duplicates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		for (var i = 0; i < Sources.Count; i++)
 		{
@@ -157,6 +160,17 @@ public sealed class CspApiDefinition : IValidatableObject
 			{
 				yield return new ValidationResult(
 					$"Source '{TruncateForDisplay(source.Source)}' exceeds maximum length of {MaxSourceLength} characters",
+					[nameof(Sources)]);
+			}
+
+			// A source is a single header token. Whitespace or ';' would splice extra tokens or
+			// directives into the header, ',' would split it into two header values, and a control
+			// character makes Kestrel reject the header so the response ships with no CSP at all.
+			// (Whitespace-only sources are dropped by the service on save, so skip those here.)
+			if (!string.IsNullOrWhiteSpace(source.Source) && source.Source.Any(IsInvalidSourceCharacter))
+			{
+				yield return new ValidationResult(
+					$"Source '{TruncateForDisplay(source.Source)}' must be a single token: it cannot contain whitespace, ';', ',' or control characters",
 					[nameof(Sources)]);
 			}
 
@@ -180,6 +194,9 @@ public sealed class CspApiDefinition : IValidatableObject
 				[nameof(Sources)]);
 		}
 	}
+
+	private static bool IsInvalidSourceCharacter(char c)
+		=> char.IsWhiteSpace(c) || char.IsControl(c) || c == ';' || c == ',';
 
 	private static string TruncateForDisplay(string value, int maxLength = 50)
 	{
