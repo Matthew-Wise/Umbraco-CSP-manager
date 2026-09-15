@@ -253,10 +253,10 @@ public class CspMiddlewareTests
 		Assert.That(headerValue, Does.Contain($"'nonce-{testNonce}'"));
 	}
 
-	// script-src-elem overrides script-src for <script> elements, so a nonce added to script-src
-	// would never be consulted by the browser and every tagged inline script would be blocked.
+	// script-src-elem overrides script-src for <script> elements in browsers that support it, while
+	// older browsers only consult script-src, so the nonce must land on both when both are configured.
 	[Test]
-	public async Task CspMiddleware_WithScriptSourceElementConfigured_InjectsNonceIntoScriptSrcElemOnly()
+	public async Task CspMiddleware_WithScriptSourceAndElementConfigured_InjectsNonceIntoBoth()
 	{
 		const string testNonce = "test-nonce-abc123";
 		var definition = new CspDefinition
@@ -294,16 +294,15 @@ public class CspMiddlewareTests
 		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
 		Assert.Multiple(() =>
 		{
+			Assert.That(headerValue, Does.Contain($"{Constants.Directives.ScriptSource} 'self' 'nonce-{testNonce}'"));
 			Assert.That(headerValue, Does.Contain($"{Constants.Directives.ScriptSourceElement} 'self' 'nonce-{testNonce}'"));
-			// script-src is left untouched - a second nonce there would make the browser ignore
-			// 'unsafe-inline' for the inline event handlers that fall back to it.
-			Assert.That(CountOccurrences(headerValue, "'nonce-"), Is.EqualTo(1));
+			Assert.That(CountOccurrences(headerValue, "'nonce-"), Is.EqualTo(2));
 		});
 	}
 
 	// style-src-elem overrides style-src for <style> and <link rel="stylesheet">.
 	[Test]
-	public async Task CspMiddleware_WithStyleSourceElementConfigured_InjectsNonceIntoStyleSrcElemOnly()
+	public async Task CspMiddleware_WithStyleSourceAndElementConfigured_InjectsNonceIntoBoth()
 	{
 		const string testNonce = "test-nonce-abc123";
 		var definition = new CspDefinition
@@ -341,13 +340,14 @@ public class CspMiddlewareTests
 		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
 		Assert.Multiple(() =>
 		{
+			Assert.That(headerValue, Does.Contain($"{Constants.Directives.StyleSource} 'self' 'nonce-{testNonce}'"));
 			Assert.That(headerValue, Does.Contain($"{Constants.Directives.StyleSourceElement} 'self' 'nonce-{testNonce}'"));
-			Assert.That(CountOccurrences(headerValue, "'nonce-"), Is.EqualTo(1));
+			Assert.That(CountOccurrences(headerValue, "'nonce-"), Is.EqualTo(2));
 		});
 	}
 
-	// script-src-elem present without script-src: the nonce still has to land on the directive the
-	// browser consults, and the "directive missing" warning must not fire.
+	// script-src-elem present without script-src: the nonce lands on the one configured directive,
+	// script-src is not created from scratch, and the "directive missing" warning must not fire.
 	[Test]
 	public async Task CspMiddleware_WithOnlyScriptSourceElementConfigured_InjectsNonceWithoutWarning()
 	{
@@ -390,7 +390,12 @@ public class CspMiddlewareTests
 		var response = await host.GetTestClient().GetAsync("/");
 
 		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
-		Assert.That(headerValue, Does.Contain($"{Constants.Directives.ScriptSourceElement} 'self' 'nonce-{testNonce}'"));
+		Assert.Multiple(() =>
+		{
+			Assert.That(headerValue, Does.Contain($"{Constants.Directives.ScriptSourceElement} 'self' 'nonce-{testNonce}'"));
+			Assert.That(headerValue, Does.Not.Contain($"{Constants.Directives.ScriptSource} "));
+			Assert.That(CountOccurrences(headerValue, "'nonce-"), Is.EqualTo(1));
+		});
 		logger.Verify(x => x.Log(
 			LogLevel.Warning,
 			It.Is<EventId>(e => e.Name == "CspNonceDirectiveMissing"),

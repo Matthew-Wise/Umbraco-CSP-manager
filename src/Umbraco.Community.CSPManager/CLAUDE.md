@@ -24,11 +24,12 @@
   returning the shared reference would let one handler's mutation corrupt what every other
   request sharing the cache sees.
 - Nonce-per-request: cryptographically secure, reused within HTTP context
-- Nonce directive targeting: the nonce goes on `script-src-elem`/`style-src-elem` when the policy
-  defines them, otherwise `script-src`/`style-src` - the `-elem` variants override the broader
-  directive for `<script>`/`<style>`/`<link>`, so a nonce on `script-src` alone would be ignored.
-  It is never added to both: a nonce makes the browser ignore `'unsafe-inline'` in that directive,
-  and `script-src-attr` falls back to `script-src` for inline event handlers.
+- Nonce directive targeting: the nonce goes on every configured directive in the
+  `script-src`/`script-src-elem` and `style-src`/`style-src-elem` pairs. Supporting browsers consult
+  the `-elem` variant for `<script>`/`<style>`/`<link>` and ignore the broader one; older browsers only
+  know the broader one, so both need it. A directive is never created just to hold a nonce (that would
+  block every other source); if neither in a pair exists, `CspNonceDirectiveMissing` is logged.
+  Inline event handlers/style attributes with `'unsafe-inline'` belong in `script-src-attr`/`style-src-attr`.
 - Middleware never breaks requests on failure
 - Composer pattern: `CspManagerComposer` auto-registers via `IComposer`
 
