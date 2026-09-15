@@ -63,7 +63,7 @@ jobs:
         run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=$BUILD_VERSION --output ${{ env.OUT_FOLDER }}
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: uSync Build Output
           path: ${{ env.OUT_FOLDER }}
