@@ -115,7 +115,7 @@ jobs:
 
       - name: Upload CSP Manager package
         if: inputs.package == 'all' || inputs.package == 'csp-manager'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-csp
           path: ./build-out/csp/
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload uSync package
         if: inputs.package == 'all' || inputs.package == 'usync'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-usync
           path: ./build-out/usync/
@@ -131,7 +131,7 @@ jobs:
 
       - name: Upload uSync Complete package
         if: inputs.package == 'all' || inputs.package == 'usync-complete'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-complete
           path: ./build-out/complete/
