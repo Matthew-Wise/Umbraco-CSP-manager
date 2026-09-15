@@ -14,8 +14,8 @@
   "devDependencies": {
     "@jumoo/usync-publisher-assets": "^18.0.1",
     "@umbraco-cms/backoffice": "^18.1.1",
-    "typescript": "^5.8.3",
-    "vite": "^8.0.16"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
   },
   "overrides": {
     "dompurify": ">=3.4.0",
