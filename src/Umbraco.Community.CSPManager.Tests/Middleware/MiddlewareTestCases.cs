@@ -68,6 +68,26 @@ internal static class MiddlewareTestCases
 				CspConstants.HeaderName,
 				"default-src 'self'")
 			{ TestName = "Duplicate source - deduplicated in header" };
+
+			// Dedupe must compare whole tokens: a substring check silently dropped "example.com"
+			// because "cdn.example.com" already contained it.
+			yield return new TestCaseData(
+				"/",
+				new CspDefinition
+				{
+					Id = CspConstants.DefaultFrontEndId,
+					Enabled = true,
+					IsBackOffice = false,
+					Sources =
+					[
+						new CspDefinitionSource { Source = "https://cdn.example.com", Directives = [CspConstants.Directives.ScriptSource] },
+						new CspDefinitionSource { Source = "example.com", Directives = [CspConstants.Directives.ScriptSource] },
+						new CspDefinitionSource { Source = "'self'", Directives = [CspConstants.Directives.ScriptSource] }
+					]
+				},
+				CspConstants.HeaderName,
+				"script-src https://cdn.example.com example.com 'self'")
+			{ TestName = "Source that is a substring of an earlier source - both emitted" };
 		}
 	}
 

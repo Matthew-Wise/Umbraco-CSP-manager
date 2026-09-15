@@ -172,18 +172,28 @@ public class CspMiddleware
 	{
 		var csp = new Dictionary<string, string>(definition.Sources.Count);
 
+		// Dedupe on whole tokens per directive. A substring check against the joined value
+		// would drop "example.com" once "cdn.example.com" is present for the same directive.
+		var emitted = new Dictionary<string, HashSet<string>>();
+
 		foreach (var source in definition.Sources)
 		{
 			foreach (var directive in source.Directives)
 			{
-				if (!csp.TryGetValue(directive, out var existingValue))
+				if (!emitted.TryGetValue(directive, out var tokens))
 				{
-					csp[directive] = source.Source;
+					tokens = new HashSet<string>(StringComparer.Ordinal);
+					emitted[directive] = tokens;
 				}
-				else if (!existingValue.Contains(source.Source))
+
+				if (!tokens.Add(source.Source))
 				{
-					csp[directive] = $"{existingValue} {source.Source}";
+					continue;
 				}
+
+				csp[directive] = csp.TryGetValue(directive, out var existingValue)
+					? $"{existingValue} {source.Source}"
+					: source.Source;
 			}
 		}
 
@@ -203,18 +213,52 @@ public class CspMiddleware
 		if (scriptNonceSet || styleNonceSet)
 		{
 			var nonce = _cspService.GetOrCreateCspNonce(httpContext);
-			if (scriptNonceSet) AddNonceToDirective(csp, Constants.Directives.ScriptSource, nonce);
-			if (styleNonceSet) AddNonceToDirective(csp, Constants.Directives.StyleSource, nonce);
+
+			if (scriptNonceSet)
+			{
+				AddNonceToDirectives(csp, nonce, definition.Id,
+					Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement);
+			}
+
+			if (styleNonceSet)
+			{
+				AddNonceToDirectives(csp, nonce, definition.Id,
+					Constants.Directives.StyleSource, Constants.Directives.StyleSourceElement);
+			}
 		}
 
 		return csp;
 	}
 
-	private static void AddNonceToDirective(Dictionary<string, string> csp, string directive, string nonce)
+	// A browser that understands script-src-elem/style-src-elem consults it for <script>/<style>/<link>
+	// and ignores script-src/style-src for those elements; a browser that predates it only knows the
+	// broader directive. Putting the nonce on every configured directive in the pair keeps nonced
+	// elements working in both. (A nonce makes 'unsafe-inline' in that directive ignored; sites that
+	// need inline event handlers or style attributes alongside nonces should grant 'unsafe-inline'
+	// via script-src-attr/style-src-attr, which the nonce never touches.)
+	private void AddNonceToDirectives(Dictionary<string, string> csp, string nonce, Guid definitionId, params string[] directives)
 	{
-		if (!string.IsNullOrWhiteSpace(nonce) && csp.TryGetValue(directive, out var existingValue))
+		if (string.IsNullOrWhiteSpace(nonce))
 		{
-			csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+			return;
+		}
+
+		var added = false;
+
+		foreach (var directive in directives)
+		{
+			if (csp.TryGetValue(directive, out var existingValue))
+			{
+				csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+				added = true;
+			}
+		}
+
+		if (!added)
+		{
+			// The nonce only augments directives the user has configured; adding
+			// script-src/style-src from scratch would block every other source.
+			Log.CspNonceDirectiveMissing(_logger, string.Join(", ", directives), definitionId);
 		}
 	}
 }

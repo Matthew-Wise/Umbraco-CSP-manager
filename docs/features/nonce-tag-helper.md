@@ -55,14 +55,32 @@ The tag helper injects a `nonce` attribute with a unique value, and CSP Manager 
 {: .note }
 A single nonce is shared across all `<script>`, `<style>`, and `<link>` tags in the same request. CSP Manager adds it to both `script-src` and `style-src` in the response header.
 
+### Policies using `script-src-elem` or `style-src-elem`
+
+Browsers that support `script-src-elem` and `style-src-elem` consult those directives for a `<script>`, `<style>`, or `<link>` tag and ignore `script-src` and `style-src` for them. Older browsers only know the broader directive. CSP Manager therefore adds the nonce to every configured directive in each pair, so nonced tags work in both:
+
+| Configured directives | Nonce added to |
+|---|---|
+| `script-src` | `script-src` |
+| `script-src-elem` | `script-src-elem` |
+| `script-src` and `script-src-elem` | both |
+
+The same applies to `style-src` and `style-src-elem`. If neither directive in a pair is configured, the nonce is not added and a warning is logged, because creating the directive from scratch would block every other source.
+
+{: .note }
+A nonce in a directive makes browsers ignore `'unsafe-inline'` in that same directive. If your site relies on inline event handlers (`onclick="..."`) or `style="..."` attributes alongside nonces, grant `'unsafe-inline'` through `script-src-attr` or `style-src-attr`, which the nonce never touches.
+
 ## Nonce as a Data Attribute
 
-If you need to read the nonce value in JavaScript (e.g., to dynamically create elements), use `csp-manager-add-nonce-data-attribute="true"`:
+If you need to read the nonce value in JavaScript (e.g., to dynamically create elements), add `csp-manager-add-nonce-data-attribute="true"` alongside `csp-manager-add-nonce="true"`:
 
 ```html
-<script csp-manager-add-nonce-data-attribute="true"></script>
-<style csp-manager-add-nonce-data-attribute="true"></style>
+<script csp-manager-add-nonce="true" csp-manager-add-nonce-data-attribute="true"></script>
+<style csp-manager-add-nonce="true" csp-manager-add-nonce-data-attribute="true"></style>
 ```
+
+{: .note }
+The tag helper only runs on tags that carry `csp-manager-add-nonce`. On its own, `csp-manager-add-nonce-data-attribute` does nothing.
 
 This adds a `data-nonce` attribute alongside the `nonce` attribute:
 
@@ -75,5 +93,5 @@ This adds a `data-nonce` attribute alongside the `nonce` attribute:
 
 - A single nonce is generated per HTTP request using a cryptographically secure random number generator
 - The same nonce value is used for all `<script>`, `<style>`, and `<link>` tags on the page
-- The nonce is automatically included in both `script-src` and `style-src` in the outgoing `Content-Security-Policy` header
+- The nonce is automatically included in every configured `script-src` / `script-src-elem` and `style-src` / `style-src-elem` directive in the outgoing `Content-Security-Policy` header
 - Nonces are generated regardless of whether the policy is in enforcing or report-only mode

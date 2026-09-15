@@ -174,6 +174,84 @@ public class CspApiDefinitionValidationTests
 		});
 	}
 
+	// CSP matching is case-insensitive and SQL Server's default collation would reject the
+	// second row on save, so case variants must be reported as duplicates before that happens.
+	[Test]
+	public void Validate_DuplicateSourcesDifferingOnlyByCase_ReturnsError()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources =
+			[
+				new() { Source = "https://Example.com", Directives = [Constants.Directives.ScriptSource] },
+				new() { Source = "https://example.com", Directives = [Constants.Directives.StyleSource] }
+			]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.That(results.FirstOrDefault()?.ErrorMessage, Does.StartWith("Duplicate sources found"));
+	}
+
+	[TestCase("https://example.com 'unsafe-inline'", TestName = "Source with a space is rejected")]
+	[TestCase("'self';script-src *", TestName = "Source with a semicolon is rejected")]
+	[TestCase("a.example.com,b.example.com", TestName = "Source with a comma is rejected")]
+	[TestCase("https://example.com\r\nX-Injected: 1", TestName = "Source with a line break is rejected")]
+	[TestCase("https://example.com\t", TestName = "Source with a tab is rejected")]
+	public void Validate_SourceThatIsNotASingleToken_ReturnsError(string source)
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources = [new() { Source = source, Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.Multiple(() =>
+		{
+			Assert.That(results.FirstOrDefault()?.ErrorMessage, Does.Contain("must be a single token"));
+			Assert.That(results.FirstOrDefault()?.MemberNames, Contains.Item("Sources"));
+		});
+	}
+
+	[TestCase("'self'")]
+	[TestCase("https://cdn.example.com/path/to/file.js")]
+	[TestCase("*.example.com")]
+	[TestCase("data:")]
+	[TestCase("'sha256-abc+def/ghi=='")]
+	[TestCase("'nonce-r4nd0m'")]
+	public void Validate_SingleTokenSource_ReturnsNoErrors(string source)
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources = [new() { Source = source, Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Is.Empty);
+	}
+
+	// The service strips whitespace-only sources on save, so the empty row the UI adds must not fail validation.
+	[Test]
+	public void Validate_EmptySource_ReturnsNoErrors()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources = [new() { Source = "", Directives = [] }]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Is.Empty);
+	}
+
 	[Test]
 	public void Validate_UnknownDirective_ReturnsError()
 	{
