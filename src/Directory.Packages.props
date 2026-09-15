@@ -5,14 +5,14 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Umbraco.Cms" Version="18.0.2" />
-    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="18.0.2" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="18.0.2" />
-    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="18.0.2" />
-    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="18.0.2" />
-    <PackageVersion Include="uSync" Version="18.0.2" />
-    <PackageVersion Include="uSync.BackOffice" Version="18.0.2" />
-    <PackageVersion Include="uSync.Complete" Version="18.0.2" />
+    <PackageVersion Include="Umbraco.Cms" Version="18.1.1" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="18.1.1" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="18.1.1" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="18.1.1" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="18.1.1" />
+    <PackageVersion Include="uSync" Version="18.1.3" />
+    <PackageVersion Include="uSync.BackOffice" Version="18.1.3" />
+    <PackageVersion Include="uSync.Complete" Version="18.1.3" />
     <PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
     <!-- Range (not a pin) so central transitive pinning doesn't force a stable version
          onto the transitive CSP Manager dependency when packing uSync.Complete against
@@ -29,6 +29,6 @@
     <PackageVersion Include="NUnit" Version="3.14.0" />
     <PackageVersion Include="NUnit.Analyzers" Version="4.12.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
-    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="18.0.2" />
+    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="18.1.1" />
   </ItemGroup>
 </Project>
