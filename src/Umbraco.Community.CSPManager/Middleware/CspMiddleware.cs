@@ -203,29 +203,52 @@ public class CspMiddleware
 		if (scriptNonceSet || styleNonceSet)
 		{
 			var nonce = _cspService.GetOrCreateCspNonce(httpContext);
-			if (scriptNonceSet) AddNonceToDirective(csp, Constants.Directives.ScriptSource, nonce, definition.Id);
-			if (styleNonceSet) AddNonceToDirective(csp, Constants.Directives.StyleSource, nonce, definition.Id);
+
+			if (scriptNonceSet)
+			{
+				AddNonceToDirectives(csp, nonce, definition.Id,
+					Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement);
+			}
+
+			if (styleNonceSet)
+			{
+				AddNonceToDirectives(csp, nonce, definition.Id,
+					Constants.Directives.StyleSource, Constants.Directives.StyleSourceElement);
+			}
 		}
 
 		return csp;
 	}
 
-	private void AddNonceToDirective(Dictionary<string, string> csp, string directive, string nonce, Guid definitionId)
+	// A browser that understands script-src-elem/style-src-elem consults it for <script>/<style>/<link>
+	// and ignores script-src/style-src for those elements; a browser that predates it only knows the
+	// broader directive. Putting the nonce on every configured directive in the pair keeps nonced
+	// elements working in both. (A nonce makes 'unsafe-inline' in that directive ignored; sites that
+	// need inline event handlers or style attributes alongside nonces should grant 'unsafe-inline'
+	// via script-src-attr/style-src-attr, which the nonce never touches.)
+	private void AddNonceToDirectives(Dictionary<string, string> csp, string nonce, Guid definitionId, params string[] directives)
 	{
 		if (string.IsNullOrWhiteSpace(nonce))
 		{
 			return;
 		}
 
-		if (csp.TryGetValue(directive, out var existingValue))
+		var added = false;
+
+		foreach (var directive in directives)
 		{
-			csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+			if (csp.TryGetValue(directive, out var existingValue))
+			{
+				csp[directive] = $"{existingValue} 'nonce-{nonce}'";
+				added = true;
+			}
 		}
-		else
+
+		if (!added)
 		{
 			// The nonce only augments directives the user has configured; adding
 			// script-src/style-src from scratch would block every other source.
-			Log.CspNonceDirectiveMissing(_logger, directive, definitionId);
+			Log.CspNonceDirectiveMissing(_logger, string.Join(", ", directives), definitionId);
 		}
 	}
 }
