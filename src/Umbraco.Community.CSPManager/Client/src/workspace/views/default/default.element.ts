@@ -131,9 +131,11 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 			return;
 		}
 
+		// Copy the directive selection onto a new, empty source and open it for editing.
+		// Deriving a name (e.g. appending "_copy") produces a value that is never a valid CSP source.
 		const newSource: CspApiDefinitionSource = {
 			definitionId: this._workspaceState.definition.id,
-			source: `${source.source}_copy`,
+			source: '',
 			directives: [...source.directives],
 		};
 
@@ -147,12 +149,12 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		};
 
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
+		this._toggleSourceExpansion(sourceIndex + 1);
 
-		// Show success toast
 		this.#notificationContext?.peek('positive', {
 			data: {
 				headline: 'Source Copied',
-				message: `Source "${source.source || '(empty)'}" has been copied successfully.`,
+				message: `Directives from "${source.source || '(empty)'}" copied to a new source. Enter a source value.`,
 			},
 		});
 	}

@@ -72,12 +72,15 @@ A nonce in a directive makes browsers ignore `'unsafe-inline'` in that same dire
 
 ## Nonce as a Data Attribute
 
-If you need to read the nonce value in JavaScript (e.g., to dynamically create elements), use `csp-manager-add-nonce-data-attribute="true"`:
+If you need to read the nonce value in JavaScript (e.g., to dynamically create elements), add `csp-manager-add-nonce-data-attribute="true"` alongside `csp-manager-add-nonce="true"`:
 
 ```html
-<script csp-manager-add-nonce-data-attribute="true"></script>
-<style csp-manager-add-nonce-data-attribute="true"></style>
+<script csp-manager-add-nonce="true" csp-manager-add-nonce-data-attribute="true"></script>
+<style csp-manager-add-nonce="true" csp-manager-add-nonce-data-attribute="true"></style>
 ```
+
+{: .note }
+The tag helper only runs on tags that carry `csp-manager-add-nonce`. On its own, `csp-manager-add-nonce-data-attribute` does nothing.
 
 This adds a `data-nonce` attribute alongside the `nonce` attribute:
 
