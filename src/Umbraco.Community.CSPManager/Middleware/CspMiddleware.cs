@@ -34,6 +34,7 @@ public class CspMiddleware
 	private readonly IRuntimeState _runtimeState;
 	private readonly ICspService _cspService;
 	private readonly IEventAggregator _eventAggregator;
+	private readonly ICspHealthMonitor _cspHealthMonitor;
 	private readonly ILogger<CspMiddleware> _logger;
 	private CspManagerOptions _cspOptions;
 
@@ -44,6 +45,7 @@ public class CspMiddleware
 	/// <param name="runtimeState">The Umbraco runtime state service.</param>
 	/// <param name="cspService">The CSP service for retrieving definitions.</param>
 	/// <param name="eventAggregator">The event aggregator for publishing notifications.</param>
+	/// <param name="cspHealthMonitor">Tracks header construction failures for the health check dashboard.</param>
 	/// <param name="cspOptions">The CSP Manager configuration options.</param>
 	/// <param name="logger">The logger for diagnostic output.</param>
 	public CspMiddleware(
@@ -51,6 +53,7 @@ public class CspMiddleware
 		IRuntimeState runtimeState,
 		ICspService cspService,
 		IEventAggregator eventAggregator,
+		ICspHealthMonitor cspHealthMonitor,
 		IOptionsMonitor<CspManagerOptions> cspOptions,
 		ILogger<CspMiddleware> logger)
 	{
@@ -58,6 +61,7 @@ public class CspMiddleware
 		_runtimeState = runtimeState;
 		_cspService = cspService;
 		_eventAggregator = eventAggregator;
+		_cspHealthMonitor = cspHealthMonitor;
 		_logger = logger;
 
 		cspOptions.OnChange(config =>
@@ -145,6 +149,7 @@ public class CspMiddleware
 				// CSP header injection should never break the request.
 				// Log the error and continue without the CSP header.
 				Log.CspHeaderConstructionFailed(_logger, context.Request.Path, ex);
+				_cspHealthMonitor.RecordFailure(context.Request.Path, ex);
 			}
 		});
 

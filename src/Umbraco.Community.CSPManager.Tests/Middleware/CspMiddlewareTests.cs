@@ -32,6 +32,8 @@ public class CspMiddlewareTests
 	private ICspService _cspService;
 
 	private IEventAggregator _eventAggregator;
+
+	private ICspHealthMonitor _cspHealthMonitor;
 	private static Dictionary<string, string> InMemoryConfiguration => [];
 
 	private TestHelper TestHelper { get; } = new();
@@ -45,6 +47,7 @@ public class CspMiddlewareTests
 			UmbConstants.Configuration.ConfigUnattended + ":" + nameof(UnattendedSettings.InstallUnattended)] = "true";
 		_cspService = Mock.Of<ICspService>();
 		_eventAggregator = Mock.Of<IEventAggregator>();
+		_cspHealthMonitor = Mock.Of<ICspHealthMonitor>();
 		_host = BuildTestHost();
 	}
 
@@ -64,6 +67,7 @@ public class CspMiddlewareTests
 					{
 						services.AddSingleton(_ => _cspService);
 						services.AddSingleton(_ => _eventAggregator);
+						services.AddSingleton(_ => _cspHealthMonitor);
 						services.AddSingleton(_ => runtimeState);
 						services.AddSingleton(_ => runtime);
 						services.AddSingleton(_ => TestHelper.GetHostingEnvironment());
@@ -464,6 +468,33 @@ public class CspMiddlewareTests
 			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
 			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
 		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenServiceThrows_RecordsFailureOnHealthMonitor()
+	{
+		var thrown = new InvalidOperationException("Test exception");
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(thrown);
+
+		await _host.GetTestClient().GetAsync("/");
+
+		Mock.Get(_cspHealthMonitor).Verify(
+			x => x.RecordFailure(It.IsAny<PathString>(), thrown), Times.Once);
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenServiceIsCancelled_DoesNotRecordFailureOnHealthMonitor()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new TaskCanceledException("Request aborted"));
+
+		await _host.GetTestClient().GetAsync("/");
+
+		Mock.Get(_cspHealthMonitor).Verify(
+			x => x.RecordFailure(It.IsAny<PathString>(), It.IsAny<Exception>()), Times.Never);
 	}
 
 	[Test]

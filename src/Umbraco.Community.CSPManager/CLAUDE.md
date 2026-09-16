@@ -3,11 +3,16 @@
 ## Architecture
 
 - **Controllers/**: API endpoints at `/csp/api/v1.0` with custom authorization
-- **Services/**: `ICspService` - core business logic, nonce generation, caching
+- **Services/**: `ICspService` - core business logic, nonce generation, caching; `ICspHealthMonitor` -
+  tracks the middleware's most recent header construction failure for the health check dashboard
 - **Middleware/**: `CspMiddleware` injects CSP headers via `Response.OnStarting()` callback
 - **Models/**: `CspDefinition` (NPoco entity), `CspDefinitionSource`, API DTOs
 - **Notifications/**: `CspSavedNotification`, `CspWritingNotification` for extensibility
 - **TagHelpers/**: `CspNonceTagHelper` for `<script csp-manager-add-nonce>` and `<style>` tags
+- **HealthChecks/**: `IHealthCheck` implementations in Umbraco's "Security" health check group - frontend
+  disabled, `'unsafe-inline'`/`'unsafe-eval'` in an enforced `script-src`, recent header construction
+  failures, `report-to` without a matching `Reporting-Endpoints` header, and the deprecated `report-uri`
+  directive. Discovered automatically by Umbraco's type scanning; no explicit registration needed.
 
 ## Key Patterns
 

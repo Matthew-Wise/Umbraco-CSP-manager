@@ -30,6 +30,7 @@ public static class UmbracoBuilderExtensions
 		builder.Services.Configure<CspManagerOptions>(builder.Config.GetSection(Constants.OptionsName));
 
 		builder.Services.AddTransient<ICspService, CspService>();
+		builder.Services.AddSingleton<ICspHealthMonitor, CspHealthMonitor>();
 
 		builder.Services.Configure<UmbracoPipelineOptions>(options =>
 		{
