@@ -9,16 +9,26 @@ on:
       - main
     paths:
       - 'src/uSync/**'
+      # uSync builds against the main package via project references, so a
+      # breaking change there breaks this build too.
+      - 'src/Umbraco.Community.CSPManager/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
+      - 'global.json'
+      - '.github/actions/**'
       - '.github/workflows/usync.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'src/uSync/**'
+      # uSync builds against the main package via project references, so a
+      # breaking change there breaks this build too.
+      - 'src/Umbraco.Community.CSPManager/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
+      - 'global.json'
+      - '.github/actions/**'
       - '.github/workflows/usync.yml'
 
 env:
@@ -32,7 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -57,10 +66,10 @@ jobs:
         working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
 
       - name: Build & Pack uSync
-        run: dotnet pack ${{ env.USYNC_PROJECT }} -c Release -p:Version=$BUILD_VERSION --output ${{ env.OUT_FOLDER }}
+        run: dotnet pack "$USYNC_PROJECT" -c Release -p:Version="$BUILD_VERSION" --output "$OUT_FOLDER"
 
       - name: Build & Pack uSync Complete
-        run: dotnet pack ${{ env.COMPLETE_PROJECT }} -c Release -p:Version=$BUILD_VERSION --output ${{ env.OUT_FOLDER }}
+        run: dotnet pack "$COMPLETE_PROJECT" -c Release -p:Version="$BUILD_VERSION" --output "$OUT_FOLDER"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

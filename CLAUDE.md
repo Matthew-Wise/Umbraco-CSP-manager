@@ -68,6 +68,15 @@ dotnet nuget add source ./<downloaded-folder> -n pr-test
 dotnet add package Umbraco.Community.CSPManager -v 0.0.0-ci.<run_number> --prerelease
 ```
 
+**Required `build` check:** `main` requires a status check named `build`. Every PR
+workflow is path-filtered, so each one names its job `build` and the filters are
+kept collectively exhaustive: `csp-manager.yml` (main package), `usync.yml` (uSync +
+main package sources), `docs-build.yml` (`docs/**` + the docs workflows) and
+`repo-hygiene.yml` (`.github/**`, root `*.md` and dotfiles, runs actionlint). A PR
+that matches none of them never reports `build` and sits pending forever, so when
+adding a new top-level path, add it to one of those filters. `claude-code-review.yml`
+skips bot, draft and fork PRs on purpose.
+
 **Dependency range:** the supporting packages declare `[18.0.0, 19.0.0)` for their
 internal CSP Manager dependencies, assembled in `src/Directory.Build.props` from
 `CspManagerDependencyFloor` (`18.0.0`) and `CspManagerDependencyCeiling` (`19.0.0`).

@@ -35,7 +35,6 @@ jobs:
   build:
     permissions:
       contents: read
-      pull-requests: write
 
     env:
       LogFileName: "test-results.trx"
@@ -70,7 +69,7 @@ jobs:
         working-directory: ./src/Umbraco.Community.CSPManager/Client
 
       - name: Build & Pack
-        run: dotnet pack $PROJECT -c Release -p:Version=$BUILD_VERSION --output ${{env.OUT_FOLDER}}
+        run: dotnet pack "$PROJECT" -c Release -p:Version="$BUILD_VERSION" --output "$OUT_FOLDER"
 
       - name: Run tests
         run: dotnet test ${{env.TESTPROJECT}} -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName" --collect:"XPlat Code Coverage"
