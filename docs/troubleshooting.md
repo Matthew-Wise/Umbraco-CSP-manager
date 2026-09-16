@@ -90,6 +90,7 @@ This tells you to add `https://cdn.example.com` as a source for the `script-src`
 - The policy is **disabled** — check the Enabled toggle in [Policy Settings](guide/policy-settings)
 - `DisableBackOfficeHeader` is `true` for the backoffice policy — check `appsettings.json`
 - Umbraco has not yet reached `RuntimeLevel.Run` (e.g., during installation or upgrade) — this is expected behaviour; the middleware waits for Umbraco to be fully running
+- Header construction threw an exception and `FailureBehavior` is set to the default `FailOpen` — check the logs for a `CspHeaderConstructionFailed` error. See [Configuration](features/configuration#failurebehavior) to make this fail closed with a `default-src 'self'` fallback instead.
 
 ---
 

@@ -71,6 +71,12 @@ internal static partial class Log
 		Message = "No CSP definition was returned for {Context}; no CSP header was applied")]
 	public static partial void CspDefinitionNotFound(ILogger logger, string context);
 
+	[LoggerMessage(
+		EventId = 10,
+		Level = LogLevel.Warning,
+		Message = "Applied fallback CSP policy '{FallbackPolicy}' for {Path} after header construction failed")]
+	public static partial void CspFailClosedFallbackApplied(ILogger logger, string fallbackPolicy, PathString path);
+
 	// ===========================================
 	// Service Events (100-199)
 	// ===========================================

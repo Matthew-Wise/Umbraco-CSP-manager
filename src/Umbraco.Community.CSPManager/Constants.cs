@@ -24,6 +24,12 @@ public static partial class Constants
 
 	public const string ReportOnlyHeaderName = HeaderName + "-Report-Only";
 
+	/// <summary>
+	/// The minimal safe policy applied when header construction throws and
+	/// <see cref="CspFailureBehavior.FailClosed"/> is configured.
+	/// </summary>
+	public const string FailClosedFallbackPolicy = $"{Directives.DefaultSource} 'self'";
+
 	public static class EntityTypes
 	{
 		public const string CspPolicy = "csp-policy";
