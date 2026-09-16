@@ -27,6 +27,12 @@ namespace Umbraco.Community.CSPManager.Middleware;
 /// The middleware only runs when Umbraco is in the <see cref="Umbraco.Cms.Core.RuntimeLevel.Run"/> state.
 /// It also respects the <see cref="CspManagerOptions.DisableBackOfficeHeader"/> configuration option.
 /// </para>
+/// <para>
+/// If header construction throws, the request is never broken - <see cref="CspManagerOptions.FailureBehavior"/>
+/// only controls what (if anything) is sent in place of the failed header: nothing
+/// (<see cref="CspFailureBehavior.FailOpen"/>, the default) or a minimal same-origin-only fallback
+/// policy (<see cref="CspFailureBehavior.FailClosed"/>).
+/// </para>
 /// </remarks>
 public class CspMiddleware
 {
@@ -143,8 +149,15 @@ public class CspMiddleware
 			catch (Exception ex)
 			{
 				// CSP header injection should never break the request.
-				// Log the error and continue without the CSP header.
+				// Log the error and continue - with or without a fallback header, depending on
+				// the configured FailureBehavior.
 				Log.CspHeaderConstructionFailed(_logger, context.Request.Path, ex);
+
+				if (_cspOptions.FailureBehavior == CspFailureBehavior.FailClosed)
+				{
+					context.Response.Headers.Append(Constants.HeaderName, Constants.FailClosedFallbackPolicy);
+					Log.CspFailClosedFallbackApplied(_logger, context.Request.Path, Constants.FailClosedFallbackPolicy);
+				}
 			}
 		});
 

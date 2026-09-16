@@ -467,6 +467,39 @@ public class CspMiddlewareTests
 	}
 
 	[Test]
+	public async Task CspMiddleware_WhenServiceThrowsAndFailureBehaviorIsFailClosed_AppliesFallbackPolicy()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		var logger = new Mock<ILogger<CspMiddleware>>();
+		logger.Setup(x => x.IsEnabled(LogLevel.Warning)).Returns(true);
+
+		using var host = BuildTestHost(extraServices: s =>
+		{
+			s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed);
+			s.AddSingleton(logger.Object);
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+			Assert.That(response.Headers.GetValues(Constants.HeaderName).First(), Is.EqualTo(Constants.FailClosedFallbackPolicy));
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
+		});
+
+		logger.Verify(x => x.Log(
+			LogLevel.Warning,
+			It.Is<EventId>(e => e.Name == "CspFailClosedFallbackApplied"),
+			It.IsAny<It.IsAnyType>(),
+			null,
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+	}
+
+	[Test]
 	public async Task CspMiddleware_WhenServiceIsCancelled_RequestCompletesWithoutCspHeader()
 	{
 		// Regression test for #130: a TaskCanceledException escaping the OnStarting callback
