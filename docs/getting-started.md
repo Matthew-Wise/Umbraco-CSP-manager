@@ -39,4 +39,5 @@ The package registers itself automatically via Umbraco's composer pattern — no
 - [Policy Management](guide/policy-management) — Learn how to add and manage CSP sources and directives
 - [Policy Settings](guide/policy-settings) — Configure report-only mode, reporting endpoints, and more
 - [Nonce Tag Helper](features/nonce-tag-helper) — Add nonces to your script and style tags
+- [Hash Tag Helper](features/hash-tag-helper) — Add cached hash sources for static script and style tags
 - [Configuration](features/configuration) — Application-level configuration options

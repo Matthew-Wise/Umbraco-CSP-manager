@@ -46,19 +46,17 @@ This keeps caching intact for the rest of the response while ensuring every visi
 
 If your inline scripts or styles are static (i.e. their content does not change per request), you can use a CSP hash instead of a nonce. A hash is computed from the exact content of the script or style block and added to the CSP header — no per-request value needed, so caching is not a problem.
 
-Example for an inline script:
+CSP Manager's [Hash Tag Helper](../features/hash-tag-helper) computes and caches this for you — add `csp-manager-add-hash="true"` to the tag and it takes care of the rest:
 
 ```html
-<script>doWhatever();</script>
+<script csp-manager-add-hash="true">doWhatever();</script>
 ```
-
-Compute the SHA-256 hash of the script content (excluding the tags), then add it as a source:
 
 ```
 Content-Security-Policy: script-src 'sha256-<base64-hash>'
 ```
 
-Hashes can be added to a CSP policy in CSP Manager as a source value, e.g. `'sha256-abc123...'`.
+You can also add a hash to a CSP policy manually as a static source value (e.g. `'sha256-abc123...'`) if you'd rather compute it yourself.
 
 {: .note }
 Hashes only work when the inline content is **identical on every request**. Any dynamic content (user data, timestamps, generated values) means the hash won't match and the script will be blocked. Use nonces for dynamic inline content and hashes for static inline content.

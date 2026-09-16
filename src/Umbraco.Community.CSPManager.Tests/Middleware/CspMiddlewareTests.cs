@@ -450,6 +450,155 @@ public class CspMiddlewareTests
 	}
 
 	[Test]
+	public async Task CspMiddleware_WithScriptHashesInContext_InjectsHashesIntoScriptSrc()
+	{
+		const string hash = "'sha256-testHashValue'";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.ScriptSource] }]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+
+		using var host = BuildTestHost(extraApp: app =>
+		{
+			app.Use(async (ctx, next) =>
+			{
+				ctx.Items[Constants.TagHelper.ContextKey] = new CspManagerContext { ScriptHashes = [hash] };
+				await next(ctx);
+			});
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Contain($"{Constants.Directives.ScriptSource} 'self' {hash}"));
+	}
+
+	// style-src-elem overrides style-src for <style> elements in browsers that support it.
+	[Test]
+	public async Task CspMiddleware_WithStyleSourceAndElementConfigured_InjectsHashIntoBoth()
+	{
+		const string hash = "'sha256-testHashValue'";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources =
+			[
+				new CspDefinitionSource
+				{
+					Source = "'self'",
+					Directives = [Constants.Directives.StyleSource, Constants.Directives.StyleSourceElement]
+				}
+			]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+
+		using var host = BuildTestHost(extraApp: app =>
+		{
+			app.Use(async (ctx, next) =>
+			{
+				ctx.Items[Constants.TagHelper.ContextKey] = new CspManagerContext { StyleHashes = [hash] };
+				await next(ctx);
+			});
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.Multiple(() =>
+		{
+			Assert.That(headerValue, Does.Contain($"{Constants.Directives.StyleSource} 'self' {hash}"));
+			Assert.That(headerValue, Does.Contain($"{Constants.Directives.StyleSourceElement} 'self' {hash}"));
+		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithMultipleScriptHashes_InjectsAllHashesSpaceSeparated()
+	{
+		const string hashOne = "'sha256-hashOne'";
+		const string hashTwo = "'sha256-hashTwo'";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.ScriptSource] }]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+
+		using var host = BuildTestHost(extraApp: app =>
+		{
+			app.Use(async (ctx, next) =>
+			{
+				ctx.Items[Constants.TagHelper.ContextKey] = new CspManagerContext { ScriptHashes = [hashOne, hashTwo] };
+				await next(ctx);
+			});
+		});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.Multiple(() =>
+		{
+			Assert.That(headerValue, Does.Contain(hashOne));
+			Assert.That(headerValue, Does.Contain(hashTwo));
+		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WithScriptHashesButNoScriptSrcDirective_LogsWarningAndOmitsHash()
+	{
+		const string hash = "'sha256-testHashValue'";
+		var definition = new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = true,
+			IsBackOffice = false,
+			UpgradeInsecureRequests = true,
+			Sources = []
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+
+		var logger = new Mock<ILogger<CspMiddleware>>();
+		logger.Setup(x => x.IsEnabled(LogLevel.Warning)).Returns(true);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.AddSingleton(logger.Object),
+			extraApp: app =>
+			{
+				app.Use(async (ctx, next) =>
+				{
+					ctx.Items[Constants.TagHelper.ContextKey] = new CspManagerContext { ScriptHashes = [hash] };
+					await next(ctx);
+				});
+			});
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		var headerValue = response.Headers.GetValues(Constants.HeaderName).First();
+		Assert.That(headerValue, Does.Not.Contain("sha256"));
+		logger.Verify(x => x.Log(
+			LogLevel.Warning,
+			It.Is<EventId>(e => e.Name == "CspHashDirectiveMissing"),
+			It.IsAny<It.IsAnyType>(),
+			null,
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+	}
+
+	[Test]
 	public async Task CspMiddleware_WhenServiceThrows_RequestCompletesWithoutCspHeader()
 	{
 		Mock.Get(_cspService)

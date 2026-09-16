@@ -7,7 +7,8 @@
 - **Middleware/**: `CspMiddleware` injects CSP headers via `Response.OnStarting()` callback
 - **Models/**: `CspDefinition` (NPoco entity), `CspDefinitionSource`, API DTOs
 - **Notifications/**: `CspSavedNotification`, `CspWritingNotification` for extensibility
-- **TagHelpers/**: `CspNonceTagHelper` for `<script csp-manager-add-nonce>` and `<style>` tags
+- **TagHelpers/**: `CspNonceTagHelper` for `<script csp-manager-add-nonce>` and `<style>` tags;
+  `CspHashTagHelper` for `<script csp-manager-add-hash>` and `<style>` tags with static content
 
 ## Key Patterns
 
@@ -30,6 +31,13 @@
   know the broader one, so both need it. A directive is never created just to hold a nonce (that would
   block every other source); if neither in a pair exists, `CspNonceDirectiveMissing` is logged.
   Inline event handlers/style attributes with `'unsafe-inline'` belong in `script-src-attr`/`style-src-attr`.
+- Hash-per-content, not per-request: `CspHashTagHelper` hashes a tag's exact static content via
+  `ICspService.AddCspHash`, which caches the `'sha256-...'` source in a process-wide
+  `ConcurrentDictionary` keyed by content, so identical content is hashed once regardless of which
+  template renders it or how many requests follow. Computed hashes accumulate per-request in
+  `CspManagerContext.ScriptHashes`/`StyleHashes` (read via the non-creating
+  `HttpContext.GetCspManagerContext()`, unlike the nonce's boolean marker items) and follow the
+  same directive-pairing and never-create-from-scratch rules as nonces.
 - Middleware never breaks requests on failure
 - Composer pattern: `CspManagerComposer` auto-registers via `IComposer`
 

@@ -1,4 +1,6 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NPoco.Expressions;
@@ -167,6 +169,43 @@ internal sealed class CspService : ICspService
 		cspManagerContext.Nonce = nonce;
 
 		return nonce;
+	}
+
+	// Keyed by the exact rendered content, not by call site: the content is what determines the
+	// hash, so two templates rendering the same static block share one cache entry, and the same
+	// template rendering different content (a bug, since hashes require static content) correctly
+	// gets separate entries instead of silently reusing a stale hash. Static and process-wide
+	// because there is nothing to invalidate - a given piece of static content always hashes the
+	// same way for the life of the process.
+	private static readonly ConcurrentDictionary<string, string> _cspHashCache = new(StringComparer.Ordinal);
+
+	public string AddCspHash(HttpContext context, CspHashTarget target, string content)
+	{
+		if (string.IsNullOrEmpty(content))
+		{
+			return string.Empty;
+		}
+
+		var cspManagerContext = context.GetOrCreateCspManagerContext();
+
+		if (cspManagerContext is null)
+		{
+			return string.Empty;
+		}
+
+		var hash = _cspHashCache.GetOrAdd(content, static c =>
+		{
+			var digest = SHA256.HashData(Encoding.UTF8.GetBytes(c));
+			return $"'sha256-{Convert.ToBase64String(digest)}'";
+		});
+
+		var hashes = target == CspHashTarget.Script
+			? cspManagerContext.ScriptHashes ??= new HashSet<string>(StringComparer.Ordinal)
+			: cspManagerContext.StyleHashes ??= new HashSet<string>(StringComparer.Ordinal);
+
+		hashes.Add(hash);
+
+		return hash;
 	}
 
 	public async Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken)

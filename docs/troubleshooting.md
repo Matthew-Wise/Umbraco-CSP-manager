@@ -38,6 +38,20 @@ If using a custom view imports file, ensure it is included in the view rendering
 
 ---
 
+## A hash is not appearing in the CSP header
+
+**Symptom**: A tag has `csp-manager-add-hash="true"` set, but the `'sha256-...'` source never shows up in `script-src` or `style-src`.
+
+**Common causes**:
+
+- The tag helper namespace is not registered — see the solution above.
+- Neither `script-src`/`script-src-elem` (or `style-src`/`style-src-elem`) is configured in the policy. Hashes only augment directives that already exist — a `CspHashDirectiveMissing` warning is logged in this case.
+- The tag has a `src` attribute. Hashes only apply to inline content; a `src`-loaded script needs a different mechanism (e.g. `'self'` or an explicit host source).
+
+See [Hash Tag Helper](features/hash-tag-helper) for details.
+
+---
+
 ## The backoffice is broken after enabling a strict CSP
 
 **Symptom**: After saving a CSP policy, the Umbraco backoffice stops functioning — JavaScript errors appear and the UI is unresponsive.

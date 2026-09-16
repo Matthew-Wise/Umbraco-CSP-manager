@@ -219,6 +219,91 @@ public class CspServiceTests : UmbracoIntegrationTest
 	}
 
 	[Test]
+	public void AddCspHash_WithStaticContent_ReturnsSameHashOnEveryCall()
+	{
+		var context1 = new DefaultHttpContext();
+		var context2 = new DefaultHttpContext();
+
+		var hash1 = _cspService.AddCspHash(context1, CspHashTarget.Script, "console.log('hi');");
+		var hash2 = _cspService.AddCspHash(context2, CspHashTarget.Script, "console.log('hi');");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(hash1, Is.Not.Null.And.Not.Empty);
+			Assert.That(hash1, Does.StartWith("'sha256-").And.EndWith("'"));
+			Assert.That(hash2, Is.EqualTo(hash1), "identical content must hash to the same cached value regardless of request");
+		});
+	}
+
+	[Test]
+	public void AddCspHash_DifferentContent_ReturnsDifferentHashes()
+	{
+		var context = new DefaultHttpContext();
+
+		var scriptHash = _cspService.AddCspHash(context, CspHashTarget.Script, "console.log('one');");
+		var otherHash = _cspService.AddCspHash(context, CspHashTarget.Script, "console.log('two');");
+
+		Assert.That(otherHash, Is.Not.EqualTo(scriptHash));
+	}
+
+	[Test]
+	public void AddCspHash_ScriptTarget_RegistersHashOnlyUnderScriptHashes()
+	{
+		var context = new DefaultHttpContext();
+
+		var hash = _cspService.AddCspHash(context, CspHashTarget.Script, "console.log('hi');");
+		var cspManagerContext = context.GetOrCreateCspManagerContext();
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(cspManagerContext.ScriptHashes, Is.Not.Null.And.Contains(hash));
+			Assert.That(cspManagerContext.StyleHashes, Is.Null);
+		});
+	}
+
+	[Test]
+	public void AddCspHash_StyleTarget_RegistersHashOnlyUnderStyleHashes()
+	{
+		var context = new DefaultHttpContext();
+
+		var hash = _cspService.AddCspHash(context, CspHashTarget.Style, ".alert { color: red; }");
+		var cspManagerContext = context.GetOrCreateCspManagerContext();
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(cspManagerContext.StyleHashes, Is.Not.Null.And.Contains(hash));
+			Assert.That(cspManagerContext.ScriptHashes, Is.Null);
+		});
+	}
+
+	[Test]
+	public void AddCspHash_CalledTwiceWithSameContentAndContext_DeduplicatesInScriptHashes()
+	{
+		var context = new DefaultHttpContext();
+
+		_cspService.AddCspHash(context, CspHashTarget.Script, "console.log('hi');");
+		_cspService.AddCspHash(context, CspHashTarget.Script, "console.log('hi');");
+
+		var cspManagerContext = context.GetOrCreateCspManagerContext();
+
+		Assert.That(cspManagerContext.ScriptHashes, Has.Count.EqualTo(1));
+	}
+
+	[Test]
+	public void AddCspHash_WithEmptyContent_ReturnsEmptyStringAndDoesNotRegister()
+	{
+		var context = new DefaultHttpContext();
+
+		var hash = _cspService.AddCspHash(context, CspHashTarget.Script, string.Empty);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(hash, Is.Empty);
+			Assert.That(context.Items.ContainsKey(Constants.TagHelper.ContextKey), Is.False);
+		});
+	}
+
+	[Test]
 	public async Task GetCachedCspDefinitionAsync_CachesResult()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);

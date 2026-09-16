@@ -227,6 +227,20 @@ public class CspMiddleware
 			}
 		}
 
+		var cspManagerContext = httpContext.GetCspManagerContext();
+
+		if (cspManagerContext?.ScriptHashes is { Count: > 0 } scriptHashes)
+		{
+			AddHashesToDirectives(csp, scriptHashes, definition.Id,
+				Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement);
+		}
+
+		if (cspManagerContext?.StyleHashes is { Count: > 0 } styleHashes)
+		{
+			AddHashesToDirectives(csp, styleHashes, definition.Id,
+				Constants.Directives.StyleSource, Constants.Directives.StyleSourceElement);
+		}
+
 		return csp;
 	}
 
@@ -259,6 +273,34 @@ public class CspMiddleware
 			// The nonce only augments directives the user has configured; adding
 			// script-src/style-src from scratch would block every other source.
 			Log.CspNonceDirectiveMissing(_logger, string.Join(", ", directives), definitionId);
+		}
+	}
+
+	// Same -elem pairing rationale as AddNonceToDirectives, and the same "only augment
+	// directives that already exist" rule - a hash is only useful alongside sources the user
+	// already configured, never as the sole content of a directive created from scratch.
+	private void AddHashesToDirectives(Dictionary<string, string> csp, IReadOnlyCollection<string> hashes, Guid definitionId, params string[] directives)
+	{
+		if (hashes.Count == 0)
+		{
+			return;
+		}
+
+		var joined = string.Join(' ', hashes);
+		var added = false;
+
+		foreach (var directive in directives)
+		{
+			if (csp.TryGetValue(directive, out var existingValue))
+			{
+				csp[directive] = $"{existingValue} {joined}";
+				added = true;
+			}
+		}
+
+		if (!added)
+		{
+			Log.CspHashDirectiveMissing(_logger, string.Join(", ", directives), definitionId);
 		}
 	}
 }

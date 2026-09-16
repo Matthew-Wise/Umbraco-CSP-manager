@@ -71,6 +71,12 @@ internal static partial class Log
 		Message = "No CSP definition was returned for {Context}; no CSP header was applied")]
 	public static partial void CspDefinitionNotFound(ILogger logger, string context);
 
+	[LoggerMessage(
+		EventId = 10,
+		Level = LogLevel.Warning,
+		Message = "A CSP hash was requested via tag helper but none of {Directives} are configured in definition {DefinitionId}; the hash was not added to the CSP header")]
+	public static partial void CspHashDirectiveMissing(ILogger logger, string directives, Guid definitionId);
+
 	// ===========================================
 	// Service Events (100-199)
 	// ===========================================

@@ -71,4 +71,25 @@ public interface ICspService
 	/// is used for both script-src and style-src directives.
 	/// </remarks>
 	string GetOrCreateCspNonce(HttpContext context);
+
+	/// <summary>
+	/// Computes (or retrieves from a process-wide cache) the CSP <c>'sha256-...'</c> source for
+	/// the given static inline content, and registers it against the current request so
+	/// <see cref="Umbraco.Community.CSPManager.Middleware.CspMiddleware"/> can add it to the matching CSP directive.
+	/// </summary>
+	/// <param name="context">The current HTTP context.</param>
+	/// <param name="target">Whether the content is a script or style block.</param>
+	/// <param name="content">The exact inline content that will be rendered to the browser.</param>
+	/// <returns>
+	/// The <c>'sha256-...'</c> CSP source value, including the surrounding quotes, or an empty
+	/// string if <paramref name="content"/> is empty or the context is unavailable.
+	/// </returns>
+	/// <remarks>
+	/// The hash is only valid if the rendered content is byte-for-byte identical on every
+	/// request, since the source is a hash of the exact bytes - use this for static content
+	/// only, never for content that includes per-request or per-user data. Computed hashes are
+	/// cached for the lifetime of the process, keyed by content, so repeated renders of the same
+	/// block only pay the hashing cost once.
+	/// </remarks>
+	string AddCspHash(HttpContext context, CspHashTarget target, string content);
 }
