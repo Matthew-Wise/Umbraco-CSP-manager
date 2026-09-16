@@ -493,10 +493,136 @@ public class CspMiddlewareTests
 
 		logger.Verify(x => x.Log(
 			LogLevel.Warning,
-			It.Is<EventId>(e => e.Name == "CspFailClosedFallbackApplied"),
+			It.Is<EventId>(e => e.Name == "CspFallbackPolicyApplied"),
 			It.IsAny<It.IsAnyType>(),
 			null,
 			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenConstructionFails_PublishesNotificationWithConfiguredFallback()
+	{
+		var thrown = new InvalidOperationException("Test exception");
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(thrown);
+
+		var published = false;
+		Exception publishedException = null;
+		string publishedPath = null;
+		string publishedFallback = null;
+		var publishedReportOnly = true;
+
+		// Read the notification inside the callback: the HttpContext is only valid while the
+		// request is still in flight.
+		Mock.Get(_eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspHeaderConstructionFailedNotification>(), It.IsAny<CancellationToken>()))
+			.Callback<INotification, CancellationToken>((n, _) =>
+			{
+				var notification = (CspHeaderConstructionFailedNotification)n;
+				published = true;
+				publishedException = notification.Exception;
+				publishedPath = notification.HttpContext.Request.Path.Value;
+				publishedFallback = notification.FallbackPolicy;
+				publishedReportOnly = notification.ReportOnly;
+			})
+			.Returns(Task.CompletedTask);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed));
+
+		await host.GetTestClient().GetAsync("/some/path");
+
+		Assert.That(published, Is.True, "the middleware publishes the notification when header construction throws");
+		Assert.Multiple(() =>
+		{
+			Assert.That(publishedException, Is.SameAs(thrown));
+			Assert.That(publishedPath, Is.EqualTo("/some/path"));
+			Assert.That(publishedFallback, Is.EqualTo(Constants.FailClosedFallbackPolicy),
+				"the notification is handed the fallback the configured FailureBehavior would apply");
+			Assert.That(publishedReportOnly, Is.False);
+		});
+	}
+
+	// A handler is the documented way to set a fallback policy manually, so it has to win over
+	// FailureBehavior in both directions: supplying a policy while fail-open, and clearing one
+	// while fail-closed.
+	[Test]
+	public async Task CspMiddleware_WhenNotificationHandlerSetsFallback_AppliesHandlerPolicy()
+	{
+		const string handlerPolicy = "default-src 'none';img-src 'self'";
+
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		Mock.Get(_eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspHeaderConstructionFailedNotification>(), It.IsAny<CancellationToken>()))
+			.Callback<INotification, CancellationToken>((n, _) =>
+			{
+				var notification = (CspHeaderConstructionFailedNotification)n;
+				notification.FallbackPolicy = handlerPolicy;
+				notification.ReportOnly = true;
+			})
+			.Returns(Task.CompletedTask);
+
+		// Left at the FailOpen default: the handler, not the configuration, decides here.
+		var response = await _host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.True);
+			Assert.That(response.Headers.GetValues(Constants.ReportOnlyHeaderName).First(), Is.EqualTo(handlerPolicy));
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenNotificationHandlerClearsFallback_SendsNoHeader()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		Mock.Get(_eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspHeaderConstructionFailedNotification>(), It.IsAny<CancellationToken>()))
+			.Callback<INotification, CancellationToken>((n, _) =>
+				((CspHeaderConstructionFailedNotification)n).FallbackPolicy = null)
+			.Returns(Task.CompletedTask);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed));
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
+		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenNotificationHandlerThrows_FallsBackToConfiguredBehavior()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		Mock.Get(_eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspHeaderConstructionFailedNotification>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Handler exception"));
+
+		using var host = BuildTestHost(
+			extraServices: s => s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed));
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.IsSuccessStatusCode, Is.True, "a throwing handler must not break the request");
+			Assert.That(response.Headers.GetValues(Constants.HeaderName).First(), Is.EqualTo(Constants.FailClosedFallbackPolicy));
+		});
 	}
 
 	[Test]

@@ -59,4 +59,6 @@ Controls what happens if CSP header construction throws, for example when a conf
 {: .warning }
 The `FailClosed` fallback is same-origin-only, so it can block cross-origin resources (CDN scripts, fonts, embeds, etc.) until the underlying construction error is fixed - similar to how a misconfigured policy can lock you out of the backoffice. If `FailClosed` breaks the backoffice, use `DisableBackOfficeHeader` as the emergency kill switch above.
 
+Both behaviors publish a `CspHeaderConstructionFailedNotification` before the fallback is written, so a handler can set the fallback policy itself for that request — see [Notification Events](../advanced/notification-events#cspheaderconstructionfailednotification).
+
 See [Troubleshooting](../troubleshooting) for more on diagnosing header construction failures.

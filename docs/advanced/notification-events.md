@@ -41,6 +41,41 @@ public class CustomCspWritingHandler : INotificationHandler<CspWritingNotificati
 }
 ```
 
+## CspHeaderConstructionFailedNotification
+
+Raised when building the CSP header for a request throws — for example when a source value is rejected as an invalid header value. Use this to set the fallback policy yourself, per request, instead of relying on the configured [`FailureBehavior`](../features/configuration#failurebehavior) alone.
+
+**Properties**:
+- `Exception` — the exception thrown while constructing the header (read-only)
+- `HttpContext` — the current HTTP context
+- `FallbackPolicy` — the policy sent in place of the failed header. Pre-populated from `FailureBehavior`: `null` for `FailOpen`, `default-src 'self'` for `FailClosed`. Set it to `null` to send no header at all
+- `ReportOnly` — send `FallbackPolicy` as a report-only header rather than an enforced one. Defaults to `false`
+
+```csharp
+using Umbraco.Cms.Core.Events;
+using Umbraco.Community.CSPManager.Notifications;
+
+public class CustomCspFallbackHandler : INotificationHandler<CspHeaderConstructionFailedNotification>
+{
+    public void Handle(CspHeaderConstructionFailedNotification notification)
+    {
+        // Keep the backoffice usable, lock the front end down to a known-good policy
+        if (notification.HttpContext.Request.Path.StartsWithSegments("/umbraco"))
+        {
+            notification.FallbackPolicy = null;
+            return;
+        }
+
+        notification.FallbackPolicy = "default-src 'self';img-src 'self' data:";
+
+        // AlertSecurityTeam(notification.Exception);
+    }
+}
+```
+
+{: .note }
+The handler has the final say — whatever it leaves in `FallbackPolicy` is what gets sent, whichever `FailureBehavior` is configured. If a handler throws, the failure is logged and the configured `FailureBehavior` fallback is applied instead; either way the request itself still completes.
+
 ## CspSavedNotification
 
 Raised when a CSP definition is saved through the backoffice. Use this for cache invalidation, logging, or integration with external systems.
@@ -100,6 +135,7 @@ public class MyComposer : IComposer
     {
         builder.AddNotificationHandler<CspWritingNotification, CustomCspWritingHandler>();
         builder.AddNotificationHandler<CspSavedNotification, CustomCspSavedHandler>();
+        builder.AddNotificationHandler<CspHeaderConstructionFailedNotification, CustomCspFallbackHandler>();
     }
 }
 ```
