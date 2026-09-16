@@ -1,0 +1,29 @@
+name: Repo Hygiene
+
+# `main` requires a status check named `build`. Every build workflow is
+# path-filtered, so a PR that only touches CI config or root metadata would
+# otherwise never report `build` and sit pending forever. This job covers
+# those files: it lints the workflows and reports `build` for them.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+      - '*.md'
+      - '.editorconfig'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'LICENSE*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Lint GitHub Actions workflows
+        uses: raven-actions/actionlint@v2
