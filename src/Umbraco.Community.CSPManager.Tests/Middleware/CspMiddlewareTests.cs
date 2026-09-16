@@ -616,11 +616,13 @@ public class CspMiddlewareTests
 		using var host = BuildTestHost(
 			extraServices: s => s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed));
 
+		// The test host has no endpoint, so the pipeline terminates in a 404 - what matters is
+		// that the handler's exception did not escape OnStarting and fault the response.
 		var response = await host.GetTestClient().GetAsync("/");
 
 		Assert.Multiple(() =>
 		{
-			Assert.That(response.IsSuccessStatusCode, Is.True, "a throwing handler must not break the request");
+			Assert.That((int)response.StatusCode, Is.LessThan(500), "a throwing handler must not break the request");
 			Assert.That(response.Headers.GetValues(Constants.HeaderName).First(), Is.EqualTo(Constants.FailClosedFallbackPolicy));
 		});
 	}
