@@ -45,7 +45,7 @@ Remember to set it back to `false` once you have fixed the policy. See [Troubles
 
 Controls what happens if CSP header construction throws, for example when a configured source value is rejected as an invalid header value. Header construction failures never break the request itself - this option only controls what (if anything) is sent in place of the failed header. Either way, the failure is logged as an error.
 
-- `FailOpen` (default): the request continues with no CSP header at all. This matches the package's original behavior - availability is prioritized over security, and the failure is only visible in the logs.
+- `FailOpen` (default): the request continues with no CSP header at all. Availability is prioritized over security, and the failure is only visible in the logs.
 - `FailClosed`: the request continues with a minimal fallback policy, `default-src 'self'`, instead of no header.
 
 ```json

@@ -6,7 +6,7 @@ public sealed class CspManagerOptions
 
 	/// <summary>
 	/// Controls what happens when CSP header construction throws. Defaults to
-	/// <see cref="CspFailureBehavior.FailOpen"/>, matching the package's original behavior.
+	/// <see cref="CspFailureBehavior.FailOpen"/>.
 	/// </summary>
 	public CspFailureBehavior FailureBehavior { get; set; } = CspFailureBehavior.FailOpen;
 }

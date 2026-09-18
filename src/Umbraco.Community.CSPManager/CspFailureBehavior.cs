@@ -8,8 +8,7 @@ public enum CspFailureBehavior
 {
 	/// <summary>
 	/// The request continues with no CSP header at all. Availability is prioritized over
-	/// security; the failure is only visible in the logs. This is the default, matching the
-	/// package's original behavior.
+	/// security; the failure is only visible in the logs. This is the default.
 	/// </summary>
 	FailOpen = 0,
 
