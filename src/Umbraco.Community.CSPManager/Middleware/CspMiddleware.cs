@@ -27,6 +27,14 @@ namespace Umbraco.Community.CSPManager.Middleware;
 /// The middleware only runs when Umbraco is in the <see cref="Umbraco.Cms.Core.RuntimeLevel.Run"/> state.
 /// It also respects the <see cref="CspManagerOptions.DisableBackOfficeHeader"/> configuration option.
 /// </para>
+/// <para>
+/// If header construction throws, the request is never broken - <see cref="CspManagerOptions.FailureBehavior"/>
+/// only controls what (if anything) is sent in place of the failed header: nothing
+/// (<see cref="CspFailureBehavior.FailOpen"/>, the default) or a minimal same-origin-only fallback
+/// policy (<see cref="CspFailureBehavior.FailClosed"/>). A
+/// <see cref="Notifications.CspHeaderConstructionFailedNotification"/> is published before that fallback
+/// is written, so handlers can supply a fallback policy of their own for the failed request.
+/// </para>
 /// </remarks>
 public class CspMiddleware
 {
@@ -143,12 +151,69 @@ public class CspMiddleware
 			catch (Exception ex)
 			{
 				// CSP header injection should never break the request.
-				// Log the error and continue without the CSP header.
+				// Log the error and continue - with or without a fallback header, depending on
+				// the configured FailureBehavior and any CspHeaderConstructionFailedNotification handler.
 				Log.CspHeaderConstructionFailed(_logger, context.Request.Path, ex);
+
+				await ApplyFallbackAsync(context, ex);
 			}
 		});
 
 		await _next(context);
+	}
+
+	/// <summary>
+	/// Applies the fallback policy for a failed header, after giving
+	/// <see cref="CspHeaderConstructionFailedNotification"/> handlers the chance to set their own.
+	/// </summary>
+	/// <remarks>
+	/// Nothing in here may throw: this runs from the <see cref="HttpResponse.OnStarting"/> callback,
+	/// where an exception would surface as an unhandled application exception and abort the connection.
+	/// </remarks>
+	private async Task ApplyFallbackAsync(HttpContext context, Exception ex)
+	{
+		var configuredPolicy = _cspOptions.FailureBehavior == CspFailureBehavior.FailClosed
+			? Constants.FailClosedFallbackPolicy
+			: null;
+
+		var fallbackPolicy = configuredPolicy;
+		var reportOnly = false;
+
+		try
+		{
+			var notification = new CspHeaderConstructionFailedNotification(ex, context, configuredPolicy);
+			await _eventAggregator.PublishAsync(notification);
+
+			fallbackPolicy = notification.FallbackPolicy;
+			reportOnly = notification.ReportOnly;
+		}
+		catch (Exception notificationEx)
+		{
+			// A handler that throws must not turn a failed header into a failed request;
+			// fall back to what FailureBehavior asked for.
+			Log.CspFallbackNotificationFailed(_logger, context.Request.Path, notificationEx);
+		}
+
+		if (string.IsNullOrWhiteSpace(fallbackPolicy))
+		{
+			return;
+		}
+
+		var headerName = reportOnly ? Constants.ReportOnlyHeaderName : Constants.HeaderName;
+
+		try
+		{
+			context.Response.Headers.Append(headerName, fallbackPolicy);
+		}
+		catch (Exception headerEx)
+		{
+			// The fallback itself is not a valid header value - there is nothing left to send,
+			// and the request still has to complete.
+			Log.CspFallbackPolicyFailed(_logger, context.Request.Path, headerEx);
+			return;
+		}
+
+		Log.CspFallbackPolicyApplied(_logger, context.Request.Path, fallbackPolicy, headerName);
 	}
 
 	private static string BuildCspHeader(Dictionary<string, string> csp)

@@ -6,7 +6,7 @@
 - **Services/**: `ICspService` - core business logic, nonce generation, caching
 - **Middleware/**: `CspMiddleware` injects CSP headers via `Response.OnStarting()` callback
 - **Models/**: `CspDefinition` (NPoco entity), `CspDefinitionSource`, API DTOs
-- **Notifications/**: `CspSavedNotification`, `CspWritingNotification` for extensibility
+- **Notifications/**: `CspSavedNotification`, `CspWritingNotification`, `CspHeaderConstructionFailedNotification` for extensibility
 - **TagHelpers/**: `CspNonceTagHelper` for `<script csp-manager-add-nonce>` and `<style>` tags
 
 ## Key Patterns
@@ -41,4 +41,7 @@
 ## Configuration
 
 - `CspManagerOptions.DisableBackOfficeHeader` - disable CSP on backoffice
+- `CspManagerOptions.FailureBehavior` - `FailOpen` (default, no header when construction throws) or
+  `FailClosed` (minimal `default-src 'self'` fallback). Either way the request completes, and
+  `CspHeaderConstructionFailedNotification` handlers can override the fallback per request.
 - All CSP directives defined in `Constants.cs`
