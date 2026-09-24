@@ -24,10 +24,10 @@
 	"devDependencies": {
 		"@hey-api/openapi-ts": "^0.99.0",
 		"@playwright/test": "^1.63.0",
-		"@types/node": "^26.5.1",
-		"@umbraco-cms/backoffice": "^18.1.1",
+		"@types/node": "^26.6.2",
+		"@umbraco-cms/backoffice": "^18.2.0",
 		"@umbraco/playwright-testhelpers": "^18.0.5",
-		"dotenv": "^17.2.3",
+		"dotenv": "^18.0.1",
 		"lit": "^3.3.3",
 		"typescript": "~7.0.2",
 		"vite": "^8.3.0",
