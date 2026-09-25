@@ -89,6 +89,15 @@ separate (no commas) because .NET's `-p:` parser splits property values on comma
 `release.yml` (environments `nuget-csp` / `nuget-usync` / `nuget-usync-complete`
 are unchanged).
 
+## Dependency Updates
+
+Maximise compatibility: only bump a dependency when it brings a benefit (security fix,
+bug fix or API we need). Versions in `src/Directory.Packages.props` and the clients'
+`@umbraco-cms/backoffice` become the floor consumers must run, so a routine bump
+(e.g. Umbraco `18.1.1` → `18.2.0`) needlessly raises the minimum. `.github/dependabot.yml`
+therefore disables NuGet/npm version-update PRs (`open-pull-requests-limit: 0`);
+Dependabot security updates still open PRs. GitHub Actions stay on, grouped monthly.
+
 ## Development Principles
 
 - Security by Design: all code should enhance security, never compromise it
