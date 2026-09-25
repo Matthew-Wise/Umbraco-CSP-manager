@@ -128,6 +128,42 @@ internal static class MiddlewareTestCases
 		}
 	}
 
+	// Which CSP definition a path is matched to. Shared by the middleware tests and the
+	// BackOfficePathMatcher unit tests so the two stay in step.
+	public static IEnumerable<TestCaseData> BackOfficeMatchingCases
+	{
+		get
+		{
+			// Backoffice: the shell, its deep links, and the backoffice APIs.
+			yield return Case("/umbraco", true);
+			yield return Case("/umbraco/", true);
+			yield return Case("/umbraco/login", true);
+			yield return Case("/umbraco/oauth_complete", true);
+			yield return Case("/umbraco/section/content/workspace/document/edit/1", true);
+			yield return Case("/UMBRACO/Section/content", true);
+			yield return Case("/umbraco/preview", true);
+			yield return Case("/umbraco/backoffice/x", true);
+			yield return Case("/umbraco/management/api/v1/document", true);
+			yield return Case("/umbraco/openapi/index.html", true);
+
+			// PluginController routes sit under /umbraco too, so they keep the backoffice policy.
+			yield return Case("/umbraco/MyPlugin/Ctrl/Action", true);
+
+			// Front end: Umbraco's public areas under /umbraco, and content URLs that merely start with "umbraco".
+			yield return Case("/umbraco/surface/Contact/Submit", false);
+			yield return Case("/umbraco/api/MyApi/Get", false);
+			yield return Case("/umbraco/delivery/api/v2/content", false);
+			yield return Case("/umbraco-partners", false);
+			yield return Case("/umbraco-partners/sub-page", false);
+			yield return Case("/umbracofoo", false);
+			yield return Case("/", false);
+			yield return Case("/about-us", false);
+
+			static TestCaseData Case(string path, bool isBackOffice) =>
+				new TestCaseData(path, isBackOffice).SetArgDisplayNames(path, isBackOffice ? "backoffice" : "frontend");
+		}
+	}
+
 	public static IEnumerable<TestCaseData> CspMiddlewareOnlyRunsWithRuntimeRunCases
 	{
 		get
