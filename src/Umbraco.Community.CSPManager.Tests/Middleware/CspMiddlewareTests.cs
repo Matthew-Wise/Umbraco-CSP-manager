@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -625,6 +626,115 @@ public class CspMiddlewareTests
 			Assert.That((int)response.StatusCode, Is.LessThan(500), "a throwing handler must not break the request");
 			Assert.That(response.Headers.GetValues(Constants.HeaderName).First(), Is.EqualTo(Constants.FailClosedFallbackPolicy));
 		});
+	}
+
+	// The backoffice needs more than a same-origin-only policy to render, and editors need it to fix
+	// the policy that failed, so FailClosed leaves backoffice requests without a fallback.
+	[Test]
+	public async Task CspMiddleware_WhenBackOfficeConstructionFailsAndFailureBehaviorIsFailClosed_SendsNoHeader()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		var publishedIsBackOffice = false;
+		string publishedFallback = "not published";
+
+		Mock.Get(_eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspHeaderConstructionFailedNotification>(), It.IsAny<CancellationToken>()))
+			.Callback<INotification, CancellationToken>((n, _) =>
+			{
+				var notification = (CspHeaderConstructionFailedNotification)n;
+				publishedIsBackOffice = notification.IsBackOfficeRequest;
+				publishedFallback = notification.FallbackPolicy;
+			})
+			.Returns(Task.CompletedTask);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed));
+
+		var response = await host.GetTestClient().GetAsync("/umbraco");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(publishedIsBackOffice, Is.True);
+			Assert.That(publishedFallback, Is.Null, "backoffice requests start from no fallback, even when fail-closed");
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
+		});
+	}
+
+	// A report-only definition is one that is still being trialled; replacing it with an enforced
+	// fallback would be stricter than anything the site chose to enforce.
+	[Test]
+	public async Task CspMiddleware_WhenReportOnlyDefinitionFailsAndFailureBehaviorIsFailClosed_AppliesFallbackAsReportOnly()
+	{
+		var definition = new CspDefinition
+		{
+			Enabled = true,
+			IsBackOffice = false,
+			ReportOnly = true,
+			Sources = [new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.DefaultSource] }]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(definition);
+
+		// Fail after the definition has loaded, so the failure path knows it was report-only.
+		Mock.Get(_eventAggregator)
+			.Setup(x => x.PublishAsync(It.IsAny<CspWritingNotification>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		using var host = BuildTestHost(
+			extraServices: s => s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed));
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.True);
+			Assert.That(response.Headers.GetValues(Constants.ReportOnlyHeaderName).First(), Is.EqualTo(Constants.FailClosedFallbackPolicy));
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+		});
+	}
+
+	[Test]
+	public async Task CspMiddleware_WhenFallbackHeaderCannotBeWritten_LogsAndCompletesRequest()
+	{
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new InvalidOperationException("Test exception"));
+
+		var logger = new Mock<ILogger<CspMiddleware>>();
+		logger.Setup(x => x.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
+
+		using var host = BuildTestHost(
+			extraServices: s =>
+			{
+				s.Configure<CspManagerOptions>(o => o.FailureBehavior = CspFailureBehavior.FailClosed);
+				s.AddSingleton(logger.Object);
+			},
+			extraApp: app => app.Use(async (ctx, next) =>
+			{
+				// Stand in for Kestrel rejecting the fallback as an invalid header value.
+				ctx.Features.Get<IHttpResponseFeature>()!.Headers = new HeaderDictionary { IsReadOnly = true };
+				await next(ctx);
+			}));
+
+		var response = await host.GetTestClient().GetAsync("/");
+
+		Assert.Multiple(() =>
+		{
+			Assert.That((int)response.StatusCode, Is.LessThan(500), "a fallback that cannot be written must not break the request");
+			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
+		});
+
+		logger.Verify(x => x.Log(
+			LogLevel.Error,
+			It.Is<EventId>(e => e.Name == "CspFallbackPolicyFailed"),
+			It.IsAny<It.IsAnyType>(),
+			It.IsAny<InvalidOperationException>(),
+			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
 	}
 
 	[Test]

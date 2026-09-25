@@ -42,6 +42,6 @@
 
 - `CspManagerOptions.DisableBackOfficeHeader` - disable CSP on backoffice
 - `CspManagerOptions.FailureBehavior` - `FailOpen` (default, no header when construction throws) or
-  `FailClosed` (minimal `default-src 'self'` fallback). Either way the request completes, and
+  `FailClosed` (minimal `default-src 'self'` fallback, frontend only; keeps the definition's report-only mode). Either way the request completes, and
   `CspHeaderConstructionFailedNotification` handlers can override the fallback per request.
 - All CSP directives defined in `Constants.cs`

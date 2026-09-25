@@ -13,9 +13,10 @@ public enum CspFailureBehavior
 	FailOpen = 0,
 
 	/// <summary>
-	/// The request continues with a minimal fallback policy (<c>default-src 'self'</c>) instead
+	/// Frontend requests continue with a minimal fallback policy (<c>default-src 'self'</c>) instead
 	/// of no header at all. Security is prioritized over availability - a misconfigured policy
 	/// that throws will still leave the site under a restrictive, same-origin-only policy.
+	/// Backoffice requests still fail open, so editors can reach the backoffice to fix the policy.
 	/// </summary>
 	FailClosed = 1,
 }

@@ -46,7 +46,9 @@ Remember to set it back to `false` once you have fixed the policy. See [Troubles
 Controls what happens if CSP header construction throws, for example when a configured source value is rejected as an invalid header value. Header construction failures never break the request itself - this option only controls what (if anything) is sent in place of the failed header. Either way, the failure is logged as an error.
 
 - `FailOpen` (default): the request continues with no CSP header at all. Availability is prioritized over security, and the failure is only visible in the logs.
-- `FailClosed`: the request continues with a minimal fallback policy, `default-src 'self'`, instead of no header.
+- `FailClosed`: frontend requests continue with a minimal fallback policy, `default-src 'self'`, instead of no header. Backoffice requests still fail open, so editors can get into the backoffice to fix the policy that failed.
+
+If the CSP definition loaded before the failure and is set to report-only, the fallback is sent as `Content-Security-Policy-Report-Only` too, so a policy you are only trialling is never replaced by an enforced one. If the definition could not be loaded at all (for example, a database error), the fallback is enforced.
 
 ```json
 {
@@ -57,7 +59,7 @@ Controls what happens if CSP header construction throws, for example when a conf
 ```
 
 {: .warning }
-The `FailClosed` fallback is same-origin-only, so it can block cross-origin resources (CDN scripts, fonts, embeds, etc.) until the underlying construction error is fixed - similar to how a misconfigured policy can lock you out of the backoffice. If `FailClosed` breaks the backoffice, use `DisableBackOfficeHeader` as the emergency kill switch above.
+The `FailClosed` fallback is same-origin-only, so it can block cross-origin resources on your site (CDN scripts, fonts, embeds, etc.) until the underlying construction error is fixed.
 
 Both behaviors publish a `CspHeaderConstructionFailedNotification` before the fallback is written, so a handler can set the fallback policy itself for that request — see [Notification Events](../advanced/notification-events#cspheaderconstructionfailednotification).
 

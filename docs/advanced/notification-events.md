@@ -47,9 +47,10 @@ Raised when building the CSP header for a request throws — for example when a 
 
 **Properties**:
 - `Exception` — the exception thrown while constructing the header (read-only)
-- `HttpContext` — the current HTTP context
-- `FallbackPolicy` — the policy sent in place of the failed header. Pre-populated from `FailureBehavior`: `null` for `FailOpen`, `default-src 'self'` for `FailClosed`. Set it to `null` to send no header at all
-- `ReportOnly` — send `FallbackPolicy` as a report-only header rather than an enforced one. Defaults to `false`
+- `HttpContext` — the current HTTP context (read-only)
+- `IsBackOfficeRequest` — whether the failed header was for a backoffice request (read-only)
+- `FallbackPolicy` — the policy sent in place of the failed header. Pre-populated from `FailureBehavior`: `null` for `FailOpen`, `default-src 'self'` for `FailClosed` on frontend requests. Backoffice requests always start from `null`. Set it to `null` to send no header at all
+- `ReportOnly` — send `FallbackPolicy` as a report-only header rather than an enforced one. Pre-populated from the CSP definition when it loaded before the failure; otherwise `false`
 
 ```csharp
 using Umbraco.Cms.Core.Events;
@@ -60,7 +61,7 @@ public class CustomCspFallbackHandler : INotificationHandler<CspHeaderConstructi
     public void Handle(CspHeaderConstructionFailedNotification notification)
     {
         // Keep the backoffice usable, lock the front end down to a known-good policy
-        if (notification.HttpContext.Request.Path.StartsWithSegments("/umbraco"))
+        if (notification.IsBackOfficeRequest)
         {
             notification.FallbackPolicy = null;
             return;
