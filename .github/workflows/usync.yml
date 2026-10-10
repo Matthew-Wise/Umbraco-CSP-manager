@@ -57,19 +57,18 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client/package-lock.json'
 
-      - name: Install uSync Complete client dependencies
-        run: npm ci
-        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
-
-      - name: Build uSync Complete client
-        run: npm run build
-        working-directory: ./src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
-
+      # No separate npm steps: the csproj builds the client, and packing from a clean
+      # checkout here is what catches a package shipped without it (as release.yml does).
       - name: Build & Pack uSync
         run: dotnet pack "$USYNC_PROJECT" -c Release -p:Version="$BUILD_VERSION" --output "$OUT_FOLDER"
 
       - name: Build & Pack uSync Complete
         run: dotnet pack "$COMPLETE_PROJECT" -c Release -p:Version="$BUILD_VERSION" --output "$OUT_FOLDER"
+
+      - name: Verify uSync Complete package contains the backoffice client
+        run: >-
+          unzip -l "${OUT_FOLDER}Umbraco.Community.CSPManager.uSync.Complete.$BUILD_VERSION.nupkg"
+          | grep -q 'staticwebassets/App_Plugins/uSyncCspComplete/umbraco-package.json'
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

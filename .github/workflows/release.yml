@@ -83,6 +83,14 @@ jobs:
         if: inputs.package == 'all' || inputs.package == 'csp-manager'
         run: dotnet pack "$MAIN_PROJECT" -c Release -p:Version=${{ inputs.version }} --output ./build-out/csp
 
+      - name: Verify CSP Manager package contains the backoffice client
+        if: inputs.package == 'all' || inputs.package == 'csp-manager'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: >-
+          unzip -l "./build-out/csp/Umbraco.Community.CSPManager.$VERSION.nupkg"
+          | grep -q 'staticwebassets/App_Plugins/UmbracoCommunityCSPManager/umbraco-package.json'
+
       # --- uSync (depends on main) ---
       - name: Register CSP Manager as a local feed
         if: inputs.package == 'all'
@@ -112,6 +120,14 @@ jobs:
           -p:CspManagerDependencyFloor=${{ steps.meta.outputs.floor }}
           -p:CspManagerDependencyCeiling=${{ steps.meta.outputs.ceiling }}
           --output ./build-out/complete
+
+      - name: Verify uSync Complete package contains the backoffice client
+        if: inputs.package == 'all' || inputs.package == 'usync-complete'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: >-
+          unzip -l "./build-out/complete/Umbraco.Community.CSPManager.uSync.Complete.$VERSION.nupkg"
+          | grep -q 'staticwebassets/App_Plugins/uSyncCspComplete/umbraco-package.json'
 
       - name: Upload CSP Manager package
         if: inputs.package == 'all' || inputs.package == 'csp-manager'

@@ -50,6 +50,9 @@
     <Exec Command="npm run build" WorkingDirectory="Client" />
     <ItemGroup>
       <_ClientAssetsBuildOutput Include="wwwroot\App_Plugins\**" />
+      <!-- The wwwroot glob is evaluated before this target runs, so on a clean checkout the freshly
+           built files must be added here or they are left out of the static web assets (and the package). -->
+      <Content Include="@(_ClientAssetsBuildOutput)" Exclude="@(Content)" />
     </ItemGroup>
     <WriteLinesToFile File="$(IntermediateOutputPath)client.txt" Lines="@(_ClientAssetsBuildOutput)" Overwrite="true" />
   </Target>

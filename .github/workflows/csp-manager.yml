@@ -60,16 +60,15 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './src/Umbraco.Community.CSPManager/Client/package-lock.json'
 
-      - name: Install client dependencies
-        run: npm ci
-        working-directory: ./src/Umbraco.Community.CSPManager/Client
-
-      - name: Build client
-        run: npm run build
-        working-directory: ./src/Umbraco.Community.CSPManager/Client
-
+      # No separate npm steps: the csproj builds the client, and packing from a clean
+      # checkout here is what catches a package shipped without it (as release.yml does).
       - name: Build & Pack
         run: dotnet pack "$PROJECT" -c Release -p:Version="$BUILD_VERSION" --output "$OUT_FOLDER"
+
+      - name: Verify package contains the backoffice client
+        run: >-
+          unzip -l "${OUT_FOLDER}Umbraco.Community.CSPManager.$BUILD_VERSION.nupkg"
+          | grep -q 'staticwebassets/App_Plugins/UmbracoCommunityCSPManager/umbraco-package.json'
 
       - name: Run tests
         run: dotnet test ${{env.TESTPROJECT}} -c Release --verbosity normal --filter "Category!=LongRunning" --logger "trx;LogFileName=$LogFileName" --collect:"XPlat Code Coverage"
