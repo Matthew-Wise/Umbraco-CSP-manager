@@ -36,3 +36,5 @@ Use this if a misconfigured backoffice CSP policy locks you out of the Umbraco a
 ```
 
 Remember to set it back to `false` once you have fixed the policy. See [Troubleshooting](../troubleshooting) for more on recovering from a broken backoffice CSP.
+
+Requests get the backoffice policy when their path is under `/umbraco`, except Umbraco's public areas there: `/umbraco/surface`, `/umbraco/api` and the Delivery API at `/umbraco/delivery/api`. Those, and content URLs that just start with "umbraco" (such as `/umbraco-partners`), get the frontend policy, so this option never removes their header. Plugin controller routes (`/umbraco/{area}/{controller}/{action}`) get the backoffice policy.

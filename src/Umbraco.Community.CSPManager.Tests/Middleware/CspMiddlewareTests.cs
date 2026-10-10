@@ -68,9 +68,6 @@ public class CspMiddlewareTests
 						services.AddSingleton(_ => runtime);
 						services.AddSingleton(_ => TestHelper.GetHostingEnvironment());
 						services.AddSingleton<IUmbracoVersion, UmbracoVersion>();
-						services.AddTransient(sp => new UmbracoRequestPaths(
-							TestHelper.GetHostingEnvironment(),
-							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
 						extraServices?.Invoke(services);
 						services.Configure<ImagingSettings>(options =>
 						{
@@ -217,6 +214,46 @@ public class CspMiddlewareTests
 			Assert.That(response.Headers.Contains(Constants.HeaderName), Is.False);
 			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
 		});
+	}
+
+	[Test]
+	[TestCaseSource(typeof(MiddlewareTestCases), nameof(MiddlewareTestCases.BackOfficeMatchingCases))]
+	public async Task CspMiddleware_RequestsDefinitionForMatchedContext(string path, bool expectedIsBackOffice)
+	{
+		await _host.GetTestClient().GetAsync(path);
+
+		Mock.Get(_cspService).Verify(
+			x => x.GetCachedCspDefinitionAsync(expectedIsBackOffice, It.IsAny<CancellationToken>()), Times.Once);
+		Mock.Get(_cspService).Verify(
+			x => x.GetCachedCspDefinitionAsync(!expectedIsBackOffice, It.IsAny<CancellationToken>()), Times.Never);
+	}
+
+	// DisableBackOfficeHeader removes the header entirely, so a front-end response wrongly matched
+	// as backoffice would be served with no CSP at all.
+	[TestCase("/umbraco/surface/Contact/Submit")]
+	[TestCase("/umbraco/api/MyApi/Get")]
+	[TestCase("/umbraco/delivery/api/v2/content")]
+	[TestCase("/umbraco-partners")]
+	[TestCase("/umbraco-partners/sub-page")]
+	public async Task CspMiddleware_WithDisableBackOfficeHeader_StillSetsHeaderForFrontEndRequest(string path)
+	{
+		var frontEnd = new CspDefinition
+		{
+			Enabled = true,
+			IsBackOffice = false,
+			Sources = [new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.DefaultSource] }]
+		};
+		Mock.Get(_cspService)
+			.Setup(x => x.GetCachedCspDefinitionAsync(false, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(frontEnd);
+
+		using var host = BuildTestHost(
+			extraServices: s => s.Configure<CspManagerOptions>(o => o.DisableBackOfficeHeader = true));
+
+		var response = await host.GetTestClient().GetAsync(path);
+
+		Assert.That(response.Headers.Contains(Constants.HeaderName), Is.True);
+		Assert.That(response.Headers.GetValues(Constants.HeaderName).First(), Is.EqualTo("default-src 'self'"));
 	}
 
 	[Test]
