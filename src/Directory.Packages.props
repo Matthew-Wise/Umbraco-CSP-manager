@@ -5,6 +5,7 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="SixLabors.ImageSharp" Version="4.1.2" />
     <PackageVersion Include="Umbraco.Cms" Version="18.1.1" />
     <PackageVersion Include="Umbraco.Cms.Api.Common" Version="18.1.1" />
     <PackageVersion Include="Umbraco.Cms.Api.Management" Version="18.1.1" />
