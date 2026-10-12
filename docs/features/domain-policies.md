@@ -27,7 +27,7 @@ Domain policies support the same settings (Report-Only, Reporting, Upgrade Insec
 
 Toggle the status switch under **Settings** to disable a domain policy without deleting it:
 
-- **Disabled:** Displays as `(inactive)` in the tree. Requests fall back to the Frontend policy or emit no header, depending on [`DisabledDomainPolicyBehavior`](configuration#disableddomainpolicybehavior).
+- **Disabled:** Displays as `(inactive)` in the tree. Requests fall back to the Frontend policy or emit no header, depending on [`DisabledNodePolicyBehavior`](configuration#disablednodepolicybehavior).
 - **Enabled:** The domain policy applies to requests on every hostname of the node.
 
 {: .warning }
@@ -47,7 +47,7 @@ The policy is resolved from the hostname Umbraco routed the request through (`Pu
 |---|---|
 | Backoffice (`/umbraco`) | Backoffice policy (domain policies never apply) |
 | Hostname of a node with an active domain policy | Domain policy |
-| Hostname of a node with a disabled domain policy | Frontend policy, or no header ([`DisabledDomainPolicyBehavior`](configuration#disableddomainpolicybehavior)) |
+| Hostname of a node with a disabled domain policy | Frontend policy, or no header ([`DisabledNodePolicyBehavior`](configuration#disablednodepolicybehavior)) |
 | Hostname of a node without a domain policy | Frontend policy |
 | Unrouted requests (static assets, custom APIs, unmatched hosts) | Frontend policy |
 
@@ -68,7 +68,7 @@ A policy only stops applying when its node has no hostname left, or the node is 
 ## Load balancing and uSync
 
 - **Cache invalidation:** Saving or deleting a domain policy clears the CSP cache across all load-balanced instances automatically.
-- **[uSync](../integrations/usync):** Domain policies export and import alongside global definitions. They reference the content node by key, which uSync keeps the same on every environment, so hostnames can differ per environment (for example a local hostname and the production one). Import the content and its Culture and Hostnames before the policies.
+- **[uSync](../integrations/usync):** Domain policies export to the `CspNodePolicies` folder in the uSync **Content** group, importing after their content node and hostnames. The exported file references the content node by key, which uSync keeps identical across environments.
 
 ## Extending
 

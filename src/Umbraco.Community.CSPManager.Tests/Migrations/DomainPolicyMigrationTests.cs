@@ -85,7 +85,7 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 			Assert.That(frontend.Id, Is.EqualTo(Constants.DefaultFrontEndId));
 			Assert.That(frontend.Enabled, Is.True);
 			Assert.That(frontend.ContentKey, Is.Null);
-			Assert.That(await cspService.GetAllDomainPoliciesAsync(CancellationToken.None), Is.Empty);
+			Assert.That(await cspService.GetAllNodePoliciesAsync(CancellationToken.None), Is.Empty);
 		});
 	}
 

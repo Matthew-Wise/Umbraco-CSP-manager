@@ -23,13 +23,13 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 	}
 
 	/// <summary>
-	/// Deletes a domain policy. Global definitions cannot be deleted.
+	/// Deletes a node policy. Global definitions cannot be deleted.
 	/// </summary>
 	public override async Task DeleteItemAsync(CspDefinition item)
 	{
 		if (item.ContentKey is null) return;
 
-		Log.DeleteDomainPolicy(logger, item.Id, ItemAlias(item));
+		Log.DeleteNodePolicy(logger, item.Id, ItemAlias(item));
 		await _cspService.DeleteCspDefinitionAsync(item.Id, CancellationToken.None);
 	}
 
@@ -46,9 +46,9 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			return await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
 		if (alias.Equals(CspItemNames.FrontEndAlias, StringComparison.InvariantCultureIgnoreCase))
 			return await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
-		if (alias.StartsWith(CspItemNames.DomainAliasPrefix, StringComparison.InvariantCultureIgnoreCase)
-			&& Guid.TryParse(alias[CspItemNames.DomainAliasPrefix.Length..], out var contentKey))
-			return await _cspService.GetCspDefinitionForDomainAsync(contentKey, CancellationToken.None);
+		if (alias.StartsWith(CspItemNames.NodeAliasPrefix, StringComparison.InvariantCultureIgnoreCase)
+			&& Guid.TryParse(alias[CspItemNames.NodeAliasPrefix.Length..], out var contentKey))
+			return await _cspService.GetCspDefinitionForNodeAsync(contentKey, CancellationToken.None);
 		return null;
 	}
 
@@ -78,7 +78,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		{
 			// The node may already have a policy created on this environment under another id.
 			// One policy per node, so update that one rather than fail on a second.
-			definition = await _cspService.GetCspDefinitionForDomainAsync(contentKey, CancellationToken.None);
+			definition = await _cspService.GetCspDefinitionForNodeAsync(contentKey, CancellationToken.None);
 		}
 
 		if (definition is null)
@@ -119,7 +119,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		}
 		else if (definition.ContentKey != (contentKey == Guid.Empty ? null : contentKey))
 		{
-			// An existing definition never changes between global and domain policy, or between nodes.
+			// An existing definition never changes between global and node policy, or between nodes.
 			return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, "The CSP definition's content node does not match the existing definition");
 		}
 
@@ -129,7 +129,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 		details.AddIfUpdated(nameof(definition.Enabled), definition.Enabled, enabled);
 		definition.Enabled = enabled;
 
-		// Domain policies are never backoffice policies, whatever the file says.
+		// Node policies are never backoffice policies, whatever the file says.
 		var isBackOffice = definition.ContentKey is null && infoNode.Element("IsBackOffice").ValueOrDefault(false);
 		details.AddIfUpdated(nameof(definition.IsBackOffice), definition.IsBackOffice, isBackOffice);
 		definition.IsBackOffice = isBackOffice;
@@ -228,7 +228,7 @@ public class CspDefinitionSerializer : SyncSerializerRoot<CspDefinition>, ISyncS
 			new XElement("UpgradeInsecureRequests", item.UpgradeInsecureRequests)
 		);
 
-		// Only domain policies carry the element, so the global definitions' files are unchanged.
+		// Only node policies carry the element, so the global definitions' files are unchanged.
 		if (item.ContentKey is { } contentKey)
 		{
 			info.Add(new XElement(nameof(CspDefinition.ContentKey), contentKey));

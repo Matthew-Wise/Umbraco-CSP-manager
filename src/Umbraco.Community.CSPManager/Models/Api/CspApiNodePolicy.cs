@@ -1,12 +1,12 @@
 namespace Umbraco.Community.CSPManager.Models.Api;
 
 /// <summary>
-/// Summary of a domain policy, as listed under the Frontend policy in the backoffice tree.
+/// Summary of a node policy, as listed under the Frontend policy in the backoffice tree.
 /// </summary>
-public sealed class CspApiDomainPolicy
+public sealed class CspApiNodePolicy
 {
 	/// <summary>
-	/// Gets or sets the id of the domain policy.
+	/// Gets or sets the id of the node policy.
 	/// </summary>
 	public Guid Id { get; set; }
 

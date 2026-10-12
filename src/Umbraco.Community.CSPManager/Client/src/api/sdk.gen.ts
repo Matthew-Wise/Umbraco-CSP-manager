@@ -10,17 +10,17 @@ import type {
 	GetDefinitionsByIdErrors,
 	GetDefinitionsByIdResponses,
 	GetDefinitionsData,
-	GetDefinitionsDomainPoliciesData,
-	GetDefinitionsDomainPoliciesErrors,
-	GetDefinitionsDomainPoliciesResponses,
 	GetDefinitionsErrors,
+	GetDefinitionsNodePoliciesData,
+	GetDefinitionsNodePoliciesErrors,
+	GetDefinitionsNodePoliciesResponses,
 	GetDefinitionsResponses,
 	GetDirectivesData,
 	GetDirectivesErrors,
 	GetDirectivesResponses,
-	GetDomainsData,
-	GetDomainsErrors,
-	GetDomainsResponses,
+	GetNodesData,
+	GetNodesErrors,
+	GetNodesResponses,
 	PostDefinitionsCreateFromFrontendData,
 	PostDefinitionsCreateFromFrontendErrors,
 	PostDefinitionsCreateFromFrontendResponses,
@@ -94,16 +94,16 @@ export class Definitions {
 		});
 	}
 
-	public static getDefinitionsDomainPolicies<ThrowOnError extends boolean = true>(
-		options?: Options<GetDefinitionsDomainPoliciesData, ThrowOnError>,
-	): RequestResult<GetDefinitionsDomainPoliciesResponses, GetDefinitionsDomainPoliciesErrors, ThrowOnError> {
+	public static getDefinitionsNodePolicies<ThrowOnError extends boolean = true>(
+		options?: Options<GetDefinitionsNodePoliciesData, ThrowOnError>,
+	): RequestResult<GetDefinitionsNodePoliciesResponses, GetDefinitionsNodePoliciesErrors, ThrowOnError> {
 		return (options?.client ?? client).get<
-			GetDefinitionsDomainPoliciesResponses,
-			GetDefinitionsDomainPoliciesErrors,
+			GetDefinitionsNodePoliciesResponses,
+			GetDefinitionsNodePoliciesErrors,
 			ThrowOnError
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
-			url: '/umbraco/csp/api/v1/Definitions/domain-policies',
+			url: '/umbraco/csp/api/v1/Definitions/node-policies',
 			...options,
 		});
 	}
@@ -135,13 +135,13 @@ export class Directives {
 	}
 }
 
-export class Domains {
-	public static getDomains<ThrowOnError extends boolean = true>(
-		options?: Options<GetDomainsData, ThrowOnError>,
-	): RequestResult<GetDomainsResponses, GetDomainsErrors, ThrowOnError> {
-		return (options?.client ?? client).get<GetDomainsResponses, GetDomainsErrors, ThrowOnError>({
+export class Nodes {
+	public static getNodes<ThrowOnError extends boolean = true>(
+		options?: Options<GetNodesData, ThrowOnError>,
+	): RequestResult<GetNodesResponses, GetNodesErrors, ThrowOnError> {
+		return (options?.client ?? client).get<GetNodesResponses, GetNodesErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
-			url: '/umbraco/csp/api/v1/Domains',
+			url: '/umbraco/csp/api/v1/Nodes',
 			...options,
 		});
 	}

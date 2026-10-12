@@ -9,6 +9,6 @@ internal static class CspCacheKeys
 	/// </summary>
 	public static string For(CspDefinition definition)
 		=> definition.ContentKey is { } contentKey
-			? Constants.DomainCacheKey(contentKey)
+			? Constants.NodeCacheKey(contentKey)
 			: definition.IsBackOffice ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
 }

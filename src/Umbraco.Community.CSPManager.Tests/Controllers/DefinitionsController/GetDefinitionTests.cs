@@ -48,7 +48,7 @@ internal class GetDefinitionTests : CspManagementApiTest<DefinitionsControllerTy
 			  "contentKey": null,
 			  "contentName": null,
 			  "domains": [],
-			  "disabledDomainPolicyBehavior": null,
+			  "disabledNodePolicyBehavior": null,
 			  "reportingDirective": null,
 			  "reportUri": null,
 			  "upgradeInsecureRequests": false,

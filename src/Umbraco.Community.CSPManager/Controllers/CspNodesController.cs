@@ -7,43 +7,43 @@ using Umbraco.Community.CSPManager.Services;
 namespace Umbraco.Community.CSPManager.Controllers;
 
 /// <summary>
-/// API controller listing the content nodes a domain policy can be created for: nodes with at
+/// API controller listing the content nodes a node policy can be created for: nodes with at
 /// least one hostname in Culture &amp; Hostnames.
 /// </summary>
 [ApiVersion("1.0")]
-[ApiExplorerSettings(GroupName = "Domains")]
-public class CspDomainsController : CspManagerControllerBase
+[ApiExplorerSettings(GroupName = "Nodes")]
+public class CspNodesController : CspManagerControllerBase
 {
 	private readonly ICspService _cspService;
 	private readonly CspDomainNodeLookup _domainNodes;
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="CspDomainsController"/> class.
+	/// Initializes a new instance of the <see cref="CspNodesController"/> class.
 	/// </summary>
 	/// <param name="cspService">The CSP service, to find which nodes have a policy.</param>
 	/// <param name="domainService">The Umbraco domain service.</param>
 	/// <param name="entityService">The Umbraco entity service, to resolve content node names.</param>
-	public CspDomainsController(ICspService cspService, IDomainService domainService, IEntityService entityService)
+	public CspNodesController(ICspService cspService, IDomainService domainService, IEntityService entityService)
 	{
 		_cspService = cspService;
 		_domainNodes = new CspDomainNodeLookup(domainService, entityService);
 	}
 
 	/// <summary>
-	/// Lists every content node with a hostname, with its hostnames and whether it has a domain policy.
+	/// Lists every content node with a hostname, with its hostnames and whether it has a node policy.
 	/// </summary>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>The nodes, ordered by the sort order of their first hostname.</returns>
-	[HttpGet("Domains")]
+	[HttpGet("Nodes")]
 	[MapToApiVersion("1.0")]
-	[ProducesResponseType(typeof(IEnumerable<CspDomainNodeInfo>), 200)]
-	public async Task<ActionResult<IEnumerable<CspDomainNodeInfo>>> GetDomains(CancellationToken cancellationToken = default)
+	[ProducesResponseType(typeof(IEnumerable<CspApiNodeInfo>), 200)]
+	public async Task<ActionResult<IEnumerable<CspApiNodeInfo>>> GetNodes(CancellationToken cancellationToken = default)
 	{
 		var nodes = await _domainNodes.GetDomainNodesAsync();
-		var policies = (await _cspService.GetAllDomainPoliciesAsync(cancellationToken))
+		var policies = (await _cspService.GetAllNodePoliciesAsync(cancellationToken))
 			.ToDictionary(p => p.ContentKey!.Value, p => p.Id);
 
-		var result = nodes.Select(n => new CspDomainNodeInfo
+		var result = nodes.Select(n => new CspApiNodeInfo
 		{
 			ContentKey = n.Key,
 			ContentName = n.Name,

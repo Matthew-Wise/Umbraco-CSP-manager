@@ -22,7 +22,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 {
 	private ICspService _cspService;
 	private IDomainService _domainService;
-	// Domain policies belong to content nodes: A and B have a hostname each, the third only a
+	// Node policies belong to content nodes: A and B have a hostname each, the third only a
 	// culture (wildcard) domain, which never qualifies.
 	private Guid _nodeA;
 	private Guid _nodeB;
@@ -90,7 +90,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	{
 		await SaveFrontendAsync("'self'", "cdn.example.com");
 
-		var created = await _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var created = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
 		var stored = await _cspService.GetCspDefinitionAsync(created.Id, CancellationToken.None);
 		Assert.That(stored, Is.Not.Null);
@@ -108,7 +108,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		Assert.That(frontend.Sources, Has.Count.EqualTo(2), "the frontend policy must be left untouched");
 	}
 
-	// Creating a domain policy means it should apply, so it starts on even when Frontend is off.
+	// Creating a node policy means it should apply, so it starts on even when Frontend is off.
 	[Test]
 	public async Task CreateCspDefinitionForDomainAsync_WhenTheFrontendPolicyIsDisabled_CreatesItEnabled()
 	{
@@ -119,7 +119,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 			Sources = [new CspDefinitionSource { DefinitionId = Constants.DefaultFrontEndId, Source = "'self'", Directives = [Constants.Directives.DefaultSource] }]
 		}, CancellationToken.None);
 
-		var created = await _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var created = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
 		var stored = await _cspService.GetCspDefinitionAsync(created.Id, CancellationToken.None);
 		Assert.Multiple(() =>
@@ -137,7 +137,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		var saved = await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA, sources: "'self'"), CancellationToken.None);
 
 		Assert.That(saved.Id, Is.Not.EqualTo(Guid.Empty));
-		var stored = await _cspService.GetCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var stored = await _cspService.GetCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 		Assert.That(stored?.Id, Is.EqualTo(saved.Id));
 		Assert.That(stored.Sources.Single().DefinitionId, Is.EqualTo(saved.Id));
 	}
@@ -184,13 +184,13 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 			Assert.That(stored.ContentKey, Is.Null);
 			Assert.That(stored.Sources.Select(s => s.Source), Does.Not.Contain("evil.example.com"));
 		});
-		Assert.That(await _cspService.GetCspDefinitionForDomainAsync(_nodeA, CancellationToken.None), Is.Null);
+		Assert.That(await _cspService.GetCspDefinitionForNodeAsync(_nodeA, CancellationToken.None), Is.Null);
 	}
 
 	[Test]
 	public async Task SaveCspDefinitionAsync_ExistingDomainPolicyWithAnotherContentKey_IsRejected()
 	{
-		var policy = await _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var policy = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
 		var ex = Assert.ThrowsAsync<CspDefinitionValidationException>(
 			() => _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeB, policy.Id), CancellationToken.None));
@@ -237,7 +237,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	public async Task SaveCspDefinitionAsync_SourcesPointingAtAnotherDefinition_AreSavedOnTheSavedDefinition()
 	{
 		await SaveFrontendAsync("'self'");
-		var policy = await _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var policy = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
 		policy.Sources.Add(new CspDefinitionSource
 		{
@@ -259,13 +259,13 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	[Test]
 	public async Task SaveCspDefinitionAsync_ExistingDomainPolicy_UpdatesIt()
 	{
-		var policy = await _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var policy = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 		policy.Enabled = false;
 		policy.Sources = [new CspDefinitionSource { Source = "only.example.com", Directives = [Constants.Directives.ImageSource] }];
 
 		await _cspService.SaveCspDefinitionAsync(policy, CancellationToken.None);
 
-		var stored = await _cspService.GetCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var stored = await _cspService.GetCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 		Assert.Multiple(() =>
 		{
 			Assert.That(stored.Enabled, Is.False);
@@ -278,7 +278,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	[Test]
 	public async Task GetCspDefinitionAsync_Global_ExcludesDomainPolicies()
 	{
-		// No frontend row is persisted, only a domain policy (also IsBackOffice = false).
+		// No frontend row is persisted, only a node policy (also IsBackOffice = false).
 		await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA, sources: "domain-only.example.com"), CancellationToken.None);
 
 		var frontend = await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
@@ -298,7 +298,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		var a = await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA, sources: ["a1", "a2"]), CancellationToken.None);
 		var b = await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeB, sources: ["b1"]), CancellationToken.None);
 
-		var policies = await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None);
+		var policies = await _cspService.GetAllNodePoliciesAsync(CancellationToken.None);
 
 		Assert.That(policies.Select(p => p.Id), Is.EquivalentTo(new[] { a.Id, b.Id }));
 		Assert.Multiple(() =>
@@ -356,11 +356,11 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	[Test]
 	public async Task OrphanedPolicy_IsKeptWhenItsNodeLosesItsHostnames()
 	{
-		var policy = await _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var policy = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
 		await CspTestDomainHelper.AssignDomainsAsync(_domainService, Textpage.Key, []);
 
-		var policies = await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None);
+		var policies = await _cspService.GetAllNodePoliciesAsync(CancellationToken.None);
 		Assert.That(policies.Select(p => p.Id), Does.Contain(policy.Id));
 		Assert.DoesNotThrowAsync(() => _cspService.DeleteCspDefinitionAsync(policy.Id, CancellationToken.None));
 	}
@@ -384,11 +384,11 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	{
 		await CspTestDomainHelper.AssignDomainsAsync(_domainService, Textpage.Key, ["a.example.com/nl", "a.example.com/fr", "a.example.de"]);
 
-		var policy = await _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var policy = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
 		Assert.That(policy.ContentKey, Is.EqualTo(_nodeA));
 		var ex = Assert.ThrowsAsync<CspDefinitionValidationException>(
-			() => _cspService.CreateCspDefinitionForDomainAsync(_nodeA, CancellationToken.None));
+			() => _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None));
 		Assert.That(ex!.MemberName, Is.EqualTo(nameof(CspDefinition.ContentKey)));
 	}
 
@@ -400,7 +400,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 
 		await CspTestDomainHelper.AssignDomainsAsync(_domainService, Textpage.Key, ["www.renamed.example.com"]);
 
-		var stored = await _cspService.GetCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var stored = await _cspService.GetCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 		Assert.That(stored?.Id, Is.EqualTo(policy.Id));
 		stored!.Sources = [new CspDefinitionSource { Source = "cdn.example.com", Directives = [Constants.Directives.DefaultSource] }];
 		Assert.DoesNotThrowAsync(() => _cspService.SaveCspDefinitionAsync(stored, CancellationToken.None));
@@ -422,9 +422,9 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		var service = CreateService(AppCaches.Create(NoAppCache.Instance));
 		await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA, sources: "'self'"), CancellationToken.None);
 
-		var first = await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var first = await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 		first.Sources.Add(new CspDefinitionSource { Source = "mutated-by-caller", Directives = [Constants.Directives.ConnectSource] });
-		var second = await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var second = await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
 		Assert.Multiple(() =>
 		{
@@ -440,14 +440,14 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		var caches = AppCaches.Create(NoAppCache.Instance);
 		var service = CreateService(caches);
 
-		Assert.That(await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None), Is.Null);
-		Assert.That(caches.RuntimeCache.Get(Constants.DomainCacheKey(_nodeA)), Is.Not.Null,
+		Assert.That(await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None), Is.Null);
+		Assert.That(caches.RuntimeCache.Get(Constants.NodeCacheKey(_nodeA)), Is.Not.Null,
 			"a domain without a policy should be cached too, or every request on it hits the database");
 
 		// Created through another cache instance, so `service`'s negative entry isn't invalidated.
 		await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA), CancellationToken.None);
 
-		Assert.That(await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None), Is.Null,
+		Assert.That(await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None), Is.Null,
 			"the second lookup should be served from the cache, not the database");
 	}
 
@@ -457,8 +457,8 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA, sources: "a.only"), CancellationToken.None);
 		var service = CreateService(AppCaches.Create(NoAppCache.Instance));
 
-		var a = await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
-		var b = await service.GetCachedCspDefinitionForDomainAsync(_nodeB, CancellationToken.None);
+		var a = await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
+		var b = await service.GetCachedCspDefinitionForNodeAsync(_nodeB, CancellationToken.None);
 		var frontend = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 
 		Assert.Multiple(() =>
@@ -492,18 +492,18 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 			.Returns(Task.CompletedTask);
 		var service = CreateService(caches, eventAggregator);
 
-		Assert.That(await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None), Is.Null);
+		Assert.That(await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None), Is.Null);
 
 		var created = await service.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA, sources: "v1"), CancellationToken.None);
-		var afterCreate = await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var afterCreate = await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 		Assert.That(afterCreate?.Sources.Single().Source, Is.EqualTo("v1"));
 
 		created.Sources = [new CspDefinitionSource { Source = "v2", Directives = [Constants.Directives.DefaultSource] }];
 		await service.SaveCspDefinitionAsync(created, CancellationToken.None);
-		var afterSave = await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None);
+		var afterSave = await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 		Assert.That(afterSave?.Sources.Single().Source, Is.EqualTo("v2"));
 
 		await service.DeleteCspDefinitionAsync(created.Id, CancellationToken.None);
-		Assert.That(await service.GetCachedCspDefinitionForDomainAsync(_nodeA, CancellationToken.None), Is.Null);
+		Assert.That(await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None), Is.Null);
 	}
 }

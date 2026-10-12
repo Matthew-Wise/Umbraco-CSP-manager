@@ -590,11 +590,11 @@ public class CspMiddlewareTests
 			It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Never);
 	}
 
-	// ── Domain policies ──────────────────────────────────────────────────────
+	// ── Node policies ──────────────────────────────────────────────────────
 
 	private const string RoutedDomainName = "a.example.com";
 
-	// The content node the routed domain is assigned to: domain policies are keyed on it.
+	// The content node the routed domain is assigned to: node policies are keyed on it.
 	private const int RoutedContentId = 1000;
 
 	private static readonly Guid RoutedContentKey = new("5b0c2c1e-8d1f-4b5e-9a37-0f6f3c2d4e81");
@@ -635,7 +635,7 @@ public class CspMiddlewareTests
 			.Setup(x => x.GetCachedCspDefinitionAsync(true, It.IsAny<CancellationToken>()))
 			.ReturnsAsync(backoffice);
 		Mock.Get(_cspService)
-			.Setup(x => x.GetCachedCspDefinitionForDomainAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
+			.Setup(x => x.GetCachedCspDefinitionForNodeAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
 			.ReturnsAsync(domainPolicy);
 	}
 
@@ -649,7 +649,7 @@ public class CspMiddlewareTests
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src domain.example.com"));
 		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never,
-			"the global policy isn't needed when the domain policy applies");
+			"the global policy isn't needed when the node policy applies");
 	}
 
 	[Test]
@@ -690,7 +690,7 @@ public class CspMiddlewareTests
 		var response = await _host.GetTestClient().GetAsync("/");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src global.example.com"));
-		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForDomainAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForNodeAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 	}
 
 	[Test]
@@ -712,7 +712,7 @@ public class CspMiddlewareTests
 		SetPolicies(GlobalFrontend(), domainPolicy);
 
 		using var host = BuildTestHost(extraServices: s =>
-			s.Configure<CspManagerOptions>(o => o.DisabledDomainPolicyBehavior = DisabledDomainPolicyBehavior.NoHeader));
+			s.Configure<CspManagerOptions>(o => o.DisabledNodePolicyBehavior = DisabledNodePolicyBehavior.NoHeader));
 
 		var response = await host.GetTestClient().GetAsync("/");
 
@@ -733,7 +733,7 @@ public class CspMiddlewareTests
 		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
 
 		using var host = BuildTestHost(extraServices: s =>
-			s.Configure<CspManagerOptions>(o => o.DisabledDomainPolicyBehavior = DisabledDomainPolicyBehavior.NoHeader));
+			s.Configure<CspManagerOptions>(o => o.DisabledNodePolicyBehavior = DisabledNodePolicyBehavior.NoHeader));
 
 		var response = await host.GetTestClient().GetAsync("/");
 
@@ -759,7 +759,7 @@ public class CspMiddlewareTests
 		var response = await _host.GetTestClient().GetAsync("/");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src global.example.com"));
-		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForDomainAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForNodeAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 	}
 
 	[Test]
@@ -778,7 +778,7 @@ public class CspMiddlewareTests
 		var response = await _host.GetTestClient().GetAsync("/umbraco");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src 'self'"));
-		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForDomainAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForNodeAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 	}
 
 	[Test]
@@ -787,7 +787,7 @@ public class CspMiddlewareTests
 		SetRoutedDomain();
 		SetPolicies(GlobalFrontend(), domainPolicy: null);
 		Mock.Get(_cspService)
-			.Setup(x => x.GetCachedCspDefinitionForDomainAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
+			.Setup(x => x.GetCachedCspDefinitionForNodeAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
 			.ThrowsAsync(new InvalidOperationException("database down"));
 
 		var response = await _host.GetTestClient().GetAsync("/");
@@ -802,7 +802,7 @@ public class CspMiddlewareTests
 		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
 		CancellationToken observedToken = new(canceled: true);
 		Mock.Get(_cspService)
-			.Setup(x => x.GetCachedCspDefinitionForDomainAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
+			.Setup(x => x.GetCachedCspDefinitionForNodeAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
 			.Callback<Guid, CancellationToken>((_, token) => observedToken = token)
 			.ReturnsAsync(DomainPolicy(enabled: true));
 

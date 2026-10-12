@@ -5,7 +5,7 @@ using Umbraco.Cms.Core.Services;
 namespace Umbraco.Community.CSPManager.Services;
 
 /// <summary>
-/// Reads the content nodes a domain policy can belong to: nodes with at least one hostname
+/// Reads the content nodes a node policy can belong to: nodes with at least one hostname
 /// (non-wildcard domain) in Culture and Hostnames, keyed by content key, with their hostnames.
 /// </summary>
 /// <remarks>
@@ -66,7 +66,7 @@ internal sealed class CspDomainNodeLookup
 	}
 
 	/// <summary>
-	/// Whether a domain policy can apply to the node: it exists, isn't in the recycle bin and has a hostname.
+	/// Whether a node policy can apply to the node: it exists, isn't in the recycle bin and has a hostname.
 	/// </summary>
 	public async Task<bool> HasHostnameAsync(Guid contentKey)
 		=> await GetDomainNodeAsync(contentKey) is not null;

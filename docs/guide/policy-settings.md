@@ -12,7 +12,7 @@ Each policy (frontend, backoffice, or domain-specific) has settings that control
 
 ## Enabled
 
-Toggles whether the CSP header is sent for this policy. When disabled on a global policy, no header is added. When disabled on a domain policy, requests fall back to the Frontend policy or send no header (see [DisabledDomainPolicyBehavior](../features/configuration#disableddomainpolicybehavior)).
+Toggles whether the CSP header is sent for this policy. When disabled on a global policy, no header is added. When disabled on a domain policy, requests fall back to the Frontend policy or send no header (see [DisabledNodePolicyBehavior](../features/configuration#disablednodepolicybehavior)).
 
 ## Report Only
 

@@ -38,7 +38,7 @@ internal static partial class Log
 	[LoggerMessage(
 		EventId = 5,
 		Level = LogLevel.Debug,
-		Message = "Returning CSP definitions: backoffice={BackofficeId} frontend={FrontendId} domain policies={DomainPolicyCount}")]
+		Message = "Returning CSP definitions: backoffice={BackofficeId} frontend={FrontendId} node policies={DomainPolicyCount}")]
 	public static partial void GetChildItemsResult(ILogger logger, Guid backofficeId, Guid frontendId, int domainPolicyCount);
 
 	[LoggerMessage(
@@ -90,8 +90,8 @@ internal static partial class Log
 	[LoggerMessage(
 		EventId = 26,
 		Level = LogLevel.Debug,
-		Message = "Deleting CSP domain policy {Key} ('{Alias}') on import")]
-	public static partial void DeleteDomainPolicy(ILogger logger, Guid key, string alias);
+		Message = "Deleting CSP node policy {Key} ('{Alias}') on import")]
+	public static partial void DeleteNodePolicy(ILogger logger, Guid key, string alias);
 
 	// ===========================================
 	// SyncItemManager Events (40-59)

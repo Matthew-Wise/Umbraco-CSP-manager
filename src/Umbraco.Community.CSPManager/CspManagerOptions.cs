@@ -12,15 +12,15 @@ public sealed class CspManagerOptions
 
 	/// <summary>
 	/// Gets or sets the policy behavior when a request matches a domain whose policy is disabled.
-	/// Defaults to <see cref="DisabledDomainPolicyBehavior.FallbackToGlobal"/>.
+	/// Defaults to <see cref="DisabledNodePolicyBehavior.FallbackToGlobal"/>.
 	/// </summary>
-	public DisabledDomainPolicyBehavior DisabledDomainPolicyBehavior { get; set; } = DisabledDomainPolicyBehavior.FallbackToGlobal;
+	public DisabledNodePolicyBehavior DisabledNodePolicyBehavior { get; set; } = DisabledNodePolicyBehavior.FallbackToGlobal;
 }
 
 /// <summary>
-/// Specifies the policy fallback behavior when a domain policy is disabled.
+/// Specifies the policy fallback behavior when a node policy is disabled.
 /// </summary>
-public enum DisabledDomainPolicyBehavior
+public enum DisabledNodePolicyBehavior
 {
 	/// <summary>
 	/// Applies the default global frontend policy.

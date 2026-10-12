@@ -42,7 +42,7 @@ public class CspServiceConcurrencyTests : UmbracoIntegrationTestWithContent
 		await CspTestMigrationHelper.RunMigrationsAsync(GetRequiredService<IMigrationPlanExecutor>(), ScopeProvider, GetRequiredService<IKeyValueService>());
 		_cspService = GetRequiredService<ICspService>();
 
-		// Domain policies belong to Textpage, which needs a hostname to qualify.
+		// Node policies belong to Textpage, which needs a hostname to qualify.
 		await CspTestDomainHelper.AssignDomainsAsync(GetRequiredService<IDomainService>(), Textpage.Key, ["race.example.com"]);
 	}
 
@@ -53,7 +53,7 @@ public class CspServiceConcurrencyTests : UmbracoIntegrationTestWithContent
 
 		// Half create through the "copy the frontend policy" path, half post a new policy directly.
 		var outcomes = await RunConcurrentlyAsync(i => i % 2 == 0
-			? _cspService.CreateCspDefinitionForDomainAsync(contentKey, CancellationToken.None)
+			? _cspService.CreateCspDefinitionForNodeAsync(contentKey, CancellationToken.None)
 			: _cspService.SaveCspDefinitionAsync(NewDomainPolicy(contentKey, $"writer{i}.example.com"), CancellationToken.None));
 
 		Assert.Multiple(async () =>
@@ -61,7 +61,7 @@ public class CspServiceConcurrencyTests : UmbracoIntegrationTestWithContent
 			Assert.That(outcomes.Count(o => o is null), Is.EqualTo(1), "exactly one writer creates the policy");
 			Assert.That(outcomes.Where(o => o is not null), Is.All.InstanceOf<CspDefinitionValidationException>(),
 				"every other writer is told the domain already has a policy");
-			Assert.That(await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None), Has.Count.EqualTo(1));
+			Assert.That(await _cspService.GetAllNodePoliciesAsync(CancellationToken.None), Has.Count.EqualTo(1));
 		});
 	}
 
@@ -94,7 +94,7 @@ public class CspServiceConcurrencyTests : UmbracoIntegrationTestWithContent
 	[Test]
 	public async Task ConcurrentSavesAndDeletesOfADomainPolicy_AllComplete()
 	{
-		var policy = await _cspService.CreateCspDefinitionForDomainAsync(Textpage.Key, CancellationToken.None);
+		var policy = await _cspService.CreateCspDefinitionForNodeAsync(Textpage.Key, CancellationToken.None);
 
 		var outcomes = await RunConcurrentlyAsync(async i =>
 		{
@@ -142,7 +142,7 @@ public class CspServiceConcurrencyTests : UmbracoIntegrationTestWithContent
 			new CspDefinition { ContentKey = Textpage.Key }, CancellationToken.None));
 
 		// The failed save rolled back, trigger insert included.
-		var policies = await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None);
+		var policies = await _cspService.GetAllNodePoliciesAsync(CancellationToken.None);
 		Assert.Multiple(() =>
 		{
 			Assert.That(ex!.MemberName, Is.EqualTo(nameof(CspDefinition.ContentKey)));

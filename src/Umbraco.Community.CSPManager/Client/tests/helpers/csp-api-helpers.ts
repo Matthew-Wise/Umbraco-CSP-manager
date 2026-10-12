@@ -1,5 +1,5 @@
 import type { APIRequestContext } from "@playwright/test";
-import type { CspApiDefinition, CspApiDomainPolicy, CspDomainNodeInfo } from "../../src/api";
+import type { CspApiDefinition, CspApiNodePolicy, CspApiNodeInfo } from "../../src/api";
 import { CspDefinitionBuilder } from "./csp-definition-builder";
 
 type PolicyKey = "frontend" | "backoffice";
@@ -57,8 +57,8 @@ export class CspApiHelpers {
 	}
 
 	/** Every content node with a hostname, with its hostnames and whether it has a domain policy. */
-	async getDomains(): Promise<CspDomainNodeInfo[]> {
-		const response = await this.request.get(this.url("Domains"), this.options);
+	async getNodes(): Promise<CspApiNodeInfo[]> {
+		const response = await this.request.get(this.url("Nodes"), this.options);
 		if (!response.ok()) {
 			throw new Error(`Failed to list domains: ${response.status()}`);
 		}
@@ -66,8 +66,8 @@ export class CspApiHelpers {
 	}
 
 	/** Every domain policy, including orphaned ones. */
-	async getDomainPolicies(): Promise<CspApiDomainPolicy[]> {
-		const response = await this.request.get(this.url("Definitions/domain-policies"), this.options);
+	async getDomainPolicies(): Promise<CspApiNodePolicy[]> {
+		const response = await this.request.get(this.url("Definitions/node-policies"), this.options);
 		if (!response.ok()) {
 			throw new Error(`Failed to list domain policies: ${response.status()}`);
 		}

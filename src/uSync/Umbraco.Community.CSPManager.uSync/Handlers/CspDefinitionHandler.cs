@@ -59,7 +59,7 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 	}
 
 	/// <summary>
-	/// Exports a delete marker when a domain policy is deleted to propagate removal on import.
+	/// Exports a delete marker when a node policy is deleted to propagate removal on import.
 	/// </summary>
 	public async Task HandleAsync(CspDeletedNotification notification, CancellationToken cancellationToken)
 	{
@@ -96,7 +96,7 @@ public class CspDefinitionHandler : SyncHandlerRoot<CspDefinition, CspDefinition
 
 		var backoffice = await _cspService.GetCspDefinitionAsync(true, CancellationToken.None);
 		var frontend = await _cspService.GetCspDefinitionAsync(false, CancellationToken.None);
-		var domainPolicies = await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None);
+		var domainPolicies = await _cspService.GetAllNodePoliciesAsync(CancellationToken.None);
 		Log.GetChildItemsResult(logger, backoffice.Id, frontend.Id, domainPolicies.Count);
 		return [backoffice, frontend, .. domainPolicies];
 	}

@@ -11,15 +11,15 @@ internal static class CspItemNames
 
 	public const string FrontEndAlias = "front-end";
 
-	public const string DomainAliasPrefix = "domain-";
+	public const string NodeAliasPrefix = "node-";
 
 	public static string Alias(CspDefinition definition)
 		=> definition.ContentKey is { } contentKey
-			? $"{DomainAliasPrefix}{contentKey:D}"
+			? $"{NodeAliasPrefix}{contentKey:D}"
 			: definition.IsBackOffice ? BackOfficeAlias : FrontEndAlias;
 
 	public static string Name(CspDefinition definition)
 		=> definition.ContentKey is { } contentKey
-			? $"Domain policy {contentKey:D}"
+			? $"Node policy {contentKey:D}"
 			: definition.IsBackOffice ? "Backoffice" : "Frontend";
 }

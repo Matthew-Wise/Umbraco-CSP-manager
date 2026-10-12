@@ -33,8 +33,8 @@ export class UmbCspDefinitionContext extends UmbContextBase {
 		return await this.#repository.getDomainPolicies();
 	}
 
-	async getDomains() {
-		return await this.#repository.getDomains();
+	async getNodes() {
+		return await this.#repository.getNodes();
 	}
 
 	async deleteDomainPolicy(id: string) {

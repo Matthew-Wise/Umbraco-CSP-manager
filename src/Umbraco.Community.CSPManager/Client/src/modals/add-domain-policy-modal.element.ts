@@ -1,6 +1,6 @@
 import { css, customElement, html, repeat, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import type { CspDomainNodeInfo } from '@/api';
+import type { CspApiNodeInfo } from '@/api';
 import { CspConstants } from '@/constants';
 import { UmbCspDefinitionRepository } from '../repository/csp-definition.repository.js';
 import type { AddDomainPolicyModalData, AddDomainPolicyModalValue } from './add-domain-policy-modal.token.js';
@@ -16,7 +16,7 @@ export class UmbCspAddDomainPolicyModalElement extends UmbModalBaseElement<
 	AddDomainPolicyModalValue
 > {
 	@state()
-	private _nodes: CspDomainNodeInfo[] = [];
+	private _nodes: CspApiNodeInfo[] = [];
 
 	@state()
 	private _loading = true;
@@ -30,7 +30,7 @@ export class UmbCspAddDomainPolicyModalElement extends UmbModalBaseElement<
 	}
 
 	async #loadDomains() {
-		const { data, error } = await new UmbCspDefinitionRepository(this).getDomains();
+		const { data, error } = await new UmbCspDefinitionRepository(this).getNodes();
 		this._loading = false;
 
 		if (error || !data) {
@@ -41,7 +41,7 @@ export class UmbCspAddDomainPolicyModalElement extends UmbModalBaseElement<
 		this._nodes = data.filter((node) => !node.hasCspPolicy);
 	}
 
-	#select(node: CspDomainNodeInfo) {
+	#select(node: CspApiNodeInfo) {
 		this.value = { contentKey: node.contentKey };
 		this.modalContext?.submit();
 	}
@@ -50,7 +50,7 @@ export class UmbCspAddDomainPolicyModalElement extends UmbModalBaseElement<
 		this.modalContext?.reject();
 	}
 
-	#detail(node: CspDomainNodeInfo) {
+	#detail(node: CspApiNodeInfo) {
 		return node.domains.map((domain) => domain.name).join(', ');
 	}
 

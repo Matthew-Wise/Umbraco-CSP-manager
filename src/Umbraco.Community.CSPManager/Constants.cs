@@ -21,15 +21,15 @@ public static partial class Constants
 	public const string BackOfficeCacheKey = "csp-backoffice";
 
 	/// <summary>
-	/// Prefix shared by every per-domain policy cache entry, so they can all be cleared at once
+	/// Prefix shared by every per-node policy cache entry, so they can all be cleared at once
 	/// (<c>IAppCache.ClearByKey</c> matches keys that start with the value it's given).
 	/// </summary>
-	public const string DomainCacheKeyPrefix = "csp-domain-";
+	public const string NodeCacheKeyPrefix = "csp-node-";
 
 	/// <summary>
-	/// Gets the cache key of the domain policy of the content node with the given key.
+	/// Gets the cache key of the node policy of the content node with the given key.
 	/// </summary>
-	public static string DomainCacheKey(Guid contentKey) => $"{DomainCacheKeyPrefix}{contentKey:D}";
+	public static string NodeCacheKey(Guid contentKey) => $"{NodeCacheKeyPrefix}{contentKey:D}";
 
 	public const string HeaderName = "Content-Security-Policy";
 

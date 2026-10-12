@@ -12,7 +12,7 @@ CSP Manager can be configured via `appsettings.json` under the `CspManager` key.
 {
   "CspManager": {
     "DisableBackOfficeHeader": false,
-    "DisabledDomainPolicyBehavior": "FallbackToGlobal"
+    "DisabledNodePolicyBehavior": "FallbackToGlobal"
   }
 }
 ```
@@ -38,7 +38,7 @@ Use this if a misconfigured backoffice CSP policy locks you out of the Umbraco a
 
 Remember to set it back to `false` once you have fixed the policy. See [Troubleshooting](../troubleshooting) for more on recovering from a broken backoffice CSP.
 
-### DisabledDomainPolicyBehavior
+### DisabledNodePolicyBehavior
 
 **Type**: `FallbackToGlobal` \| `NoHeader`
 **Default**: `FallbackToGlobal`
@@ -56,7 +56,7 @@ Controls which policy applies when a request matches a domain whose [domain poli
 ```json
 {
   "CspManager": {
-    "DisabledDomainPolicyBehavior": "NoHeader"
+    "DisabledNodePolicyBehavior": "NoHeader"
   }
 }
 ```

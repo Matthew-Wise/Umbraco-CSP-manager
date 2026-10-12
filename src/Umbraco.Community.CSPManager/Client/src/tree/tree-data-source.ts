@@ -3,7 +3,7 @@ import type { UmbTreeItemModel, UmbTreeRootItemsRequestArgs, UmbTreeChildrenOfRe
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UmbCspDefinitionRepository } from '@/repository/csp-definition.repository.js';
-import type { CspApiDomainPolicy } from '@/api';
+import type { CspApiNodePolicy } from '@/api';
 import { domainPolicyLabel } from '@/domain-policy-label';
 
 export interface CspTreeItemModel extends UmbTreeItemModel {
@@ -109,7 +109,7 @@ export class CspTreeDataSource {
 		};
 	}
 
-	#toTreeItem(policy: CspApiDomainPolicy): CspTreeItemModel {
+	#toTreeItem(policy: CspApiNodePolicy): CspTreeItemModel {
 		// The name is rendered by the tree item as text; never as HTML. A policy is labelled with its
 		// content node, since it covers every hostname (culture) of that node.
 		const label = domainPolicyLabel(this.#localize, policy);

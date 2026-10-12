@@ -42,7 +42,7 @@ The package registers a uSync serializer for `CspDefinition` objects. When uSync
 
 ## Domain policies
 
-[Domain policies](../features/domain-policies) sync alongside global policies. Each is exported as `CspDefinitions/domain-{contentKey}.config`, where `contentKey` is the key of the content node the policy belongs to. uSync keeps content keys the same on every environment, so a policy lines up even when the node's hostnames differ per environment. Deleting a domain policy writes a delete marker so the removal syncs on the next import.
+[Domain policies](../features/domain-policies) sync alongside global policies. Each is exported as `CspDefinitions/node-{contentKey}.config`, where `contentKey` is the key of the content node the policy belongs to. uSync keeps content keys the same on every environment, so a policy lines up even when the node's hostnames differ per environment. Deleting a domain policy writes a delete marker so the removal syncs on the next import.
 
 | Import condition | Outcome |
 |---|---|

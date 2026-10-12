@@ -8,7 +8,7 @@ Provides uSync serialization and sync support for CSP Manager configurations.
 - **Handlers/CspDefinitionHandler.cs** - `SyncHandlerRoot<CspDefinition>`, exports on `CspSavedNotification`,
   writes a delete marker on `CspDeletedNotification`
 - **Trackers/CspDefinitionTracker.cs** - Tracks changes to CSP properties for diff detection
-- **CspItemNames.cs** - aliases/names: `backoffice`, `front-end`, `domain-{contentKey}`
+- **CspItemNames.cs** - aliases/names: `backoffice`, `front-end`, `node-{contentKey}`
 - **Composer.cs** - Registers notification handlers
 
 ## Conditional References

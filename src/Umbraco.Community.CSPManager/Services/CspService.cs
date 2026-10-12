@@ -63,14 +63,14 @@ internal sealed class CspService : ICspService
 			cancellationToken);
 	}
 
-	public Task<CspDefinition?> GetCachedCspDefinitionForDomainAsync(Guid contentKey, CancellationToken cancellationToken)
+	public Task<CspDefinition?> GetCachedCspDefinitionForNodeAsync(Guid contentKey, CancellationToken cancellationToken)
 		// A domain without a policy caches a completed Task whose result is null. That Task is
 		// the negative-cache entry: frontend requests on domains without an override don't query
 		// the database every time. Creating a policy for the domain clears it like any save.
 		=> GetCachedAsync(
-			Constants.DomainCacheKey(contentKey),
+			Constants.NodeCacheKey(contentKey),
 			DomainContext(contentKey),
-			() => GetCspDefinitionForDomainAsync(contentKey, CancellationToken.None),
+			() => GetCspDefinitionForNodeAsync(contentKey, CancellationToken.None),
 			cancellationToken);
 
 	private async Task<CspDefinition?> GetCachedAsync(
@@ -158,7 +158,7 @@ internal sealed class CspService : ICspService
 		return definition;
 	}
 
-	public async Task<CspDefinition?> GetCspDefinitionForDomainAsync(Guid contentKey, CancellationToken cancellationToken)
+	public async Task<CspDefinition?> GetCspDefinitionForNodeAsync(Guid contentKey, CancellationToken cancellationToken)
 	{
 		Log.LoadingCspDefinitionFromDatabase(_logger, DomainContext(contentKey));
 
@@ -173,7 +173,7 @@ internal sealed class CspService : ICspService
 		return definition;
 	}
 
-	public async Task<List<CspDefinition>> GetAllDomainPoliciesAsync(CancellationToken cancellationToken)
+	public async Task<List<CspDefinition>> GetAllNodePoliciesAsync(CancellationToken cancellationToken)
 	{
 		using var scope = _scopeProvider.CreateScope();
 
@@ -203,7 +203,7 @@ internal sealed class CspService : ICspService
 		return definitions;
 	}
 
-	public async Task<CspDefinition> CreateCspDefinitionForDomainAsync(Guid contentKey, CancellationToken cancellationToken)
+	public async Task<CspDefinition> CreateCspDefinitionForNodeAsync(Guid contentKey, CancellationToken cancellationToken)
 	{
 		var frontend = await GetCspDefinitionAsync(isBackOfficeRequest: false, cancellationToken);
 		var id = Guid.NewGuid();
@@ -213,7 +213,7 @@ internal sealed class CspService : ICspService
 			Id = id,
 			ContentKey = contentKey,
 			IsBackOffice = false,
-			// Always on: creating a domain policy means it should apply. Copying the Frontend policy's
+			// Always on: creating a node policy means it should apply. Copying the Frontend policy's
 			// switch would silently create a policy that does nothing whenever Frontend is off.
 			Enabled = true,
 			ReportOnly = frontend.ReportOnly,
@@ -401,8 +401,8 @@ internal sealed class CspService : ICspService
 
 	// The service, not the caller, decides what a definition is: anything that can reach the save
 	// (the management API, uSync, custom code) must not be able to turn a global policy into a
-	// domain policy, change the content node of a domain policy, or create a second global policy.
-	// These rules need no database; returns whether the definition is a domain policy.
+	// node policy, change the content node of a node policy, or create a second global policy.
+	// These rules need no database; returns whether the definition is a node policy.
 	private static bool EnsureValidIdentityShape(CspDefinition definition)
 	{
 		if (IsGlobalId(definition.Id))
@@ -423,10 +423,10 @@ internal sealed class CspService : ICspService
 			throw new CspDefinitionValidationException(nameof(CspDefinition.Id), "Only the global frontend and backoffice policies can be saved without a content node.");
 		}
 
-		// Domain policies replace the frontend policy; the backoffice never uses them.
+		// Node policies replace the frontend policy; the backoffice never uses them.
 		definition.IsBackOffice = false;
 
-		// A new domain policy is posted without an id: the server assigns it, so a caller can't
+		// A new node policy is posted without an id: the server assigns it, so a caller can't
 		// pick an id that collides with (and so overwrites) another definition.
 		if (definition.Id == Guid.Empty)
 		{
@@ -454,7 +454,7 @@ internal sealed class CspService : ICspService
 		{
 			if (existing.ContentKey != contentKey)
 			{
-				throw new CspDefinitionValidationException(nameof(CspDefinition.ContentKey), "The content node of an existing domain policy cannot be changed.");
+				throw new CspDefinitionValidationException(nameof(CspDefinition.ContentKey), "The content node of an existing node policy cannot be changed.");
 			}
 
 			return;
@@ -521,7 +521,7 @@ internal sealed class CspService : ICspService
 
 	// Two queries instead of a single join because FetchOneToMany has no async variant.
 	// The extra round-trip is acceptable here since results are cached and cache misses are rare.
-	// ContentKey IS NULL keeps domain policies (IsBackOffice = false too) out of the global lookup.
+	// ContentKey IS NULL keeps node policies (IsBackOffice = false too) out of the global lookup.
 	private static Task<CspDefinition?> GetDefinitionAsync(IScope scope, bool isBackOffice, CancellationToken cancellationToken)
 	{
 		var definitionSql = scope.SqlContext.Sql()
@@ -554,7 +554,7 @@ internal sealed class CspService : ICspService
 
 	private static bool IsGlobalId(Guid id) => id == Constants.DefaultFrontEndId || id == Constants.DefaultBackofficeId;
 
-	private static string DomainContext(Guid contentKey) => $"Domain policy of node {contentKey:D}";
+	private static string DomainContext(Guid contentKey) => $"Node policy of node {contentKey:D}";
 
 	private static string GetContextName(CspDefinition definition)
 		=> definition.ContentKey is { } contentKey

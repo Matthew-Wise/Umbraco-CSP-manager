@@ -24,7 +24,7 @@ test.afterEach(async ({ page }) => {
 
 // Domain policies belong to content nodes with a hostname (seeded by uSync).
 async function contentKeyOf(api: CspApiHelpers, name: string): Promise<string> {
-	const node = (await api.getDomains()).find((n) => n.contentName === name);
+	const node = (await api.getNodes()).find((n) => n.contentName === name);
 	expect(node, `test site node ${name} with a hostname (seeded by uSync)`).toBeDefined();
 	return node!.contentKey;
 }
@@ -226,7 +226,7 @@ test.describe("Domain policies: create, edit, delete", () => {
 		const domainsReleased = new Promise<void>((resolve) => (releaseDomains = resolve));
 		let markDomainsRequested!: () => void;
 		const domainsRequested = new Promise<void>((resolve) => (markDomainsRequested = resolve));
-		await umbracoUi.page.route("**/umbraco/csp/api/v1/Domains", async (route) => {
+		await umbracoUi.page.route("**/umbraco/csp/api/v1/Nodes", async (route) => {
 			markDomainsRequested();
 			await domainsReleased;
 			await route.continue();
@@ -241,7 +241,7 @@ test.describe("Domain policies: create, edit, delete", () => {
 		await expect(csp.workspaceEditor()).toHaveAttribute("headline", `${CspConstants.policyTypes.frontend.label} CSP Management`);
 
 		// Let the draft's request finish now that the user has moved on.
-		const domainsResponse = umbracoUi.page.waitForResponse("**/umbraco/csp/api/v1/Domains");
+		const domainsResponse = umbracoUi.page.waitForResponse("**/umbraco/csp/api/v1/Nodes");
 		releaseDomains();
 		await domainsResponse;
 		// The response has arrived; give the page a moment to apply it before checking nothing changed.

@@ -129,7 +129,7 @@ export class UmbCspManagerWorkspaceContext
 
 		const [frontendResult, domainsResult] = await Promise.all([
 			this.#cspDefinitionContext.load(false),
-			this.#cspDefinitionContext.getDomains(),
+			this.#cspDefinitionContext.getNodes(),
 			this.loadDirectives(),
 		]);
 
@@ -164,7 +164,7 @@ export class UmbCspManagerWorkspaceContext
 			contentKey,
 			contentName: node.contentName,
 			domains: node.domains,
-			disabledDomainPolicyBehavior: null,
+			disabledNodePolicyBehavior: null,
 			sources: frontendResult.data.sources.map((s) => ({ ...s, definitionId: newId, directives: [...s.directives] })),
 		};
 

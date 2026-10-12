@@ -88,7 +88,7 @@ This tells you to add `https://cdn.example.com` as a source for the `script-src`
 **Possible causes**:
 
 - The policy is **disabled** — check the Enabled toggle in [Policy Settings](guide/policy-settings)
-- A domain policy is disabled and `DisabledDomainPolicyBehavior` is set to `NoHeader` — check [Configuration](features/configuration#disableddomainpolicybehavior)
+- A domain policy is disabled and `DisabledNodePolicyBehavior` is set to `NoHeader` — check [Configuration](features/configuration#disablednodepolicybehavior)
 - `DisableBackOfficeHeader` is `true` for the backoffice policy — check `appsettings.json`
 - Umbraco has not yet reached `RuntimeLevel.Run` (e.g., during installation or upgrade) — this is expected behaviour; the middleware waits for Umbraco to be fully running
 

@@ -1,7 +1,7 @@
 import { UmbRepositoryBase } from "@umbraco-cms/backoffice/repository";
 import type { UmbControllerHost } from "@umbraco-cms/backoffice/controller-api";
 import { tryExecute } from "@umbraco-cms/backoffice/resources";
-import { Definitions, Domains, type CspApiDefinition } from '../api';
+import { Definitions, Nodes, type CspApiDefinition } from '../api';
 
 export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	constructor(host: UmbControllerHost) {
@@ -50,7 +50,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	 * Get every domain policy (including orphaned ones whose content node lost its hostnames)
 	 */
 	async getDomainPolicies() {
-		const { data, error } = await tryExecute(this, Definitions.getDefinitionsDomainPolicies(), {
+		const { data, error } = await tryExecute(this, Definitions.getDefinitionsNodePolicies(), {
 			disableNotifications: false,
 		});
 
@@ -64,8 +64,8 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	/**
 	 * Get the content nodes (with their hostnames) a domain policy can be created for
 	 */
-	async getDomains() {
-		const { data, error } = await tryExecute(this, Domains.getDomains(), { disableNotifications: false });
+	async getNodes() {
+		const { data, error } = await tryExecute(this, Nodes.getNodes(), { disableNotifications: false });
 
 		if (data) {
 			return { data };

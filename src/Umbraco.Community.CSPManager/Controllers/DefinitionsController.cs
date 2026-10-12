@@ -13,7 +13,7 @@ namespace Umbraco.Community.CSPManager.Controllers;
 /// </summary>
 /// <remarks>
 /// This controller provides endpoints to retrieve and save CSP definitions for both
-/// frontend and backoffice contexts, and to create, list and delete domain policies. All
+/// frontend and backoffice contexts, and to create, list and delete node policies. All
 /// endpoints require authentication and authorization to the CSP Manager section.
 /// </remarks>
 [ApiVersion("1.0")]
@@ -43,16 +43,16 @@ public class DefinitionsController : CspManagerControllerBase
 	}
 
 	/// <summary>
-	/// Retrieves the global CSP definition for the specified context, or the domain policy of a content node.
+	/// Retrieves the global CSP definition for the specified context, or the node policy of a content node.
 	/// </summary>
 	/// <param name="isBackOffice">
 	/// <c>true</c> to retrieve the backoffice CSP policy; <c>false</c> for the frontend policy.
 	/// Defaults to <c>false</c>. Ignored when <paramref name="contentKey"/> is given.
 	/// </param>
-	/// <param name="contentKey">The key of a content node, to retrieve that node's domain policy.</param>
+	/// <param name="contentKey">The key of a content node, to retrieve that node's policy.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>The <see cref="CspApiDefinition"/> for the specified context.</returns>
-	/// <response code="404">A <paramref name="contentKey"/> was given and that node has no domain policy.</response>
+	/// <response code="404">A <paramref name="contentKey"/> was given and that node has no node policy.</response>
 	[HttpGet("Definitions")]
 	[MapToApiVersion("1.0")]
 	[ProducesResponseType(typeof(CspApiDefinition), 200)]
@@ -67,7 +67,7 @@ public class DefinitionsController : CspManagerControllerBase
 			return CspApiDefinition.FromCspDefinition(await _cspService.GetCspDefinitionAsync(isBackOffice, cancellationToken));
 		}
 
-		var definition = await _cspService.GetCspDefinitionForDomainAsync(contentKey.Value, cancellationToken);
+		var definition = await _cspService.GetCspDefinitionForNodeAsync(contentKey.Value, cancellationToken);
 		return definition is null ? NotFound() : await ToApiDefinitionAsync(definition);
 	}
 
@@ -89,16 +89,16 @@ public class DefinitionsController : CspManagerControllerBase
 	}
 
 	/// <summary>
-	/// Lists every domain policy, including orphaned ones whose node was deleted or lost its hostnames.
+	/// Lists every node policy, including orphaned ones whose node was deleted or lost its hostnames.
 	/// </summary>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-	/// <returns>The domain policies, ordered by content node name; orphans last.</returns>
-	[HttpGet("Definitions/domain-policies")]
+	/// <returns>The node policies, ordered by content node name; orphans last.</returns>
+	[HttpGet("Definitions/node-policies")]
 	[MapToApiVersion("1.0")]
-	[ProducesResponseType(typeof(IEnumerable<CspApiDomainPolicy>), 200)]
-	public async Task<ActionResult<IEnumerable<CspApiDomainPolicy>>> GetDomainPolicies(CancellationToken cancellationToken = default)
+	[ProducesResponseType(typeof(IEnumerable<CspApiNodePolicy>), 200)]
+	public async Task<ActionResult<IEnumerable<CspApiNodePolicy>>> GetNodePolicies(CancellationToken cancellationToken = default)
 	{
-		var policies = await _cspService.GetAllDomainPoliciesAsync(cancellationToken);
+		var policies = await _cspService.GetAllNodePoliciesAsync(cancellationToken);
 		var nodes = (await _domainNodes.GetDomainNodesAsync()).ToDictionary(n => n.Key);
 
 		// An orphan's node may still exist without a hostname (or in the recycle bin), so its name is
@@ -111,7 +111,7 @@ public class DefinitionsController : CspManagerControllerBase
 			{
 				var contentKey = p.ContentKey!.Value;
 				var node = nodes.GetValueOrDefault(contentKey);
-				return new CspApiDomainPolicy
+				return new CspApiNodePolicy
 				{
 					Id = p.Id,
 					ContentKey = contentKey,
@@ -137,11 +137,11 @@ public class DefinitionsController : CspManagerControllerBase
 	/// or a validation problem details object if the model state is invalid.
 	/// </returns>
 	/// <remarks>
-	/// Saves global or domain policies. Posting <see cref="Guid.Empty"/> with a content key creates a new policy with a server-assigned ID.
+	/// Saves global or node policies. Posting <see cref="Guid.Empty"/> with a content key creates a new policy with a server-assigned ID.
 	/// </remarks>
 	/// <response code="200">The definition was saved successfully.</response>
 	/// <response code="400">The definition failed validation (e.g., duplicate sources, invalid ID, changed content node).</response>
-	/// <response code="404">The definition is a domain policy that doesn't exist.</response>
+	/// <response code="404">The definition is a node policy that doesn't exist.</response>
 	[HttpPost("Definitions/save")]
 	[MapToApiVersion("1.0")]
 	[ProducesResponseType(typeof(CspApiDefinition), 200)]
@@ -154,7 +154,7 @@ public class DefinitionsController : CspManagerControllerBase
 			return BadRequest(new ValidationProblemDetails(ModelState));
 		}
 
-		// A domain policy is created by posting Guid.Empty; any other id must already exist, so a
+		// A node policy is created by posting Guid.Empty; any other id must already exist, so a
 		// caller can't create a policy under an id of its choosing.
 		if (definition.ContentKey is not null
 			&& definition.Id != Guid.Empty
@@ -175,13 +175,13 @@ public class DefinitionsController : CspManagerControllerBase
 	}
 
 	/// <summary>
-	/// Creates a domain policy for a content node as an enabled copy of the global frontend policy.
+	/// Creates a node policy for a content node as an enabled copy of the global frontend policy.
 	/// </summary>
-	/// <param name="contentKey">The key of a content node with a hostname (non-wildcard domain) that has no domain policy yet.</param>
+	/// <param name="contentKey">The key of a content node with a hostname (non-wildcard domain) that has no node policy yet.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-	/// <returns>The new domain policy.</returns>
-	/// <response code="200">The domain policy was created.</response>
-	/// <response code="400">The node doesn't exist, has no hostname, or already has a domain policy.</response>
+	/// <returns>The new node policy.</returns>
+	/// <response code="200">The node policy was created.</response>
+	/// <response code="400">The node doesn't exist, has no hostname, or already has a node policy.</response>
 	[HttpPost("Definitions/create-from-frontend")]
 	[MapToApiVersion("1.0")]
 	[ProducesResponseType(typeof(CspApiDefinition), 200)]
@@ -190,7 +190,7 @@ public class DefinitionsController : CspManagerControllerBase
 	{
 		try
 		{
-			var created = await _cspService.CreateCspDefinitionForDomainAsync(contentKey, cancellationToken);
+			var created = await _cspService.CreateCspDefinitionForNodeAsync(contentKey, cancellationToken);
 			return Ok(await ToApiDefinitionAsync(created));
 		}
 		catch (CspDefinitionValidationException ex)
@@ -200,11 +200,11 @@ public class DefinitionsController : CspManagerControllerBase
 	}
 
 	/// <summary>
-	/// Deletes a domain policy. The global frontend and backoffice policies cannot be deleted.
+	/// Deletes a node policy. The global frontend and backoffice policies cannot be deleted.
 	/// </summary>
-	/// <param name="id">The id of the domain policy.</param>
+	/// <param name="id">The id of the node policy.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-	/// <response code="200">The domain policy was deleted.</response>
+	/// <response code="200">The node policy was deleted.</response>
 	/// <response code="400">The id is one of the global policies.</response>
 	/// <response code="404">There is no definition with that id.</response>
 	[HttpDelete("Definitions/{id:guid}")]
@@ -243,7 +243,7 @@ public class DefinitionsController : CspManagerControllerBase
 			definition,
 			node?.Name ?? _domainNodes.GetContentNames([contentKey]).GetValueOrDefault(contentKey),
 			node?.Domains.Select(d => new CspApiDomainName { Name = d.Name, Culture = d.Culture }),
-			_options.CurrentValue.DisabledDomainPolicyBehavior);
+			_options.CurrentValue.DisabledNodePolicyBehavior);
 	}
 
 	private BadRequestObjectResult CspValidationProblem(CspDefinitionValidationException ex)

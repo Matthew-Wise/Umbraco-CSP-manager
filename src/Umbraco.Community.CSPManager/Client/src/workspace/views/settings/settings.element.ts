@@ -64,13 +64,13 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 
 	private get _disabledMeansNoHeader(): boolean {
 		return (
-			this._workspaceState.definition?.disabledDomainPolicyBehavior ===
+			this._workspaceState.definition?.disabledNodePolicyBehavior ===
 			CspConstants.domainPolicy.disabledBehavior.noHeader
 		);
 	}
 
 	// A domain policy is a switch between its own policy and the Frontend one (or, when the server is
-	// configured with DisabledDomainPolicyBehavior NoHeader, no header). Text bindings only: the
+	// configured with DisabledNodePolicyBehavior NoHeader, no header). Text bindings only: the
 	// domain name is user content.
 	private _renderDomainStatusSummary(definition: CspApiDefinition) {
 		const domain = this._scopeLabel();

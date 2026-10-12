@@ -74,19 +74,19 @@ internal static partial class Log
 	[LoggerMessage(
 		EventId = 10,
 		Level = LogLevel.Debug,
-		Message = "Domain policy {DefinitionId} applies to {Path} (content node {ContentKey})")]
+		Message = "Node policy {DefinitionId} applies to {Path} (content node {ContentKey})")]
 	public static partial void CspDomainPolicyApplied(ILogger logger, Guid definitionId, Guid contentKey, PathString path);
 
 	[LoggerMessage(
 		EventId = 11,
 		Level = LogLevel.Debug,
-		Message = "Domain policy {DefinitionId} is disabled; {Path} uses the global frontend policy instead")]
+		Message = "Node policy {DefinitionId} is disabled; {Path} uses the global frontend policy instead")]
 	public static partial void CspDomainPolicyDisabledFallback(ILogger logger, Guid definitionId, PathString path);
 
 	[LoggerMessage(
 		EventId = 12,
 		Level = LogLevel.Error,
-		Message = "Failed to resolve the domain policy for {Path}; using the global frontend policy instead")]
+		Message = "Failed to resolve the node policy for {Path}; using the global frontend policy instead")]
 	public static partial void CspDomainPolicyLookupFailed(ILogger logger, PathString path, Exception ex);
 
 	[LoggerMessage(

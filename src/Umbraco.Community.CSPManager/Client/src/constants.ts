@@ -42,7 +42,7 @@ export const CspConstants = {
 		addModalAlias: `${packageAlias}.Modal.AddDomainPolicy`,
 		/** Id a new (unsaved) domain policy is posted with; the server assigns the real one. */
 		newId: '00000000-0000-0000-0000-000000000000',
-		/** DisabledDomainPolicyBehavior values, as serialized by the API. */
+		/** DisabledNodePolicyBehavior values, as serialized by the API. */
 		disabledBehavior: {
 			fallbackToGlobal: 0,
 			noHeader: 1,

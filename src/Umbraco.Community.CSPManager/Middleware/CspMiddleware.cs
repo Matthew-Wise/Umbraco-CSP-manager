@@ -32,9 +32,9 @@ namespace Umbraco.Community.CSPManager.Middleware;
 /// <para>
 /// A frontend request that Umbraco routed through a hostname (Culture &amp; Hostnames) gets the domain
 /// policy of the content node that hostname is assigned to, if it has one, instead of the global
-/// frontend policy. Every hostname of a node (e.g. one per culture) shares that policy. A disabled domain policy follows
-/// <see cref="CspManagerOptions.DisabledDomainPolicyBehavior"/>. Backoffice requests never use
-/// domain policies.
+/// frontend policy. Every hostname of a node (e.g. one per culture) shares that policy. A disabled node policy follows
+/// <see cref="CspManagerOptions.DisabledNodePolicyBehavior"/>. Backoffice requests never use
+/// node policies.
 /// </para>
 /// </remarks>
 public class CspMiddleware
@@ -171,8 +171,8 @@ public class CspMiddleware
 		await _next(context);
 	}
 
-	// Returns the domain policy to apply, or null to use the global frontend policy. A disabled
-	// domain policy is returned (so no header is sent) only when configured with NoHeader.
+	// Returns the node policy to apply, or null to use the global frontend policy. A disabled
+	// node policy is returned (so no header is sent) only when configured with NoHeader.
 	private async Task<CspDefinition?> GetDomainDefinitionAsync(HttpContext context)
 	{
 		try
@@ -195,13 +195,13 @@ public class CspMiddleware
 			var contentKey = nodeKey.Result;
 
 			// Shared cache again, so not context.RequestAborted (see the global lookup).
-			var definition = await _cspService.GetCachedCspDefinitionForDomainAsync(contentKey, CancellationToken.None);
+			var definition = await _cspService.GetCachedCspDefinitionForNodeAsync(contentKey, CancellationToken.None);
 			if (definition is null)
 			{
 				return null;
 			}
 
-			if (definition.Enabled || _cspOptions.DisabledDomainPolicyBehavior == DisabledDomainPolicyBehavior.NoHeader)
+			if (definition.Enabled || _cspOptions.DisabledNodePolicyBehavior == DisabledNodePolicyBehavior.NoHeader)
 			{
 				Log.CspDomainPolicyApplied(_logger, definition.Id, contentKey, context.Request.Path);
 				return definition;

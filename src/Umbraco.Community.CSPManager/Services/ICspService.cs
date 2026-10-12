@@ -24,11 +24,11 @@ public interface ICspService
 	/// The <see cref="CspDefinition"/> for the specified context, or a default disabled
 	/// definition if none exists in the database.
 	/// </returns>
-	/// <remarks>Only returns a global policy; domain policies are never returned here.</remarks>
+	/// <remarks>Only returns a global policy; node policies are never returned here.</remarks>
 	Task<CspDefinition> GetCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Retrieves a CSP definition (global or domain policy) from the database by its id.
+	/// Retrieves a CSP definition (global or node policy) from the database by its id.
 	/// </summary>
 	/// <param name="key">The definition id.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
@@ -36,57 +36,57 @@ public interface ICspService
 	Task<CspDefinition?> GetCspDefinitionAsync(Guid key, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Retrieves the domain policy of a content node from the database.
+	/// Retrieves the node policy of a content node from the database.
 	/// </summary>
 	/// <param name="contentKey">The key of the content node the policy belongs to.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-	/// <returns>The domain policy, or <c>null</c> if the node has none.</returns>
-	Task<CspDefinition?> GetCspDefinitionForDomainAsync(Guid contentKey, CancellationToken cancellationToken);
+	/// <returns>The node policy, or <c>null</c> if the node has none.</returns>
+	Task<CspDefinition?> GetCspDefinitionForNodeAsync(Guid contentKey, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Retrieves the domain policy of a content node from the runtime cache, loading it from the
+	/// Retrieves the node policy of a content node from the runtime cache, loading it from the
 	/// database if it isn't cached.
 	/// </summary>
 	/// <param name="contentKey">The key of the content node the policy belongs to.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>
-	/// A defensive copy of the cached domain policy, or <c>null</c> if the node has none. The
+	/// A defensive copy of the cached node policy, or <c>null</c> if the node has none. The
 	/// absence of a policy is cached too, until a policy for the node is saved.
 	/// </returns>
-	Task<CspDefinition?> GetCachedCspDefinitionForDomainAsync(Guid contentKey, CancellationToken cancellationToken);
+	Task<CspDefinition?> GetCachedCspDefinitionForNodeAsync(Guid contentKey, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Retrieves every domain policy, including orphaned ones whose node was deleted or lost its hostnames.
+	/// Retrieves every node policy, including orphaned ones whose node was deleted or lost its hostnames.
 	/// </summary>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-	/// <returns>The domain policies with their sources.</returns>
-	Task<List<CspDefinition>> GetAllDomainPoliciesAsync(CancellationToken cancellationToken);
+	/// <returns>The node policies with their sources.</returns>
+	Task<List<CspDefinition>> GetAllNodePoliciesAsync(CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Checks whether a domain policy can apply to a content node: the node exists, isn't in the
+	/// Checks whether a node policy can apply to a content node: the node exists, isn't in the
 	/// recycle bin and has at least one hostname (non-wildcard domain) assigned.
 	/// </summary>
 	/// <param name="contentKey">The key of the content node.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-	/// <returns><c>true</c> when a domain policy for the node applies to requests on its hostnames.</returns>
+	/// <returns><c>true</c> when a node policy for the node applies to requests on its hostnames.</returns>
 	Task<bool> ContentNodeHasHostnameAsync(Guid contentKey, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Creates a domain policy for a content node as an enabled copy of the global frontend policy.
+	/// Creates a node policy for a content node as an enabled copy of the global frontend policy.
 	/// </summary>
 	/// <param name="contentKey">The key of a content node with at least one hostname (non-wildcard domain) assigned.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-	/// <returns>The saved domain policy.</returns>
+	/// <returns>The saved node policy.</returns>
 	/// <exception cref="CspDefinitionValidationException">
 	/// The node doesn't exist, has no hostname, or already has a policy.
 	/// </exception>
-	Task<CspDefinition> CreateCspDefinitionForDomainAsync(Guid contentKey, CancellationToken cancellationToken);
+	Task<CspDefinition> CreateCspDefinitionForNodeAsync(Guid contentKey, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Deletes a domain policy and publishes a <see cref="Notifications.CspDeletedNotification"/>.
+	/// Deletes a node policy and publishes a <see cref="Notifications.CspDeletedNotification"/>.
 	/// Does nothing if there is no definition with that id.
 	/// </summary>
-	/// <param name="id">The id of the domain policy.</param>
+	/// <param name="id">The id of the node policy.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <exception cref="CspDefinitionValidationException">The id is one of the two global policies.</exception>
 	Task DeleteCspDefinitionAsync(Guid id, CancellationToken cancellationToken);
@@ -116,7 +116,7 @@ public interface ICspService
 	/// <returns>The saved <see cref="CspDefinition"/> with any modifications applied during save.</returns>
 	/// <remarks>
 	/// Strips whitespace sources and validates identity: global policies cannot carry a content key,
-	/// domain policies require a content node with a hostname, and empty IDs receive a newly generated GUID.
+	/// node policies require a content node with a hostname, and empty IDs receive a newly generated GUID.
 	/// </remarks>
 	/// <exception cref="CspDefinitionValidationException">The definition fails identity or content validation.</exception>
 	Task<CspDefinition> SaveCspDefinitionAsync(CspDefinition definition, CancellationToken cancellationToken);

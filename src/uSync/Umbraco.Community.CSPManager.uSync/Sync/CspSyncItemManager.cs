@@ -102,7 +102,7 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 			}
 		};
 
-		foreach (var policy in await _cspService.GetAllDomainPoliciesAsync(CancellationToken.None))
+		foreach (var policy in await _cspService.GetAllNodePoliciesAsync(CancellationToken.None))
 		{
 			items.Add(new SyncItem
 			{

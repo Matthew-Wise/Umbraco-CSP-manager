@@ -12,7 +12,7 @@ export type CspApiDefinition = {
 	contentKey?: null | string;
 	contentName?: null | string;
 	domains: Array<CspApiDomainName>;
-	disabledDomainPolicyBehavior?: null | DisabledDomainPolicyBehavior;
+	disabledNodePolicyBehavior?: null | DisabledNodePolicyBehavior;
 	reportingDirective?: null | string;
 	reportUri?: null | string;
 	upgradeInsecureRequests: boolean;
@@ -30,15 +30,7 @@ export type CspApiDomainName = {
 	culture?: null | string;
 };
 
-export type CspApiDomainPolicy = {
-	id: string;
-	contentKey: string;
-	contentName?: null | string;
-	enabled: boolean;
-	isOrphaned: boolean;
-};
-
-export type CspDomainNodeInfo = {
+export type CspApiNodeInfo = {
 	contentKey: string;
 	contentName: string;
 	domains: Array<CspApiDomainName>;
@@ -46,7 +38,15 @@ export type CspDomainNodeInfo = {
 	cspDefinitionId?: null | string;
 };
 
-export type DisabledDomainPolicyBehavior = number;
+export type CspApiNodePolicy = {
+	id: string;
+	contentKey: string;
+	contentName?: null | string;
+	enabled: boolean;
+	isOrphaned: boolean;
+};
+
+export type DisabledNodePolicyBehavior = number;
 
 export type ProblemDetails = {
 	type?: null | string;
@@ -197,14 +197,14 @@ export type PostDefinitionsCreateFromFrontendResponses = {
 export type PostDefinitionsCreateFromFrontendResponse =
 	PostDefinitionsCreateFromFrontendResponses[keyof PostDefinitionsCreateFromFrontendResponses];
 
-export type GetDefinitionsDomainPoliciesData = {
+export type GetDefinitionsNodePoliciesData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: '/umbraco/csp/api/v1/Definitions/domain-policies';
+	url: '/umbraco/csp/api/v1/Definitions/node-policies';
 };
 
-export type GetDefinitionsDomainPoliciesErrors = {
+export type GetDefinitionsNodePoliciesErrors = {
 	/**
 	 * The resource is protected and requires an authentication token
 	 */
@@ -215,15 +215,15 @@ export type GetDefinitionsDomainPoliciesErrors = {
 	403: unknown;
 };
 
-export type GetDefinitionsDomainPoliciesResponses = {
+export type GetDefinitionsNodePoliciesResponses = {
 	/**
 	 * OK
 	 */
-	200: Array<CspApiDomainPolicy>;
+	200: Array<CspApiNodePolicy>;
 };
 
-export type GetDefinitionsDomainPoliciesResponse =
-	GetDefinitionsDomainPoliciesResponses[keyof GetDefinitionsDomainPoliciesResponses];
+export type GetDefinitionsNodePoliciesResponse =
+	GetDefinitionsNodePoliciesResponses[keyof GetDefinitionsNodePoliciesResponses];
 
 export type PostDefinitionsSaveData = {
 	body: CspApiDefinition;
@@ -289,14 +289,14 @@ export type GetDirectivesResponses = {
 
 export type GetDirectivesResponse = GetDirectivesResponses[keyof GetDirectivesResponses];
 
-export type GetDomainsData = {
+export type GetNodesData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: '/umbraco/csp/api/v1/Domains';
+	url: '/umbraco/csp/api/v1/Nodes';
 };
 
-export type GetDomainsErrors = {
+export type GetNodesErrors = {
 	/**
 	 * The resource is protected and requires an authentication token
 	 */
@@ -307,11 +307,11 @@ export type GetDomainsErrors = {
 	403: unknown;
 };
 
-export type GetDomainsResponses = {
+export type GetNodesResponses = {
 	/**
 	 * OK
 	 */
-	200: Array<CspDomainNodeInfo>;
+	200: Array<CspApiNodeInfo>;
 };
 
-export type GetDomainsResponse = GetDomainsResponses[keyof GetDomainsResponses];
+export type GetNodesResponse = GetNodesResponses[keyof GetNodesResponses];

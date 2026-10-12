@@ -86,7 +86,7 @@ public class CspDistributedCacheRefresherTests
 
 		_refresher.Refresh(payload);
 
-		_runtimeCache.Verify(c => c.ClearByKey(Constants.DomainCacheKey(contentKey)), Times.Once);
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.NodeCacheKey(contentKey)), Times.Once);
 		_runtimeCache.Verify(c => c.ClearByKey(Constants.FrontEndCacheKey), Times.Never);
 		_runtimeCache.Verify(c => c.ClearByKey(Constants.BackOfficeCacheKey), Times.Never);
 	}
@@ -103,8 +103,8 @@ public class CspDistributedCacheRefresherTests
 			NullLogger<CspDistributedCacheRefresher>.Instance,
 			Mock.Of<IEventAggregator>(),
 			Mock.Of<ICacheRefresherNotificationFactory>());
-		var domainA = Constants.DomainCacheKey(Guid.NewGuid());
-		var domainB = Constants.DomainCacheKey(Guid.NewGuid());
+		var domainA = Constants.NodeCacheKey(Guid.NewGuid());
+		var domainB = Constants.NodeCacheKey(Guid.NewGuid());
 		foreach (var key in new[] { Constants.FrontEndCacheKey, Constants.BackOfficeCacheKey, domainA, domainB })
 		{
 			caches.RuntimeCache.Insert(key, () => Task.FromResult<CspDefinition>(null));

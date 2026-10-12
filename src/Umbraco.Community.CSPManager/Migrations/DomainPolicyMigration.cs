@@ -5,7 +5,7 @@ using Umbraco.Community.CSPManager.Models;
 namespace Umbraco.Community.CSPManager.Migrations;
 
 /// <summary>
-/// Adds the nullable <c>ContentKey</c> column used by domain policies, plus a unique index so a
+/// Adds the nullable <c>ContentKey</c> column used by node policies, plus a unique index so a
 /// content node can never end up with two policies even when two saves race.
 /// </summary>
 internal sealed class DomainPolicyMigration : AsyncMigrationBase

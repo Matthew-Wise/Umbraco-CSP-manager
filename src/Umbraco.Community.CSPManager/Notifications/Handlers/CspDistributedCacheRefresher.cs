@@ -45,8 +45,8 @@ public class CspDistributedCacheRefresher
 		_runtimeCache.ClearByKey(Constants.BackOfficeCacheKey);
 		_runtimeCache.ClearByKey(Constants.FrontEndCacheKey);
 
-		// ClearByKey matches on "starts with", so this clears every domain policy entry, including
+		// ClearByKey matches on "starts with", so this clears every node policy entry, including
 		// the cached "no policy" results.
-		_runtimeCache.ClearByKey(Constants.DomainCacheKeyPrefix);
+		_runtimeCache.ClearByKey(Constants.NodeCacheKeyPrefix);
 	}
 }
