@@ -38,14 +38,20 @@ internal static partial class Log
 	[LoggerMessage(
 		EventId = 5,
 		Level = LogLevel.Debug,
-		Message = "Returning CSP definitions: backoffice={BackofficeId} frontend={FrontendId} node policies={DomainPolicyCount}")]
-	public static partial void GetChildItemsResult(ILogger logger, Guid backofficeId, Guid frontendId, int domainPolicyCount);
+		Message = "Returning CSP definitions: backoffice={BackofficeId} frontend={FrontendId}")]
+	public static partial void GetChildItemsResult(ILogger logger, Guid backofficeId, Guid frontendId);
 
 	[LoggerMessage(
 		EventId = 6,
 		Level = LogLevel.Debug,
 		Message = "Exported delete marker for CSP definition {ItemId}")]
 	public static partial void CspDeleteExported(ILogger logger, Guid itemId);
+
+	[LoggerMessage(
+		EventId = 7,
+		Level = LogLevel.Debug,
+		Message = "Returning {NodePolicyCount} CSP node policies")]
+	public static partial void GetNodePoliciesResult(ILogger logger, int nodePolicyCount);
 
 	// ===========================================
 	// Serializer Events (20-39)

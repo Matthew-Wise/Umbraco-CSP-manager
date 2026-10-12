@@ -16,6 +16,9 @@ internal class Composer : IComposer
 
 		builder.AddNotificationAsyncHandler<CspSavedNotification, CspDefinitionHandler>();
 		builder.AddNotificationAsyncHandler<CspDeletedNotification, CspDefinitionHandler>();
+		builder.AddNotificationAsyncHandler<CspSavedNotification, CspNodePolicyHandler>();
+		builder.AddNotificationAsyncHandler<CspDeletedNotification, CspNodePolicyHandler>();
 		UdiParser.RegisterUdiType(CspManagerConstants.EntityTypes.CspPolicy, UdiType.GuidUdi);
+		UdiParser.RegisterUdiType(CspItemNames.NodePolicyEntityType, UdiType.GuidUdi);
 	}
 }

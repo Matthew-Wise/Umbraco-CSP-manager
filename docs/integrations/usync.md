@@ -42,15 +42,19 @@ The package registers a uSync serializer for `CspDefinition` objects. When uSync
 
 ## Domain policies
 
-[Domain policies](../features/domain-policies) sync alongside global policies. Each is exported as `CspDefinitions/node-{contentKey}.config`, where `contentKey` is the key of the content node the policy belongs to. uSync keeps content keys the same on every environment, so a policy lines up even when the node's hostnames differ per environment. Deleting a domain policy writes a delete marker so the removal syncs on the next import.
+[Domain policies](../features/domain-policies) have their own handler, **CSP Node Policies**, in the uSync **Content** group. A policy belongs to a content node, and uSync imports content and Culture and Hostnames in the Content group, so the policy imports after its node and hostnames. The Frontend and Backoffice policies stay in the **Settings** group.
+
+Each policy is exported as `CspNodePolicies/node-{contentKey}.config`, where `contentKey` is the key of the content node the policy belongs to. uSync keeps content keys the same on every environment, so a policy lines up even when the node's hostnames differ per environment. The file's key is made from the content key too, so a policy for the same node gets the same file on every environment, even when each environment created its own. Deleting a domain policy writes a delete marker so the removal syncs on the next import.
 
 | Import condition | Outcome |
 |---|---|
-| Policy does not exist on target | Created with the exported ID. |
+| Policy does not exist on target | Created. |
 | Target already has a policy for that content node | Existing policy is updated. |
-| Content node does not exist on target, or has no hostname | Import fails with an error. Import the content and its Culture and Hostnames before importing CSP policies. |
-| File reassigns an existing policy ID to a different content node | Import fails with an error. |
+| Content node does not exist on target, or has no hostname | Import fails with an error. Import the content and its Culture and Hostnames first (a full import, or the Content group, does this in the right order). |
 | Policy contains invalid values (e.g. `;`, `,`, newlines, unknown directives) | Import fails with validation errors. |
+
+{: .note }
+A Settings-only import (for example `ImportAtStartup: Settings`) imports the Frontend and Backoffice policies but not domain policies. Import the Content group too to bring them in.
 
 {: .note }
 Domain policies belong to a content node, not to a hostname. On each environment they apply to whatever hostnames that node has in Culture and Hostnames, so local, staging and production hostnames can differ.
