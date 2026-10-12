@@ -30,7 +30,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 		base.SetUpTestConfiguration(configBuilder);
 		// Umbraco 17.3 runs package migrations via a background service when PackageMigrationsUnattended=true,
 		// which conflicts with the manual migration execution in SetUp. Disable it so tests manage their own migrations.
-		configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+		configBuilder.AddInMemoryCollection(new Dictionary<string, string>
 		{
 			["Umbraco:CMS:Unattended:PackageMigrationsUnattended"] = "false"
 		});

@@ -116,7 +116,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 		}
 
 		if (!this._workspaceState.definition) {
-			return html`<div>No CSP definition available</div>`;
+			return html`<div>${this._workspaceState.error?.message ?? this.localize.term('cspManager_noDefinition')}</div>`;
 		}
 
 		const definition = this._workspaceState.definition;

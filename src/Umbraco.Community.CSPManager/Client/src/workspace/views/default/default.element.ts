@@ -274,7 +274,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		}
 
 		if (!this._workspaceState.definition) {
-			return html`<div>${this._workspaceState.error?.message ?? 'No CSP definition available'}</div>`;
+			return html`<div>${this._workspaceState.error?.message ?? this.localize.term('cspManager_noDefinition')}</div>`;
 		}
 
 		return html`

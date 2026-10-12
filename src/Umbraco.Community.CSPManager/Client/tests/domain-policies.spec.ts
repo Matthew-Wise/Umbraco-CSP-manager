@@ -268,8 +268,13 @@ test.describe("Domain policies: create, edit, delete", () => {
 
 		await umbracoUi.page.goto(`${baseUrl}/umbraco/section/csp-manager/workspace/csp-policy/create/${crypto.randomUUID()}`);
 
-		await expect(csp.workspace().getByText("A domain policy cannot be created for this content node.")).toBeVisible();
+		const unavailable = "A domain policy cannot be created for this content node.";
+		await expect(csp.workspace().getByText(unavailable)).toBeVisible();
 		await expect(umbracoUi.page.locator('[data-mark="csp-domain-info"]')).toHaveCount(0);
+		// Every view reports the same error, not a generic "no definition" message.
+		await csp.workspaceTab(WorkspaceTabs.settings).click();
+		await expect(umbracoUi.page.locator("umb-csp-settings-view")).toBeVisible();
+		await expect(csp.workspace().getByText(unavailable)).toBeVisible();
 		await expect(csp.workspace().getByRole("button", { name: "Save", exact: true })).toBeDisabled();
 		expect(await api.getDomainPolicies()).toHaveLength(0);
 	});

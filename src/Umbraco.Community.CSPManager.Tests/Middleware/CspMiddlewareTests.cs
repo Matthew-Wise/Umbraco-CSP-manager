@@ -84,7 +84,8 @@ public class CspMiddlewareTests
 						services.AddSingleton<IUmbracoVersion, UmbracoVersion>();
 						services.AddTransient(sp => new UmbracoRequestPaths(
 							TestHelper.GetHostingEnvironment(),
-							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>()));
+							sp.GetRequiredService<IOptions<UmbracoRequestPathsOptions>>(),
+							sp.GetRequiredService<IOptions<DeliveryApiSettings>>()));
 						extraServices?.Invoke(services);
 						services.Configure<ImagingSettings>(options =>
 						{

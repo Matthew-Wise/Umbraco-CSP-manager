@@ -298,7 +298,7 @@ export class UmbCspManagerWorkspaceContext
 	async deleteDomainPolicy(): Promise<{ success: boolean; error?: UmbError | UmbApiError | UmbCancelError | Error }> {
 		const id = this.#policyId;
 		if (!id || !this.isDomainPolicy() || this.#state.getValue().isNew) {
-			return { success: false, error: new Error('Only a saved domain policy can be deleted') };
+			return { success: false, error: new Error(this.#localize.term('cspManagerDomainPolicy_deleteUnsaved')) };
 		}
 
 		const { error } = await this.#cspDefinitionContext.deleteDomainPolicy(id);

@@ -13,7 +13,7 @@ The CSP Manager provides an intuitive interface for managing Content Security Po
 
 Navigate to the **CSP Management section** in the Umbraco backoffice sidebar to manage both.
 
-Sites with multiple domains can also configure domain-specific policies that override the Frontend policy for specific hostnames. See [Domain Policies](../features/domain-policies).
+Sites with multiple domains can also give a content node its own policy. It overrides the Frontend policy on every hostname that node has in Culture and Hostnames. See [Domain Policies](../features/domain-policies).
 
 ## Managing Sources
 

@@ -22,7 +22,7 @@ A Content Security Policy management package for Umbraco CMS. Manage CSP headers
 ## Features
 
 - **Frontend & Backend CSP Management** — Configure separate Content Security Policies for your website frontend and Umbraco backoffice
-- **Domain-Specific Policies** — Assign dedicated CSPs to specific hostnames from Culture and Hostnames
+- **Domain-Specific Policies** — Give a content node its own CSP, used on every hostname the node has in Culture and Hostnames
 - **Intuitive Backoffice Interface** — Easy-to-use management screens within the Umbraco backoffice
 - **CSP Evaluation Tools** — Test and validate your Content Security Policies before deployment
 - **Nonce Support** — Built-in tag helpers for script, style, and link nonces

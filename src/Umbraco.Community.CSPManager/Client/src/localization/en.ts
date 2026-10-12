@@ -5,6 +5,9 @@ export default {
 		"usyncpublish": {
 			"CspDefinition": "CSP"
 	},
+	cspManager: {
+		noDefinition: 'No CSP definition available',
+	},
 	cspManagerDomainPolicy: {
 		addAction: 'Add Domain Policy',
 		addModalHeadline: 'Add Domain Policy',
@@ -38,5 +41,6 @@ export default {
 		deletedMessage: 'The CSP policy for %0% has been deleted.',
 		deleteFailedHeadline: 'Delete failed',
 		deleteFailedMessage: 'An error occurred while deleting the CSP policy.',
+		deleteUnsaved: 'Only a saved domain policy can be deleted.',
 	},
 };
