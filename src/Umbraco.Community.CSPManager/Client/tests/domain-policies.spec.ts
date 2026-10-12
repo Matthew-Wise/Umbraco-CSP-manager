@@ -41,8 +41,14 @@ test.describe("Domain policies: tree and add action", () => {
 		await csp.addDomainPolicyModal().getByRole("button", { name: "Cancel" }).click();
 		await expect(csp.addDomainPolicyModal()).toHaveCount(0);
 
-		const backOffice = csp.treeItem(CspConstants.policyTypes.backoffice.label);
+		// Back Office's only action is Import, so Umbraco renders it inline with no "View actions for"
+		// dropdown. Waiting for Import proves the actions have rendered; a second action (such as Add
+		// Domain Policy) would add the dropdown.
+		const backOfficeLabel = CspConstants.policyTypes.backoffice.label;
+		const backOffice = csp.treeItemByLabel(backOfficeLabel);
 		await backOffice.hover();
+		await expect(backOffice.getByRole("button", { name: EntityActions.import, exact: true })).toBeVisible();
+		await expect(backOffice.getByRole("button", { name: `View actions for '${backOfficeLabel}'` })).toHaveCount(0);
 		await expect(backOffice.getByRole("button", { name: EntityActions.addDomainPolicy })).toHaveCount(0);
 	});
 
@@ -240,12 +246,13 @@ test.describe("Domain policies: create, edit, delete", () => {
 		await expect(umbracoUi.page).toHaveURL(new RegExp(`/edit/${CspConstants.policyTypes.frontend.value}$`));
 		await expect(csp.workspaceEditor()).toHaveAttribute("headline", `${CspConstants.policyTypes.frontend.label} CSP Management`);
 
-		// Let the draft's request finish now that the user has moved on.
-		const domainsResponse = umbracoUi.page.waitForResponse("**/umbraco/csp/api/v1/Nodes");
+		// Let the draft's request finish now that the user has moved on. Wait until the page has
+		// received the whole body, then let it run the task that hands the body to the workspace,
+		// so the checks below see the result of applying it rather than the state before it.
+		const nodesResponse = umbracoUi.page.waitForResponse("**/umbraco/csp/api/v1/Nodes");
 		releaseDomains();
-		await domainsResponse;
-		// The response has arrived; give the page a moment to apply it before checking nothing changed.
-		await umbracoUi.page.waitForTimeout(500);
+		await (await nodesResponse).finished();
+		await umbracoUi.page.evaluate(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 		await expect(csp.workspaceEditor()).toHaveAttribute("headline", `${CspConstants.policyTypes.frontend.label} CSP Management`);
 		await expect(umbracoUi.page.locator('[data-mark="csp-domain-info"]')).toHaveCount(0);
