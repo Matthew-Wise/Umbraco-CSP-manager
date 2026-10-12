@@ -6,16 +6,21 @@ import type { UmbWorkspaceContext, UmbRoutableWorkspaceContext } from '@umbraco-
 import { UmbWorkspaceRouteManager } from '@umbraco-cms/backoffice/workspace';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { UMB_DISCARD_CHANGES_MODAL, umbOpenModal } from '@umbraco-cms/backoffice/modal';
+import { UMB_ACTION_EVENT_CONTEXT } from '@umbraco-cms/backoffice/action';
+import { UmbRequestReloadChildrenOfEntityEvent, UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
 import type { CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
 import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
-import { CspConstants, type PolicyType } from '@/constants';
+import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
+import { CspConstants, isGlobalPolicyId, type PolicyType } from '@/constants';
 
 export interface WorkspaceState {
 	definition: CspApiDefinition | null;
 	persistedDefinition: CspApiDefinition | null;
 	availableDirectives: string[];
 	loading: boolean;
+	/** True for an unsaved domain policy draft (create route); it is created on the first save. */
+	isNew?: boolean;
 	error?: UmbError | UmbApiError | UmbCancelError | Error | undefined;
 }
 
@@ -33,6 +38,9 @@ export class UmbCspManagerWorkspaceContext
 
 	#policyId: string | null = null;
 	#allowNavigateAway = false;
+	// Bumped by every route load. A response that arrives after the route has changed again (e.g. the
+	// user clicks another policy while a draft is still loading) must not overwrite the newer state.
+	#loadVersion = 0;
 
 	#state = new UmbObjectState<WorkspaceState>({
 		definition: null,
@@ -43,6 +51,7 @@ export class UmbCspManagerWorkspaceContext
 
 	#cspDefinitionContext: UmbCspDefinitionContext;
 	#cspDirectivesContext: UmbCspDirectivesContext;
+	#localize = new UmbLocalizationController(this);
 
 	readonly state = this.#state.asObservable();
 
@@ -58,7 +67,13 @@ export class UmbCspManagerWorkspaceContext
 		if (this.#policyId && ID_TO_POLICY_TYPE[this.#policyId]) {
 			return ID_TO_POLICY_TYPE[this.#policyId];
 		}
+		// Domain policies override the frontend policy.
 		return CspConstants.policyTypes.frontend;
+	}
+
+	/** True when this workspace edits a domain policy (saved or a new draft) rather than a global one. */
+	isDomainPolicy(): boolean {
+		return this.#state.getValue().isNew === true || (this.#policyId !== null && !isGlobalPolicyId(this.#policyId));
 	}
 
 	constructor(host: UmbControllerHost) {
@@ -84,24 +99,99 @@ export class UmbCspManagerWorkspaceContext
 					this.#load(unique);
 				},
 			},
+			{
+				path: 'create/:contentKey',
+				component: () => import('../csp-management-workspace.element.js'),
+				setup: (_component, info) => {
+					this.#loadNew(decodeURIComponent(info.match.params.contentKey));
+				},
+			},
 		]);
 	}
 
 	async #load(unique: string) {
+		const version = ++this.#loadVersion;
 		this.#policyId = unique;
+		this.#state.update({ isNew: false });
 		// Load both in parallel but await completion to avoid race conditions
-		await Promise.all([this.loadDefinition(), this.loadDirectives()]);
+		await Promise.all([this.loadDefinition(version), this.loadDirectives()]);
+	}
+
+	/**
+	 * Builds an unsaved draft for a new domain policy from the Frontend policy. Nothing is persisted
+	 * until save(); the id stays empty so the server assigns it.
+	 */
+	async #loadNew(contentKey: string) {
+		const version = ++this.#loadVersion;
+		this.#policyId = null;
+		this.#allowNavigateAway = false;
+		this.#state.update({ loading: true, error: undefined, isNew: true, definition: null, persistedDefinition: null });
+
+		const [frontendResult, domainsResult] = await Promise.all([
+			this.#cspDefinitionContext.load(false),
+			this.#cspDefinitionContext.getNodes(),
+			this.loadDirectives(),
+		]);
+
+		if (version !== this.#loadVersion) {
+			return;
+		}
+
+		const error = frontendResult.error ?? domainsResult.error;
+		if (error || !frontendResult.data) {
+			this.#state.update({ loading: false, error });
+			return;
+		}
+
+		// A stale or hand-typed URL: the node lost its hostname, was deleted or trashed, or already
+		// has a policy. Shown now rather than as a 400 on save.
+		const node = domainsResult.data?.find((n) => n.contentKey === contentKey);
+		if (!node || node.hasCspPolicy) {
+			this.#state.update({
+				loading: false,
+				error: new UmbError(this.#localize.term('cspManagerDomainPolicy_createUnavailable')),
+			});
+			return;
+		}
+
+		const newId = CspConstants.domainPolicy.newId;
+		const draft: CspApiDefinition = {
+			...structuredClone(frontendResult.data),
+			id: newId,
+			// Always on: a new domain policy should apply, whether or not the Frontend policy is on.
+			enabled: true,
+			isBackOffice: false,
+			contentKey,
+			contentName: node.contentName,
+			domains: node.domains,
+			disabledNodePolicyBehavior: null,
+			sources: frontendResult.data.sources.map((s) => ({ ...s, definitionId: newId, directives: [...s.directives] })),
+		};
+
+		this.#state.update({
+			definition: draft,
+			persistedDefinition: null,
+			loading: false,
+			isNew: true,
+			error: undefined,
+		});
 	}
 
 	getIsBackOffice(): boolean {
 		return this.getPolicyType() === CspConstants.policyTypes.backoffice;
 	}
 
-	async loadDefinition() {
+	async loadDefinition(version = this.#loadVersion) {
 		this.#state.update({ loading: true, error: undefined });
 		this.#allowNavigateAway = false;
-		const isBackOffice = this.getIsBackOffice();
-		const { data, error } = await this.#cspDefinitionContext.load(isBackOffice);
+		const { data, error } =
+			this.#policyId && !isGlobalPolicyId(this.#policyId)
+				? await this.#cspDefinitionContext.loadById(this.#policyId)
+				: await this.#cspDefinitionContext.load(this.getIsBackOffice());
+
+		if (version !== this.#loadVersion) {
+			return;
+		}
 
 		if (error) {
 			this.#state.update({ loading: false, error });
@@ -168,10 +258,26 @@ export class UmbCspManagerWorkspaceContext
 			return { success: false, error: new Error('No definition to save') };
 		}
 
-		const { error } = await this.#cspDefinitionContext.save(currentState.definition);
+		const { data, error } = await this.#cspDefinitionContext.save(currentState.definition);
 
 		if (error) {
 			return { success: false, error };
+		}
+
+		if (currentState.isNew && data) {
+			// First save of a draft: the server created the policy and assigned its id. Show it in
+			// the tree and swap the create route for its edit route.
+			this.#policyId = data.id;
+			this.#allowNavigateAway = true;
+			this.#state.update({
+				definition: data,
+				persistedDefinition: structuredClone(data),
+				isNew: false,
+				error: undefined,
+			});
+			await this.#reloadDomainPoliciesInTree();
+			history.replaceState(null, '', `section/csp-manager/workspace/csp-policy/edit/${data.id}`);
+			return { success: true };
 		}
 
 		// Update persisted to match current after successful save
@@ -180,7 +286,40 @@ export class UmbCspManagerWorkspaceContext
 			error: undefined,
 		});
 
+		// The tree marks inactive domain policies, so it has to follow an Enabled change.
+		if (this.isDomainPolicy()) {
+			await this.#reloadDomainPoliciesInTree();
+		}
+
 		return { success: true };
+	}
+
+	/** Deletes the saved domain policy this workspace shows. The global policies can't be deleted. */
+	async deleteDomainPolicy(): Promise<{ success: boolean; error?: UmbError | UmbApiError | UmbCancelError | Error }> {
+		const id = this.#policyId;
+		if (!id || !this.isDomainPolicy() || this.#state.getValue().isNew) {
+			return { success: false, error: new Error(this.#localize.term('cspManagerDomainPolicy_deleteUnsaved')) };
+		}
+
+		const { error } = await this.#cspDefinitionContext.deleteDomainPolicy(id);
+		if (error) {
+			return { success: false, error };
+		}
+
+		this.#allowNavigateAway = true;
+		await this.#reloadDomainPoliciesInTree();
+		return { success: true };
+	}
+
+	async #reloadDomainPoliciesInTree() {
+		const actionEventContext = await this.getContext(UMB_ACTION_EVENT_CONTEXT);
+		const frontend = {
+			entityType: CspConstants.workspace.entityType,
+			unique: CspConstants.policyTypes.frontend.value,
+		};
+		// Structure too, so Frontend gets its expand arrow when its first domain policy appears.
+		actionEventContext?.dispatchEvent(new UmbRequestReloadStructureForEntityEvent(frontend));
+		actionEventContext?.dispatchEvent(new UmbRequestReloadChildrenOfEntityEvent(frontend));
 	}
 
 	getDefinition(): CspApiDefinition | null {
@@ -197,6 +336,10 @@ export class UmbCspManagerWorkspaceContext
 	 */
 	hasUnsavedChanges(): boolean {
 		const state = this.#state.getValue();
+		// An unsaved draft is all unsaved changes.
+		if (state.isNew) {
+			return state.definition !== null;
+		}
 		if (!state.definition || !state.persistedDefinition) {
 			return false;
 		}

@@ -30,6 +30,9 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	private _invalidSources: Array<string> = [];
 
 	@state()
+	private _isDomainPolicy = false;
+
+	@state()
 	private _expandedSources = new Set<number>();
 
 	@state()
@@ -45,8 +48,9 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 
 			this.observe(context.state, (state) => {
 				this._workspaceState = state;
+				this._isDomainPolicy = context.isDomainPolicy();
 				if (state.error) {
-					this._invalidSources = state.error.cause as string[];
+					this._invalidSources = (state.error.cause as string[] | undefined) ?? [];
 				} else {
 					this._invalidSources = [];
 				}
@@ -224,16 +228,57 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
+	// Only what the user can't see elsewhere: which hostnames the policy covers (every culture of the
+	// node), why an orphaned policy does nothing, and a link to the content node. Text bindings only.
+	private _renderDomainInfo() {
+		const definition = this._workspaceState.definition!;
+		const isOrphaned = !this._workspaceState.isNew && definition.domains.length === 0;
+		// A deleted node has no name; there is nothing to link to then.
+		const nodeExists = !!definition.contentName && !!definition.contentKey;
+
+		return html`
+			<uui-box
+				class="domain-info"
+				data-mark="csp-domain-info"
+				headline=${this.localize.term('cspManagerDomainPolicy_domainInfoHeadline')}>
+				<div class="domain-info-content">
+					${isOrphaned
+						? html`<p>${this.localize.term('cspManagerDomainPolicy_orphanedPolicyInfo')}</p>`
+						: html`
+								<div class="hostnames">
+									<span>${this.localize.term('cspManagerDomainPolicy_appliesTo')}</span>
+									<ul data-mark="csp-domain-hostnames">
+										${definition.domains.map((domain) => html`<li>${domain.name}</li>`)}
+									</ul>
+								</div>
+							`}
+					${nodeExists
+						? html`
+								<uui-button
+									look="secondary"
+									href=${`section/content/workspace/document/edit/${encodeURIComponent(definition.contentKey!)}`}
+									label=${this.localize.term('cspManagerDomainPolicy_openContent')}>
+									<uui-icon name="icon-document"></uui-icon>
+									${this.localize.term('cspManagerDomainPolicy_openContent')}
+								</uui-button>
+							`
+						: ''}
+				</div>
+			</uui-box>
+		`;
+	}
+
 	override render() {
 		if (this._workspaceState.loading) {
 			return html`<uui-loader></uui-loader>`;
 		}
 
 		if (!this._workspaceState.definition) {
-			return html`<div>No CSP definition available</div>`;
+			return html`<div>${this._workspaceState.error?.message ?? this.localize.term('cspManager_noDefinition')}</div>`;
 		}
 
 		return html`
+			${this._isDomainPolicy ? this._renderDomainInfo() : ''}
 			<uui-box headline="Directives">
 				<uui-form-layout-item>
 					<uui-label slot="label" for="insecure-requests">Upgrade Insecure Requests</uui-label>
@@ -365,6 +410,30 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 
 	static styles = [
 		css`
+			.domain-info-content {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--uui-size-space-4);
+			}
+
+			.hostnames {
+				flex: 1;
+				color: var(--uui-color-text-alt);
+			}
+
+			.hostnames ul {
+				margin: var(--uui-size-space-1) 0 0;
+				padding-left: var(--uui-size-space-5);
+				color: var(--uui-color-text);
+			}
+
+			.domain-info-content p {
+				margin: 0;
+				flex: 1;
+				color: var(--uui-color-text-alt);
+			}
+
 			:host {
 				display: block;
 				padding: var(--uui-size-layout-1);

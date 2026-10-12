@@ -55,6 +55,22 @@ export class CspTestHelpers {
 		return this.sidebar().locator(Selectors.menuItem).filter({ hasText: label });
 	}
 
+	/**
+	 * The tree item with exactly this label. Unlike `treeItem`, it doesn't also match a parent
+	 * whose text includes the label (e.g. Frontend, which contains its domain policies).
+	 */
+	treeItemByLabel(label: string): Locator {
+		return this.sidebar().locator(`${Selectors.menuItem}[label="${label}"]`);
+	}
+
+	/** Expands a tree item if it isn't already. */
+	async expandTreeItem(label: string): Promise<void> {
+		const item = this.treeItemByLabel(label);
+		if ((await item.getAttribute("show-children")) === null) {
+			await item.getByRole("button", { name: "Expand child items" }).first().click();
+		}
+	}
+
 	/** The CSP management workspace element. */
 	workspace(): Locator {
 		return this.umbracoUi.page.locator(Selectors.workspace);
@@ -95,6 +111,22 @@ export class CspTestHelpers {
 		const item = this.treeItem(policyLabel);
 		await item.hover();
 		await item.getByRole("button", { name: actionLabel }).click();
+	}
+
+	/**
+	 * Open an entity action that isn't the tree item's inline action: those live in the
+	 * "View actions for ..." dropdown.
+	 */
+	async openEntityActionFromMenu(itemLabel: string, actionLabel: string): Promise<void> {
+		const item = this.treeItemByLabel(itemLabel);
+		await item.hover();
+		await item.getByRole("button", { name: `View actions for '${itemLabel}'` }).first().click();
+		await this.umbracoUi.page.getByRole("button", { name: actionLabel, exact: true }).click();
+	}
+
+	/** The add domain policy modal (sidebar). */
+	addDomainPolicyModal(): Locator {
+		return this.umbracoUi.page.locator(Selectors.addDomainPolicyModal);
 	}
 
 	// ── Import Modal ──────────────────────────────────────────────────────────

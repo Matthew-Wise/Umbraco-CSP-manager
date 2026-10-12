@@ -7,8 +7,13 @@ internal class SpyServerMessenger : IServerMessenger
 {
 	public int PayloadRefreshCount { get; private set; }
 
+	public object[] LastPayload { get; private set; } = [];
+
 	public void QueueRefresh<TPayload>(ICacheRefresher refresher, TPayload[] payload)
-		=> PayloadRefreshCount++;
+	{
+		PayloadRefreshCount++;
+		LastPayload = [.. payload.Cast<object>()];
+	}
 
 	public void QueueRefresh<T>(ICacheRefresher refresher, Func<T, int> getNumericId, params T[] instances) { }
 	public void QueueRefresh<T>(ICacheRefresher refresher, Func<T, Guid> getGuidId, params T[] instances) { }
