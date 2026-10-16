@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Umbraco.Community.CSPManager.Logging;
@@ -70,6 +70,24 @@ internal static partial class Log
 		Level = LogLevel.Debug,
 		Message = "No CSP definition was returned for {Context}; no CSP header was applied")]
 	public static partial void CspDefinitionNotFound(ILogger logger, string context);
+
+	[LoggerMessage(
+		EventId = 10,
+		Level = LogLevel.Warning,
+		Message = "CSP header construction failed for {Path}; applied fallback policy '{FallbackPolicy}' as {HeaderName}")]
+	public static partial void CspFallbackPolicyApplied(ILogger logger, PathString path, string fallbackPolicy, string headerName);
+
+	[LoggerMessage(
+		EventId = 11,
+		Level = LogLevel.Error,
+		Message = "A CspHeaderConstructionFailedNotification handler threw for {Path}; the fallback configured by FailureBehavior was used instead")]
+	public static partial void CspFallbackNotificationFailed(ILogger logger, PathString path, Exception ex);
+
+	[LoggerMessage(
+		EventId = 12,
+		Level = LogLevel.Error,
+		Message = "Failed to apply the CSP fallback policy for {Path}; no CSP header was sent")]
+	public static partial void CspFallbackPolicyFailed(ILogger logger, PathString path, Exception ex);
 
 	// ===========================================
 	// Service Events (100-199)
