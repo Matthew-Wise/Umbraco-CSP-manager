@@ -73,6 +73,20 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this._focusSourceIndex = index;
 	}
 
+	// Expansion is tracked by row index, so inserting or removing a row has to move the
+	// indices after it, or the open state ends up on the wrong rows.
+	private _shiftExpandedSources(fromIndex: number, offset: 1 | -1) {
+		const shifted = new Set<number>();
+		for (const index of this._expandedSources) {
+			if (index < fromIndex) {
+				shifted.add(index);
+			} else if (offset === 1 || index > fromIndex) {
+				shifted.add(index + offset);
+			}
+		}
+		this._expandedSources = shifted;
+	}
+
 	override updated(changedProperties: Map<string | number | symbol, unknown>) {
 		super.updated(changedProperties);
 		if (changedProperties.has('_focusSourceIndex') && this._focusSourceIndex !== undefined) {
@@ -149,7 +163,12 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		};
 
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
-		this._toggleSourceExpansion(sourceIndex + 1);
+
+		// Open the new row (rather than toggling it) so it is always ready for its source value.
+		const newIndex = sourceIndex + 1;
+		this._shiftExpandedSources(newIndex, 1);
+		this._expandedSources = new Set([...this._expandedSources, newIndex]);
+		this._focusSourceIndex = newIndex;
 
 		this.#notificationContext?.peek('positive', {
 			data: {
@@ -175,12 +194,17 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 			await modalContext?.onSubmit();
 
 			// If we reach here, the user confirmed
+			const deletedIndex = this._workspaceState.definition.sources.indexOf(source);
 			const updatedDefinition = {
 				...this._workspaceState.definition,
 				sources: this._workspaceState.definition.sources.filter((s) => s !== source),
 			};
 
 			this.#workspaceContext?.updateDefinition(updatedDefinition);
+
+			if (deletedIndex !== -1) {
+				this._shiftExpandedSources(deletedIndex, -1);
+			}
 
 			// Show success toast
 			this.#notificationContext?.peek('danger', {

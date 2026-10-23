@@ -17,7 +17,17 @@ public sealed class CspApiDefinitionSource
 	/// <summary>
 	/// Gets or sets the CSP source value (e.g., "'self'", "https://example.com", "'unsafe-inline'").
 	/// </summary>
-	public string Source { get; init; } = string.Empty;
+	/// <remarks>
+	/// Surrounding whitespace is trimmed on assignment, i.e. before validation runs, so a pasted
+	/// value such as "https://example.com " is accepted rather than rejected as multiple tokens.
+	/// </remarks>
+	public string Source
+	{
+		get => _source;
+		init => _source = value?.Trim() ?? string.Empty;
+	}
+
+	private readonly string _source = string.Empty;
 
 	/// <summary>
 	/// Gets or sets the list of CSP directives this source applies to (e.g., "script-src", "style-src").
