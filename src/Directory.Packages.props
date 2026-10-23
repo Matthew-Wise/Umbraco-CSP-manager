@@ -5,6 +5,9 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="MessagePack" Version="3.1.9" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.13" />
     <PackageVersion Include="Umbraco.Cms" Version="18.1.1" />
     <PackageVersion Include="Umbraco.Cms.Api.Common" Version="18.1.1" />
     <PackageVersion Include="Umbraco.Cms.Api.Management" Version="18.1.1" />
