@@ -199,7 +199,7 @@ public class CspApiDefinitionValidationTests
 	[TestCase("'self';script-src *", TestName = "Source with a semicolon is rejected")]
 	[TestCase("a.example.com,b.example.com", TestName = "Source with a comma is rejected")]
 	[TestCase("https://example.com\r\nX-Injected: 1", TestName = "Source with a line break is rejected")]
-	[TestCase("https://example.com\t", TestName = "Source with a tab is rejected")]
+	[TestCase("https://example.com\t'self'", TestName = "Source with a tab is rejected")]
 	public void Validate_SourceThatIsNotASingleToken_ReturnsError(string source)
 	{
 		var definition = new CspApiDefinition
@@ -235,6 +235,45 @@ public class CspApiDefinitionValidationTests
 		var results = ValidateModel(definition);
 
 		Assert.That(results, Is.Empty);
+	}
+
+	// Surrounding whitespace (e.g. from a paste) is trimmed on assignment, so it is not a second token.
+	[TestCase(" https://example.com")]
+	[TestCase("https://example.com ")]
+	[TestCase("\thttps://example.com\r\n")]
+	public void Validate_SourceWithSurroundingWhitespace_IsTrimmedAndReturnsNoErrors(string source)
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources = [new() { Source = source, Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(results, Is.Empty);
+			Assert.That(definition.Sources[0].Source, Is.EqualTo("https://example.com"));
+		});
+	}
+
+	[Test]
+	public void Validate_SourcesDifferingOnlyBySurroundingWhitespace_ReturnsDuplicateError()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources =
+			[
+				new() { Source = "https://example.com", Directives = [Constants.Directives.DefaultSource] },
+				new() { Source = "https://example.com ", Directives = [Constants.Directives.ScriptSource] },
+			]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results.Select(r => r.ErrorMessage), Has.Some.Contains("Duplicate"));
 	}
 
 	// The service strips whitespace-only sources on save, so the empty row the UI adds must not fail validation.

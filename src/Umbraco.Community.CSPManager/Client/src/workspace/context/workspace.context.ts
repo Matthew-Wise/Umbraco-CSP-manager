@@ -129,17 +129,18 @@ export class UmbCspManagerWorkspaceContext
 
 	private _validateDefinition(definition: CspApiDefinition): UmbError | undefined {
 		// CSP host and keyword matching is case-insensitive, and the server rejects case
-		// variants as duplicates, so compare case-insensitively here too. The cause carries the
+		// variants as duplicates, so compare case-insensitively here too. The server also trims
+		// surrounding whitespace before comparing, so do the same. The cause carries the
 		// sources exactly as typed so each offending row can be highlighted.
 		const counts = new Map<string, number>();
 		for (const { source } of definition.sources) {
-			const key = source.toLowerCase();
+			const key = source.trim().toLowerCase();
 			counts.set(key, (counts.get(key) ?? 0) + 1);
 		}
 
 		const duplicates = definition.sources
 			.map(({ source }) => source)
-			.filter((source) => (counts.get(source.toLowerCase()) ?? 0) > 1);
+			.filter((source) => (counts.get(source.trim().toLowerCase()) ?? 0) > 1);
 
 		if (duplicates.length > 0) {
 			return new UmbError('Duplicate source names found', { cause: [...new Set(duplicates)] });
