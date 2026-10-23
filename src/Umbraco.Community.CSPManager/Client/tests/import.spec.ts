@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "@umbraco/playwright-testhelpers";
-import { CspTestHelpers, CspDefinitionBuilder, TestCspStrings, EntityActions } from "./helpers";
+import { CspTestHelpers, CspApiHelpers, TestCspStrings, EntityActions } from "./helpers";
 import { CspConstants } from "../src/constants";
 
 test.beforeEach(async ({ umbracoUi }) => {
@@ -119,14 +119,9 @@ test.describe("Import Full Flow", () => {
 				new RegExp(CspConstants.policyTypes.frontend.value),
 			);
 		} finally {
-			// Reset via page.request so browser cookies are used for auth.
-			// umbracoApi cannot be used here as it requires a Bearer token from
-			// localStorage which Umbraco v17 does not store there.
-			const definition = CspDefinitionBuilder.for("frontend").build();
-			await page.request.post(
-				`${process.env.URL ?? "https://localhost:44370"}/umbraco/csp/api/v1/Definitions/save`,
-				{ data: definition, ignoreHTTPSErrors: true },
-			);
+			// Reset through the cookie-authenticated helper (see CspApiHelpers); a bare
+			// page.request.post without the placeholder bearer header is rejected with 401.
+			await new CspApiHelpers(page.request).resetDefinition("frontend");
 		}
 	});
 });

@@ -6,13 +6,13 @@ nav_order: 3
 
 # Policy Settings
 
-Each policy (frontend and backoffice) has settings that control how the CSP header is sent.
+Each policy (frontend, backoffice, or domain-specific) has settings that control how the CSP header is sent.
 
 ![Policy Settings section](../assets/images/screenshots/settings-screen.png "Policy Settings section"){: width="3840" height="2160" }
 
 ## Enabled
 
-Toggles whether the CSP header is sent for this policy. When disabled, no `Content-Security-Policy` or `Content-Security-Policy-Report-Only` header is added to responses.
+Toggles whether the CSP header is sent for this policy. When disabled on a global policy, no header is added. When disabled on a domain policy, requests fall back to the Frontend policy or send no header (see [DisabledNodePolicyBehavior](../features/configuration#disablednodepolicybehavior)).
 
 ## Report Only
 
@@ -25,13 +25,23 @@ This is useful for:
 
 ## Reporting Directive
 
-Selects which reporting directive is used when a Report URI is configured. Options include `report-uri` (legacy, widely supported) and `report-to` (modern, requires a Reporting API endpoint).
+Selects how violations are reported: **No reporting**, `report-to` (modern, requires a Reporting API endpoint) or `report-uri` (legacy, widely supported).
 
 ## Report URI
 
-The URL to which the browser sends CSP violation reports. The endpoint receives JSON payloads describing what was blocked and why.
+Shown when a reporting directive is selected. For `report-uri`, enter an absolute HTTP/HTTPS URL or relative path. For `report-to`, enter the endpoint name defined in your `Reporting-Endpoints` header (such as `csp-endpoint`).
 
 Leave blank if you do not want to collect violation reports.
+
+## Value validation
+
+Source values, directives, and Report URIs are written directly into the HTTP response header. To prevent header injection or malformed responses, CSP Manager validates values on save:
+
+- Values cannot contain whitespace, semicolons (`;`), commas (`,`), or control characters (such as newlines).
+- Directives must match recognized CSP directive names.
+- Report URIs must be valid URIs (for `report-uri`) or endpoint names (for `report-to`).
+
+Validation applies across the backoffice, [uSync](../integrations/usync) imports, and the `ICspService` API. Invalid values are rejected with a descriptive error.
 
 ## Upgrade Insecure Requests
 

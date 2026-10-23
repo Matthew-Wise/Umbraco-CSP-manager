@@ -26,6 +26,7 @@ export const CspConstants = {
 		conditions: {
 			sectionAlias: 'Umb.Condition.SectionAlias',
 			workspaceAlias: 'Umb.Condition.WorkspaceAlias',
+			entityUnique: 'Umb.Condition.Entity.Unique',
 		},
 	},
 	icons: {
@@ -33,6 +34,19 @@ export const CspConstants = {
 		sources: 'icon-list',
 		settings: 'icon-settings',
 		evaluate: 'icon-locate',
+		domainPolicy: 'icon-link',
+		orphanedDomainPolicy: 'icon-alert',
+	},
+	domainPolicy: {
+		addEntityActionAlias: `${packageAlias}.EntityAction.AddDomainPolicy`,
+		addModalAlias: `${packageAlias}.Modal.AddDomainPolicy`,
+		/** Id a new (unsaved) domain policy is posted with; the server assigns the real one. */
+		newId: '00000000-0000-0000-0000-000000000000',
+		/** DisabledNodePolicyBehavior values, as serialized by the API. */
+		disabledBehavior: {
+			fallbackToGlobal: 0,
+			noHeader: 1,
+		},
 	},
 	weights: {
 		high: 100,
@@ -55,3 +69,7 @@ export const CspConstants = {
 } as const;
 
 export type PolicyType = (typeof CspConstants.policyTypes)[keyof typeof CspConstants.policyTypes];
+
+/** True for the two global policy ids; anything else is a domain policy. */
+export const isGlobalPolicyId = (unique: string | null | undefined): boolean =>
+	unique === CspConstants.policyTypes.frontend.value || unique === CspConstants.policyTypes.backoffice.value;
