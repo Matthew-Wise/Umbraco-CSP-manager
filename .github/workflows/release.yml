@@ -70,8 +70,13 @@ jobs:
             FLOOR="$VERSION"
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
-            # Stable: float across the whole major line.
-            FLOOR="${MAJOR}.0.0"
+            # Stable: the floor in src/Directory.Build.props, i.e. the oldest CSP Manager
+            # release with the API the supporting packages use.
+            FLOOR="$(sed -n 's:.*<CspManagerDependencyFloor[^>]*>\(.*\)</CspManagerDependencyFloor>.*:\1:p' src/Directory.Build.props)"
+            if [[ -z "$FLOOR" || "${FLOOR%%.*}" != "$MAJOR" ]]; then
+              echo "::error::CspManagerDependencyFloor ('$FLOOR') in src/Directory.Build.props is missing or not in major $MAJOR"
+              exit 1
+            fi
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
           echo "floor=$FLOOR" >> "$GITHUB_OUTPUT"

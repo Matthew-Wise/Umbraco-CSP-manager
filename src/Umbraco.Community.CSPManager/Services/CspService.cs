@@ -374,7 +374,9 @@ internal sealed class CspService : ICspService
 		}
 		catch (CspDefinitionValidationException ex)
 		{
-			Log.CspDefinitionSaveRejected(_logger, definition.Id, ex.Message);
+			// The message can quote posted values. The validator masks control characters, but
+			// strip line breaks here too so the log can never be forged from a request body.
+			Log.CspDefinitionSaveRejected(_logger, definition.Id, ex.Message.Replace("\r", string.Empty).Replace("\n", string.Empty));
 			throw;
 		}
 		catch (Exception ex)
