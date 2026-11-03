@@ -11,6 +11,8 @@ on:
       - main
     paths:
       - '.github/**'
+      - '.claude/**'
+      - '.mcp.json'
       - '*.md'
       - '.editorconfig'
       - '.gitattributes'

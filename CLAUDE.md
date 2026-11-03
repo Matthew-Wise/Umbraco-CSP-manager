@@ -72,7 +72,7 @@ dotnet add package Umbraco.Community.CSPManager -v 0.0.0-ci.<run_number> --prere
 workflow is path-filtered, so each one names its job `build` and the filters are
 kept collectively exhaustive: `csp-manager.yml` (main package), `usync.yml` (uSync +
 main package sources), `docs-build.yml` (`docs/**` + the docs workflows) and
-`repo-hygiene.yml` (`.github/**`, root `*.md` and dotfiles, runs actionlint). A PR
+`repo-hygiene.yml` (`.github/**`, `.claude/**`, root `*.md` and dotfiles, runs actionlint). A PR
 that matches none of them never reports `build` and sits pending forever, so when
 adding a new top-level path, add it to one of those filters. `claude-code-review.yml`
 skips bot, draft and fork PRs on purpose.
@@ -88,6 +88,14 @@ separate (no commas) because .NET's `-p:` parser splits property values on comma
 **NuGet trusted publishing:** each package's policy must reference workflow
 `release.yml` (environments `nuget-csp` / `nuget-usync` / `nuget-usync-complete`
 are unchanged).
+
+## Cloud Sessions
+
+`.claude/hooks/session-start.sh` (SessionStart hook, Claude Code cloud only) installs the
+.NET 10 SDK from Ubuntu's apt feed (the dotnet.microsoft.com download hosts are blocked by
+the default network policy), Node 24 via nvm, and restores NuGet + both clients. The
+uSync.Complete client needs `pkgs.dev.azure.com` (the `@jumoo` npm registry) in the
+environment's allowed domains; without it only that project fails to build.
 
 ## Dependency Updates
 

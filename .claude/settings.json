@@ -4,5 +4,17 @@
     "umbraco-cms-backoffice-skills@umbraco-backoffice-marketplace": true,
     "umbraco-cms-backoffice-testing-skills@umbraco-backoffice-marketplace": true,
     "code-review@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
   }
 }
