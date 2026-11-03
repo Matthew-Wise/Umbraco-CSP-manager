@@ -84,7 +84,7 @@ Bump the floor when a supporting package starts using CSP Manager API that older
 releases don't have (18.2.0 added node policies, which uSync uses). Stable releases
 read the floor from that file; the release workflow overrides it to the exact version
 for prerelease builds (e.g. `[18.2.0-beta-1, 19.0.0)`) — no manual csproj edits for
-betas. Floor/ceiling are separate (no commas) because .NET's `-p:` parser splits
+betas — and refuses a uSync prerelease of a version below the floor (e.g. `18.1.1-beta-1`). Floor/ceiling are separate (no commas) because .NET's `-p:` parser splits
 property values on commas.
 
 **NuGet trusted publishing:** each package's policy must reference workflow
