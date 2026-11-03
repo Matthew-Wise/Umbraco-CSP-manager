@@ -64,14 +64,29 @@ jobs:
           VERSION="${{ inputs.version }}"
           MAJOR="${VERSION%%.*}"
           CEILING="$((MAJOR + 1)).0.0"
+          # The oldest CSP Manager release with the API the supporting packages use.
+          PROPS_FLOOR="$(sed -n 's:.*<CspManagerDependencyFloor[^>]*>\(.*\)</CspManagerDependencyFloor>.*:\1:p' src/Directory.Build.props)"
+          if [[ -z "$PROPS_FLOOR" || "${PROPS_FLOOR%%.*}" != "$MAJOR" ]]; then
+            echo "::error::CspManagerDependencyFloor ('$PROPS_FLOOR') in src/Directory.Build.props is missing or not in major $MAJOR"
+            exit 1
+          fi
           if [[ "$VERSION" == *-* ]]; then
             # Prerelease: floor at the exact version so dependents (and consumers)
-            # resolve the prerelease, not an older stable in the same major.
+            # resolve the prerelease, not an older stable in the same major. A
+            # prerelease of the floor itself (e.g. 18.2.0-beta-1 for floor 18.2.0) is
+            # fine; one of an older version (e.g. 18.1.1-beta-1) would depend on a CSP
+            # Manager without that API, so the supporting packages can't use it.
+            BASE="${VERSION%%-*}"
+            LOWEST="$(printf '%s\n%s\n' "$BASE" "$PROPS_FLOOR" | sort -V | head -n1)"
+            if [[ "${{ inputs.package }}" != "csp-manager" && "$LOWEST" != "$PROPS_FLOOR" ]]; then
+              echo "::error::$VERSION is a prerelease of $BASE, older than CspManagerDependencyFloor $PROPS_FLOOR, so uSync can't depend on it. Release $PROPS_FLOOR-<tag> or later."
+              exit 1
+            fi
             FLOOR="$VERSION"
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
-            # Stable: float across the whole major line.
-            FLOOR="${MAJOR}.0.0"
+            # Stable: the floor in src/Directory.Build.props.
+            FLOOR="$PROPS_FLOOR"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
           echo "floor=$FLOOR" >> "$GITHUB_OUTPUT"

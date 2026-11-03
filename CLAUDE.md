@@ -77,13 +77,15 @@ that matches none of them never reports `build` and sits pending forever, so whe
 adding a new top-level path, add it to one of those filters. `claude-code-review.yml`
 skips bot, draft and fork PRs on purpose.
 
-**Dependency range:** the supporting packages declare `[18.0.0, 19.0.0)` for their
+**Dependency range:** the supporting packages declare `[18.2.0, 19.0.0)` for their
 internal CSP Manager dependencies, assembled in `src/Directory.Build.props` from
-`CspManagerDependencyFloor` (`18.0.0`) and `CspManagerDependencyCeiling` (`19.0.0`).
-Bump the floor only on a breaking change that requires a newer minimum. The release
-workflow overrides the floor to the exact version for prerelease builds (e.g.
-`[18.0.0-beta-1, 19.0.0)`) — no manual csproj edits for betas. Floor/ceiling are
-separate (no commas) because .NET's `-p:` parser splits property values on commas.
+`CspManagerDependencyFloor` (`18.2.0`) and `CspManagerDependencyCeiling` (`19.0.0`).
+Bump the floor when a supporting package starts using CSP Manager API that older
+releases don't have (18.2.0 added node policies, which uSync uses). Stable releases
+read the floor from that file; the release workflow overrides it to the exact version
+for prerelease builds (e.g. `[18.2.0-beta-1, 19.0.0)`) — no manual csproj edits for
+betas — and refuses a uSync prerelease of a version below the floor (e.g. `18.1.1-beta-1`). Floor/ceiling are separate (no commas) because .NET's `-p:` parser splits
+property values on commas.
 
 **NuGet trusted publishing:** each package's policy must reference workflow
 `release.yml` (environments `nuget-csp` / `nuget-usync` / `nuget-usync-complete`

@@ -15,8 +15,11 @@
          Floor + ceiling are kept as separate properties (no commas) so the release
          workflow can override them on the command line — .NET's -p: parser splits
          values on commas, so the assembled range can't be passed directly. The
-         workflow sets a prerelease floor (e.g. 18.0.0-beta-1) for prerelease builds. -->
-    <CspManagerDependencyFloor Condition="'$(CspManagerDependencyFloor)' == ''">18.0.0</CspManagerDependencyFloor>
+         workflow sets a prerelease floor (e.g. 18.0.0-beta-1) for prerelease builds; stable
+         releases use the floor below.
+         18.2.0: the uSync packages use the node policy API (ICspService node methods,
+         CspDeletedNotification, CspDefinition.ContentKey) added in that release. -->
+    <CspManagerDependencyFloor Condition="'$(CspManagerDependencyFloor)' == ''">18.2.0</CspManagerDependencyFloor>
     <CspManagerDependencyCeiling Condition="'$(CspManagerDependencyCeiling)' == ''">19.0.0</CspManagerDependencyCeiling>
     <CspManagerDependencyRange>[$(CspManagerDependencyFloor),$(CspManagerDependencyCeiling))</CspManagerDependencyRange>
   </PropertyGroup>
