@@ -38,3 +38,10 @@ Once installed, Push and Pull entity actions become available in the CSP Manager
 ![Pull CSP policies from a remote environment](../assets/images/screenshots/pull-screen.png "Pull CSP policies"){: width="3840" height="2160" }
 
 These actions are available on both individual CSP policy items and the CSP Manager tree root.
+
+## Domain policies
+
+Pushing a [domain policy](../features/domain-policies) also pushes its content node and the node's hostnames, because a domain policy can only exist for a node with a hostname. Pushing the tree root sends every policy.
+
+{: .note }
+Publisher doesn't remove domain policies that exist only on the target. Delete them there, or sync the delete with a uSync import of the delete marker.

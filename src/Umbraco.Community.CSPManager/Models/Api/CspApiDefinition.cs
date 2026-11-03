@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Umbraco.Community.CSPManager.Services;
 
 namespace Umbraco.Community.CSPManager.Models.Api;
 
@@ -13,7 +14,9 @@ public sealed class CspApiDefinition : IValidatableObject
 {
 	/// <summary>
 	/// Gets or sets the unique identifier for this CSP definition.
-	/// Must be either <see cref="Constants.DefaultFrontEndId"/> or <see cref="Constants.DefaultBackofficeId"/>.
+	/// Either <see cref="Constants.DefaultFrontEndId"/> or <see cref="Constants.DefaultBackofficeId"/>
+	/// for the global policies, or the id the server gave a node policy when it was created.
+	/// Post <see cref="Guid.Empty"/> with a <see cref="ContentKey"/> to create a node policy.
 	/// </summary>
 	public Guid Id { get; set; }
 
@@ -33,6 +36,32 @@ public sealed class CspApiDefinition : IValidatableObject
 	/// Gets or sets a value indicating whether this definition is for the Umbraco backoffice.
 	/// </summary>
 	public bool IsBackOffice { get; set; }
+
+	/// <summary>
+	/// Gets or sets the key of the content node this node policy belongs to (a node with a hostname
+	/// in Culture and Hostnames), or <c>null</c> for the two global policies. It can't be changed once
+	/// a node policy exists.
+	/// </summary>
+	public Guid? ContentKey { get; set; }
+
+	/// <summary>
+	/// Gets or sets the name of the content node, for display only (ignored on save). <c>null</c> for
+	/// the global policies, and for a node policy whose node has been deleted.
+	/// </summary>
+	public string? ContentName { get; set; }
+
+	/// <summary>
+	/// Gets or sets the hostnames the policy applies to, for display only (ignored on save). Empty for
+	/// the global policies, and for an orphaned node policy whose node has no hostname any more.
+	/// </summary>
+	public List<CspApiDomainName> Domains { get; set; } = [];
+
+	/// <summary>
+	/// Gets or sets what happens when this node policy is disabled (the configured
+	/// <see cref="CspManagerOptions.DisabledNodePolicyBehavior"/>), for display only (ignored on
+	/// save). <c>null</c> for the global policies.
+	/// </summary>
+	public DisabledNodePolicyBehavior? DisabledNodePolicyBehavior { get; set; }
 
 	/// <summary>
 	/// Gets or sets the reporting directive to use (e.g., "report-uri" or "report-to").
@@ -56,162 +85,59 @@ public sealed class CspApiDefinition : IValidatableObject
 	public List<CspApiDefinitionSource> Sources { get; set; } = [];
 
 	/// <summary>
-	/// Maximum length for a source value (database column limit).
-	/// </summary>
-	private const int MaxSourceLength = 4000;
-
-	/// <summary>
 	/// Validates the CSP definition according to CSP specification rules.
 	/// </summary>
 	/// <param name="validationContext">The validation context.</param>
 	/// <returns>A collection of validation results.</returns>
 	public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
 	{
-		// Validate Id is one of the known definition IDs
-		if (!Constants.DefaultFrontEndId.Equals(Id) && !Constants.DefaultBackofficeId.Equals(Id))
+		var isGlobalId = Constants.DefaultFrontEndId.Equals(Id) || Constants.DefaultBackofficeId.Equals(Id);
+
+		// The service enforces the same rules (and checks the stored row); this just fails fast.
+		if (ContentKey is null)
 		{
-			yield return new ValidationResult("Invalid Id", [nameof(Id)]);
+			// Without a domain, only the two global policies exist.
+			if (!isGlobalId)
+			{
+				yield return new ValidationResult("Invalid Id", [nameof(Id)]);
+			}
+		}
+		else
+		{
+			if (isGlobalId)
+			{
+				yield return new ValidationResult("The global frontend and backoffice policies cannot be assigned to a content node", [nameof(ContentKey)]);
+			}
+
+			if (IsBackOffice)
+			{
+				yield return new ValidationResult("Node policies cannot be backoffice policies", [nameof(IsBackOffice)]);
+			}
 		}
 
-		// Validate ReportingDirective if provided
-		foreach (var result in ValidateReporting())
+		// The header content rules are shared with the service, which enforces them for every
+		// caller (uSync, custom code); validating here too keeps them as model-state errors.
+		foreach (var result in CspDefinitionValidator.Validate(
+			ReportingDirective,
+			ReportUri,
+			[.. Sources.Select(s => (s.Source, (IReadOnlyCollection<string>)s.Directives))]))
 		{
 			yield return result;
 		}
-
-		// Validate Sources
-		foreach (var result in ValidateSources())
-		{
-			yield return result;
-		}
 	}
 
-	private IEnumerable<ValidationResult> ValidateReporting()
-	{
-		if (string.IsNullOrWhiteSpace(ReportingDirective))
-		{
-			yield break;
-		}
-
-		// ReportingDirective must be one of the valid values
-		if (ReportingDirective != Constants.ReportingDirectives.ReportUri &&
-			ReportingDirective != Constants.ReportingDirectives.ReportTo)
-		{
-			yield return new ValidationResult(
-				$"ReportingDirective must be '{Constants.ReportingDirectives.ReportUri}' or '{Constants.ReportingDirectives.ReportTo}'",
-				[nameof(ReportingDirective)]);
-			yield break;
-		}
-
-		// If a reporting directive is set, ReportUri is required
-		if (string.IsNullOrWhiteSpace(ReportUri))
-		{
-			yield return new ValidationResult(
-				"ReportUri is required when ReportingDirective is set",
-				[nameof(ReportUri)]);
-			yield break;
-		}
-
-		// Validate ReportUri format based on directive type
-		if (ReportingDirective == Constants.ReportingDirectives.ReportUri)
-		{
-			// report-uri accepts absolute or relative URIs
-			if (!Uri.TryCreate(ReportUri, UriKind.RelativeOrAbsolute, out var uri))
-			{
-				yield return new ValidationResult(
-					"ReportUri must be a valid URI when using report-uri directive",
-					[nameof(ReportUri)]);
-			}
-			else if (uri.IsAbsoluteUri && uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-			{
-				yield return new ValidationResult(
-					"ReportUri must use HTTP or HTTPS scheme when using an absolute URI",
-					[nameof(ReportUri)]);
-			}
-		}
-		// report-to uses an endpoint name, not a URI - no URL validation needed
-	}
-
-	private IEnumerable<ValidationResult> ValidateSources()
-	{
-		if (Sources.Count == 0)
-		{
-			yield break;
-		}
-
-		// CSP host and keyword matching is case-insensitive, and SQL Server's default collation
-		// treats the (DefinitionId, Source) key the same way, so two sources differing only by
-		// case would collide on save. Treat them as duplicates up front.
-		var sourceSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var duplicates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-		for (var i = 0; i < Sources.Count; i++)
-		{
-			var source = Sources[i];
-
-			// Check for duplicate sources
-			if (!sourceSet.Add(source.Source))
-			{
-				duplicates.Add(source.Source);
-			}
-
-			// Check source length
-			if (source.Source.Length > MaxSourceLength)
-			{
-				yield return new ValidationResult(
-					$"Source '{TruncateForDisplay(source.Source)}' exceeds maximum length of {MaxSourceLength} characters",
-					[nameof(Sources)]);
-			}
-
-			// A source is a single header token. Whitespace or ';' would splice extra tokens or
-			// directives into the header, ',' would split it into two header values, and a control
-			// character makes Kestrel reject the header so the response ships with no CSP at all.
-			// (Whitespace-only sources are dropped by the service on save, so skip those here.)
-			if (!string.IsNullOrWhiteSpace(source.Source) && source.Source.Any(IsInvalidSourceCharacter))
-			{
-				yield return new ValidationResult(
-					$"Source '{TruncateForDisplay(source.Source)}' must be a single token: it cannot contain whitespace, ';', ',' or control characters",
-					[nameof(Sources)]);
-			}
-
-			// Validate directives are known CSP directives
-			foreach (var directive in source.Directives)
-			{
-				if (!Constants.AllDirectives.Contains(directive))
-				{
-					yield return new ValidationResult(
-						$"Unknown directive '{directive}' in source '{TruncateForDisplay(source.Source)}'",
-						[nameof(Sources)]);
-				}
-			}
-		}
-
-		if (duplicates.Count > 0)
-		{
-			var duplicateList = string.Join(", ", duplicates.Select(d => $"'{TruncateForDisplay(d)}'"));
-			yield return new ValidationResult(
-				$"Duplicate sources found: {duplicateList}",
-				[nameof(Sources)]);
-		}
-	}
-
-	private static bool IsInvalidSourceCharacter(char c)
-		=> char.IsWhiteSpace(c) || char.IsControl(c) || c == ';' || c == ',';
-
-	private static string TruncateForDisplay(string value, int maxLength = 50)
-	{
-		if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
-		{
-			return value;
-		}
-
-		return string.Concat(value.AsSpan(0, maxLength - 3), "...");
-	}
-
-	internal static CspApiDefinition FromCspDefinition(CspDefinition definition)
+	internal static CspApiDefinition FromCspDefinition(
+		CspDefinition definition,
+		string? contentName = null,
+		IEnumerable<CspApiDomainName>? domains = null,
+		DisabledNodePolicyBehavior? disabledNodePolicyBehavior = null)
 		=> new()
 		{
 			Id = definition.Id,
+			ContentKey = definition.ContentKey,
+			ContentName = definition.ContentKey is null ? null : contentName,
+			Domains = definition.ContentKey is null || domains is null ? [] : [.. domains],
+			DisabledNodePolicyBehavior = definition.ContentKey is null ? null : disabledNodePolicyBehavior,
 			Enabled = definition.Enabled,
 			UpgradeInsecureRequests = definition.UpgradeInsecureRequests,
 			ReportingDirective = definition.ReportingDirective,
@@ -220,8 +146,6 @@ public sealed class CspApiDefinition : IValidatableObject
 			ReportUri = definition.ReportUri,
 			Sources = definition.Sources.ConvertAll(CspApiDefinitionSource.FromCspDefinitionSource),
 		};
-
-
 
 	internal CspDefinition ToCspDefinition()
 		=> new()
@@ -233,6 +157,7 @@ public sealed class CspApiDefinition : IValidatableObject
 			IsBackOffice = IsBackOffice,
 			ReportingDirective = ReportingDirective,
 			ReportUri = ReportUri,
+			ContentKey = ContentKey,
 			Sources = Sources.ConvertAll(CspApiDefinitionSource.ToCspDefinitionSource)
 		};
 }

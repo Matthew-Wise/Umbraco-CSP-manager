@@ -30,7 +30,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 		base.SetUpTestConfiguration(configBuilder);
 		// Umbraco 17.3 runs package migrations via a background service when PackageMigrationsUnattended=true,
 		// which conflicts with the manual migration execution in SetUp. Disable it so tests manage their own migrations.
-		configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+		configBuilder.AddInMemoryCollection(new Dictionary<string, string>
 		{
 			["Umbraco:CMS:Unattended:PackageMigrationsUnattended"] = "false"
 		});
@@ -76,7 +76,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	[Test]
 	public async Task GetCspDefinitionAsync_ByKey_WhenDefinitionExists_ReturnsDefinitionWithSources()
 	{
-		var id = Guid.NewGuid();
+		var id = Constants.DefaultFrontEndId;
 		var definition = new CspDefinition
 		{
 			Id = id,
@@ -114,7 +114,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	{
 		var originalDefinition = new CspDefinition
 		{
-			Id = Guid.NewGuid(),
+			Id = Constants.DefaultBackofficeId,
 			Enabled = false,
 			IsBackOffice = true,
 			Sources = []
@@ -187,11 +187,11 @@ public class CspServiceTests : UmbracoIntegrationTest
 			.Callback<INotification, CancellationToken>((notification, _) => notificationPublished = true)
 			.Returns(Task.CompletedTask);
 
-		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches, NullLogger<CspService>.Instance);
+		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
 
 		var definition = new CspDefinition
 		{
-			Id = Guid.NewGuid(),
+			Id = Constants.DefaultFrontEndId,
 			Enabled = true,
 			IsBackOffice = false,
 			Sources = []
@@ -222,7 +222,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_CachesResult()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
 
 		await _cspService.SaveCspDefinitionAsync(new CspDefinition
 		{
@@ -256,7 +256,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_ReturnsIndependentCopyPerCall()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
 
 		var definition1 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 		definition1.Enabled = true;
@@ -284,7 +284,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_CachesTheLoadBeforeAwaitingIt()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
 
 		// Not awaited yet: everything up to the first await has run, including the cache insert.
 		var pending = service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
@@ -299,7 +299,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_WhenClearedMidLoad_DoesNotReCacheTheStaleLoad()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance);
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
 
 		var pending = service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 
@@ -329,7 +329,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			.Callback<CspSavedNotification, CancellationToken>((notification, _) => handler.Handle(notification))
 			.Returns(Task.CompletedTask);
 
-		var service = new CspService(eventAggregator, ScopeProvider, caches, NullLogger<CspService>.Instance);
+		var service = new CspService(eventAggregator, ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
 
 		await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 		Assert.That(caches.RuntimeCache.Get(Constants.FrontEndCacheKey), Is.Not.Null);
@@ -380,7 +380,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	[Test]
 	public async Task Integration_SaveAndRetrieveDefinition()
 	{
-		var definitionId = Guid.NewGuid();
+		var definitionId = Constants.DefaultFrontEndId;
 		var definition = new CspDefinition
 		{
 			Id = definitionId,
@@ -425,5 +425,41 @@ public class CspServiceTests : UmbracoIntegrationTest
 		var cdnSource = retrievedDefinition.Sources.First(s => s.Source == "https://cdn.example.com");
 		Assert.That(cdnSource.Directives, Contains.Item(Constants.Directives.ScriptSource));
 		Assert.That(cdnSource.Directives, Contains.Item(Constants.Directives.StyleSource));
+	}
+
+	// The header rules themselves are covered by CspApiDefinitionValidationTests; this proves the
+	// service applies them to callers that bypass the API (uSync, custom code).
+	[Test]
+	public async Task SaveCspDefinitionAsync_WithAnInvalidSource_IsRejectedAndNotStored()
+	{
+		const string source = "https://example.com\r\nX-Injected: 1";
+		var ex = Assert.ThrowsAsync<CspDefinitionValidationException>(() => _cspService.SaveCspDefinitionAsync(
+			new CspDefinition
+			{
+				Id = Constants.DefaultFrontEndId,
+				Enabled = true,
+				Sources = [new CspDefinitionSource { Source = source, Directives = [Constants.Directives.DefaultSource] }]
+			},
+			CancellationToken.None));
+
+		var stored = await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
+		Assert.Multiple(() =>
+		{
+			Assert.That(ex!.MemberName, Is.EqualTo(nameof(CspDefinition.Sources)));
+			Assert.That(ex.Message, Does.Contain("must be a single token").And.Not.Contain("\n"));
+			Assert.That(stored.Sources.Select(s => s.Source), Does.Not.Contain(source));
+		});
+	}
+
+	// "No reporting" can leave a Report URI behind; without a directive it never reaches the header,
+	// so it must not block the save.
+	[Test]
+	public async Task SaveCspDefinitionAsync_WithoutAReportingDirective_IgnoresAStaleReportUri()
+	{
+		await _cspService.SaveCspDefinitionAsync(
+			new CspDefinition { Id = Constants.DefaultFrontEndId, Enabled = true, ReportUri = "left over; from before" },
+			CancellationToken.None);
+
+		Assert.That((await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None)).Enabled, Is.True);
 	}
 }

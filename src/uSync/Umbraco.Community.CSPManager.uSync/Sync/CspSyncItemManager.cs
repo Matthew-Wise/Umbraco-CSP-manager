@@ -3,13 +3,17 @@ using Umbraco.Cms.Core;
 using Umbraco.Community.CSPManager.Services;
 using Umbraco.Community.CSPManager.uSync.Logging;
 using uSync.Core.Dependency;
-using uSync.Core.Extensions;
 using uSync.Core.Sync;
 
 using CspManagerConstants = Umbraco.Community.CSPManager.Constants;
 
 namespace Umbraco.Community.CSPManager.uSync.Sync;
 
+/// <summary>
+/// Maps the CSP tree to uSync items. Every tree item has the <c>csp-policy</c> entity type and the
+/// definition id; node policies are handed to uSync as <see cref="CspItemNames.NodePolicyEntityType"/>
+/// items with their content-derived key, so they reach <see cref="Handlers.CspNodePolicyHandler"/>.
+/// </summary>
 [SyncItemManager(CspManagerConstants.EntityTypes.CspPolicy)]
 public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 {
@@ -28,7 +32,7 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 		return SyncTreeType.Settings;
 	}
 
-	public override string[] EntityTypes => [CspManagerConstants.EntityTypes.CspPolicy];
+	public override string[] EntityTypes => [CspManagerConstants.EntityTypes.CspPolicy, CspItemNames.NodePolicyEntityType];
 
 	public override string[] Trees => ["Umbraco.Community.CSPManager.Tree"];
 
@@ -49,26 +53,23 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 
 		return new SyncEntity
 		{
-			Name = definition.IsBackOffice ? "Backoffice" : "Frontend",
-			Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, definition.Id),
+			Name = CspItemNames.Name(definition),
+			Udi = CspItemNames.GetUdi(definition),
 		};
 	}
 
-	public override Task<IEnumerable<SyncItem>> GetItemsAsync(SyncItem item)
-		=> uSyncTaskHelper.FromResultOf(() => GetItems(item).AsEnumerable());
-
-	private List<SyncItem> GetItems(SyncItem item)
+	public override async Task<IEnumerable<SyncItem>> GetItemsAsync(SyncItem item)
 	{
 		var items = new List<SyncItem>();
 
-		if (item.Udi.EntityType == CspManagerConstants.EntityTypes.CspPolicy && !item.Udi.IsRoot)
+		if (!item.Udi.IsRoot)
 		{
-			items.Add(item);
+			items.Add(await ToHandlerItemAsync(item));
 		}
 
 		if (item.Flags.HasFlag(DependencyFlags.IncludeChildren))
 		{
-			items.AddRange(GetDescendants(item, item.Flags & ~DependencyFlags.IncludeChildren));
+			items.AddRange(await GetDescendantsAsync(item, item.Flags & ~DependencyFlags.IncludeChildren));
 		}
 
 		Log.GetItemsResult(_logger, item.Udi, items.Count);
@@ -79,33 +80,70 @@ public class CspSyncItemManager : SyncItemManagerBase, ISyncItemManager
 		return items;
 	}
 
-	protected override Task<IEnumerable<SyncItem>> GetDescendantsAsync(SyncItem item, DependencyFlags flags)
-		=> Task.FromResult(GetDescendants(item, flags));
-
-	private IEnumerable<SyncItem> GetDescendants(SyncItem item, DependencyFlags flags)
+	protected override async Task<IEnumerable<SyncItem>> GetDescendantsAsync(SyncItem item, DependencyFlags flags)
 	{
 		Log.GetDescendants(_logger, item.Udi, flags, item.Udi.IsRoot);
-		if (item.Udi.IsRoot)
+		if (!item.Udi.IsRoot)
 		{
-			return
-			[
-				new SyncItem
-				{
-					Name = "Backoffice",
-					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultBackofficeId),
-					Flags = flags & ~DependencyFlags.IncludeChildren,
-					Icon = "icon-umbraco"
-				},
-				new SyncItem
-				{
-					Name = "Frontend",
-					Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultFrontEndId),
-					Flags = flags & ~DependencyFlags.IncludeChildren,
-					Icon = "icon-globe"
-				}
-			];
+			return [];
 		}
 
-		return [];
+		var childFlags = flags & ~DependencyFlags.IncludeChildren;
+		var items = new List<SyncItem>
+		{
+			new()
+			{
+				Name = "Backoffice",
+				Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultBackofficeId),
+				Flags = childFlags,
+				Icon = "icon-umbraco"
+			},
+			new()
+			{
+				Name = "Frontend",
+				Udi = Udi.Create(CspManagerConstants.EntityTypes.CspPolicy, CspManagerConstants.DefaultFrontEndId),
+				Flags = childFlags,
+				Icon = "icon-globe"
+			}
+		};
+
+		foreach (var policy in await _cspService.GetAllNodePoliciesAsync(CancellationToken.None))
+		{
+			items.Add(new SyncItem
+			{
+				Name = CspItemNames.Name(policy),
+				Udi = CspItemNames.GetUdi(policy),
+				Flags = childFlags,
+				Icon = "icon-home"
+			});
+		}
+
+		return items;
+	}
+
+	/// <summary>
+	/// A tree item carries the definition id; a node policy's handler knows it by its derived key.
+	/// </summary>
+	private async Task<SyncItem> ToHandlerItemAsync(SyncItem item)
+	{
+		if (item.Udi.EntityType != CspManagerConstants.EntityTypes.CspPolicy || item.Udi is not GuidUdi guidUdi)
+		{
+			return item;
+		}
+
+		var definition = await _cspService.GetCspDefinitionAsync(guidUdi.Guid, CancellationToken.None);
+		if (definition?.ContentKey is null)
+		{
+			return item;
+		}
+
+		return new SyncItem
+		{
+			Name = CspItemNames.Name(definition),
+			Udi = CspItemNames.GetUdi(definition),
+			Flags = item.Flags,
+			Icon = "icon-home",
+			Change = item.Change
+		};
 	}
 }

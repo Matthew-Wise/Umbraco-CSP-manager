@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Umbraco.Community.CSPManager.Logging;
@@ -71,6 +71,30 @@ internal static partial class Log
 		Message = "No CSP definition was returned for {Context}; no CSP header was applied")]
 	public static partial void CspDefinitionNotFound(ILogger logger, string context);
 
+	[LoggerMessage(
+		EventId = 10,
+		Level = LogLevel.Debug,
+		Message = "Node policy {DefinitionId} applies to {Path} (content node {ContentKey})")]
+	public static partial void CspDomainPolicyApplied(ILogger logger, Guid definitionId, Guid contentKey, PathString path);
+
+	[LoggerMessage(
+		EventId = 11,
+		Level = LogLevel.Debug,
+		Message = "Node policy {DefinitionId} is disabled; {Path} uses the global frontend policy instead")]
+	public static partial void CspDomainPolicyDisabledFallback(ILogger logger, Guid definitionId, PathString path);
+
+	[LoggerMessage(
+		EventId = 12,
+		Level = LogLevel.Error,
+		Message = "Failed to resolve the node policy for {Path}; using the global frontend policy instead")]
+	public static partial void CspDomainPolicyLookupFailed(ILogger logger, PathString path, Exception ex);
+
+	[LoggerMessage(
+		EventId = 13,
+		Level = LogLevel.Warning,
+		Message = "A {Part} in CSP definition {DefinitionId} contains control characters and was left out of the CSP header; re-save the definition to fix it")]
+	public static partial void CspUnsafeHeaderValueSkipped(ILogger logger, Guid definitionId, string part);
+
 	// ===========================================
 	// Service Events (100-199)
 	// ===========================================
@@ -104,6 +128,18 @@ internal static partial class Log
 		Level = LogLevel.Debug,
 		Message = "Loading CSP definition from database for {Context}")]
 	public static partial void LoadingCspDefinitionFromDatabase(ILogger logger, string context);
+
+	[LoggerMessage(
+		EventId = 105,
+		Level = LogLevel.Information,
+		Message = "Deleted CSP definition {DefinitionId} for {Context}")]
+	public static partial void CspDefinitionDeleted(ILogger logger, Guid definitionId, string context);
+
+	[LoggerMessage(
+		EventId = 106,
+		Level = LogLevel.Warning,
+		Message = "Rejected save of CSP definition {DefinitionId}: {Reason}")]
+	public static partial void CspDefinitionSaveRejected(ILogger logger, Guid definitionId, string reason);
 
 	// ===========================================
 	// Cache Events (200-299)

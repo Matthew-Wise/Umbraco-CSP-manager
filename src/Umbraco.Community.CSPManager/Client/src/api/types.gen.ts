@@ -9,6 +9,10 @@ export type CspApiDefinition = {
 	enabled: boolean;
 	reportOnly: boolean;
 	isBackOffice: boolean;
+	contentKey?: null | string;
+	contentName?: null | string;
+	domains: Array<CspApiDomainName>;
+	disabledNodePolicyBehavior?: null | DisabledNodePolicyBehavior;
 	reportingDirective?: null | string;
 	reportUri?: null | string;
 	upgradeInsecureRequests: boolean;
@@ -20,6 +24,29 @@ export type CspApiDefinitionSource = {
 	source: string;
 	directives: Array<string>;
 };
+
+export type CspApiDomainName = {
+	name: string;
+	culture?: null | string;
+};
+
+export type CspApiNodeInfo = {
+	contentKey: string;
+	contentName: string;
+	domains: Array<CspApiDomainName>;
+	hasCspPolicy: boolean;
+	cspDefinitionId?: null | string;
+};
+
+export type CspApiNodePolicy = {
+	id: string;
+	contentKey: string;
+	contentName?: null | string;
+	enabled: boolean;
+	isOrphaned: boolean;
+};
+
+export type DisabledNodePolicyBehavior = number;
 
 export type ProblemDetails = {
 	type?: null | string;
@@ -34,6 +61,7 @@ export type GetDefinitionsData = {
 	path?: never;
 	query?: {
 		isBackOffice?: boolean;
+		contentKey?: string;
 	};
 	url: '/umbraco/csp/api/v1/Definitions';
 };
@@ -47,6 +75,10 @@ export type GetDefinitionsErrors = {
 	 * The authenticated user does not have access to this resource
 	 */
 	403: unknown;
+	/**
+	 * Not Found
+	 */
+	404: unknown;
 };
 
 export type GetDefinitionsResponses = {
@@ -57,6 +89,141 @@ export type GetDefinitionsResponses = {
 };
 
 export type GetDefinitionsResponse = GetDefinitionsResponses[keyof GetDefinitionsResponses];
+
+export type DeleteDefinitionsByIdData = {
+	body?: never;
+	path: {
+		id: string;
+	};
+	query?: never;
+	url: '/umbraco/csp/api/v1/Definitions/{id}';
+};
+
+export type DeleteDefinitionsByIdErrors = {
+	/**
+	 * Bad Request
+	 */
+	400: ProblemDetails;
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+	/**
+	 * Not Found
+	 */
+	404: unknown;
+};
+
+export type DeleteDefinitionsByIdError = DeleteDefinitionsByIdErrors[keyof DeleteDefinitionsByIdErrors];
+
+export type DeleteDefinitionsByIdResponses = {
+	/**
+	 * OK
+	 */
+	200: unknown;
+};
+
+export type GetDefinitionsByIdData = {
+	body?: never;
+	path: {
+		id: string;
+	};
+	query?: never;
+	url: '/umbraco/csp/api/v1/Definitions/{id}';
+};
+
+export type GetDefinitionsByIdErrors = {
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+	/**
+	 * Not Found
+	 */
+	404: unknown;
+};
+
+export type GetDefinitionsByIdResponses = {
+	/**
+	 * OK
+	 */
+	200: CspApiDefinition;
+};
+
+export type GetDefinitionsByIdResponse = GetDefinitionsByIdResponses[keyof GetDefinitionsByIdResponses];
+
+export type PostDefinitionsCreateFromFrontendData = {
+	body?: never;
+	path?: never;
+	query?: {
+		contentKey?: string;
+	};
+	url: '/umbraco/csp/api/v1/Definitions/create-from-frontend';
+};
+
+export type PostDefinitionsCreateFromFrontendErrors = {
+	/**
+	 * Bad Request
+	 */
+	400: ProblemDetails;
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+};
+
+export type PostDefinitionsCreateFromFrontendError =
+	PostDefinitionsCreateFromFrontendErrors[keyof PostDefinitionsCreateFromFrontendErrors];
+
+export type PostDefinitionsCreateFromFrontendResponses = {
+	/**
+	 * OK
+	 */
+	200: CspApiDefinition;
+};
+
+export type PostDefinitionsCreateFromFrontendResponse =
+	PostDefinitionsCreateFromFrontendResponses[keyof PostDefinitionsCreateFromFrontendResponses];
+
+export type GetDefinitionsNodePoliciesData = {
+	body?: never;
+	path?: never;
+	query?: never;
+	url: '/umbraco/csp/api/v1/Definitions/node-policies';
+};
+
+export type GetDefinitionsNodePoliciesErrors = {
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+};
+
+export type GetDefinitionsNodePoliciesResponses = {
+	/**
+	 * OK
+	 */
+	200: Array<CspApiNodePolicy>;
+};
+
+export type GetDefinitionsNodePoliciesResponse =
+	GetDefinitionsNodePoliciesResponses[keyof GetDefinitionsNodePoliciesResponses];
 
 export type PostDefinitionsSaveData = {
 	body: CspApiDefinition;
@@ -78,6 +245,10 @@ export type PostDefinitionsSaveErrors = {
 	 * The authenticated user does not have access to this resource
 	 */
 	403: unknown;
+	/**
+	 * Not Found
+	 */
+	404: unknown;
 };
 
 export type PostDefinitionsSaveError = PostDefinitionsSaveErrors[keyof PostDefinitionsSaveErrors];
@@ -117,3 +288,30 @@ export type GetDirectivesResponses = {
 };
 
 export type GetDirectivesResponse = GetDirectivesResponses[keyof GetDirectivesResponses];
+
+export type GetNodesData = {
+	body?: never;
+	path?: never;
+	query?: never;
+	url: '/umbraco/csp/api/v1/Nodes';
+};
+
+export type GetNodesErrors = {
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+};
+
+export type GetNodesResponses = {
+	/**
+	 * OK
+	 */
+	200: Array<CspApiNodeInfo>;
+};
+
+export type GetNodesResponse = GetNodesResponses[keyof GetNodesResponses];

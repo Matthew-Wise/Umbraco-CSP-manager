@@ -8,7 +8,7 @@ namespace Umbraco.Community.CSPManager.Tests.Controllers.DefinitionsController;
 
 internal class GetDefinitionTests : CspManagementApiTest<DefinitionsControllerType>
 {
-	protected override Expression<Func<DefinitionsControllerType, object>> MethodSelector => x => x.GetDefinition(true, default);
+	protected override Expression<Func<DefinitionsControllerType, object>> MethodSelector => x => x.GetDefinition(true, null, default);
 
 	[Test]
 	public async Task GetDefinition_WithOutSectionAcess_Returns_Forbidden()
@@ -45,6 +45,10 @@ internal class GetDefinitionTests : CspManagementApiTest<DefinitionsControllerTy
 			  "enabled": false,
 			  "reportOnly": false,
 			  "isBackOffice": true,
+			  "contentKey": null,
+			  "contentName": null,
+			  "domains": [],
+			  "disabledNodePolicyBehavior": null,
 			  "reportingDirective": null,
 			  "reportUri": null,
 			  "upgradeInsecureRequests": false,
