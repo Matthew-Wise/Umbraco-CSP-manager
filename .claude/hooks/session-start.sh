@@ -17,20 +17,35 @@ if ! command -v dotnet >/dev/null 2>&1 || ! dotnet --list-sdks | grep -q '^10\.0
   apt-get install -y -qq dotnet-sdk-10.0 >/dev/null
 fi
 
-# Node: the clients declare engines node >=24; the image ships Node 22.
+# Node: the clients declare engines node >=24; the image ships Node 22 and puts
+# it first on PATH. Single place to change the Node version for cloud sessions.
+NODE_MAJOR=24
+
 export NVM_DIR="${NVM_DIR:-/opt/nvm}"
 # shellcheck disable=SC1091
 source "$NVM_DIR/nvm.sh"
-nvm install 24 >/dev/null
-NODE_BIN="$(dirname "$(nvm which 24)")"
+nvm install "$NODE_MAJOR" >/dev/null
+NODE_BIN="$(dirname "$(nvm which "$NODE_MAJOR")")"
 export PATH="$NODE_BIN:$PATH"
 
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
+  # Running as the SessionStart hook: persist into the session's environment.
   {
     echo "export PATH=\"$NODE_BIN:\$PATH\""
     echo 'export DOTNET_CLI_TELEMETRY_OPTOUT=1'
     echo 'export DOTNET_NOLOGO=1'
   } >> "$CLAUDE_ENV_FILE"
+else
+  # Running from the environment's Setup script: its exports end with the script,
+  # but session shells source ~/.bashrc. Replace any earlier line so re-runs and
+  # version bumps don't stack up PATH entries.
+  marker='# csp-manager session-start'
+  touch ~/.bashrc
+  sed -i "/$marker\$/d" ~/.bashrc
+  {
+    echo "export PATH=\"$NODE_BIN:\$PATH\" $marker"
+    echo "export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 $marker"
+  } >> ~/.bashrc
 fi
 
 dotnet restore src/Umbraco.Community.CSPManager.slnx

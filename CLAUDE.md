@@ -97,6 +97,10 @@ the default network policy), Node 24 via nvm, and restores NuGet + both clients.
 uSync.Complete client needs `pkgs.dev.azure.com` (the `@jumoo` npm registry) in the
 environment's allowed domains; without it only that project fails to build.
 
+The Node version lives in one place, `NODE_MAJOR` in the hook. The environment's Setup
+script runs the same hook; there `CLAUDE_ENV_FILE` is unset, so the hook writes the Node PATH
+to `~/.bashrc` instead (session shells source it), replacing its own earlier lines.
+
 ## Dependency Updates
 
 Maximise compatibility: only bump a dependency when it brings a benefit (security fix,
