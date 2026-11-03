@@ -12,12 +12,11 @@ on:
 
 jobs:
   claude-review:
-    # Skip bot PRs (Dependabot etc. - the action refuses bot actors anyway),
-    # drafts, and fork PRs (secrets are unavailable, so the run can only fail).
-    if: |
-      github.event.pull_request.user.type != 'Bot' &&
-      !github.event.pull_request.draft &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
     runs-on: ubuntu-latest
     permissions:
@@ -28,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
