@@ -103,6 +103,13 @@ The Node version lives in one place, `NODE_MAJOR` in the hook. The environment's
 script runs the same hook; there `CLAUDE_ENV_FILE` is unset, so the hook writes the Node PATH
 to `~/.bashrc` instead (session shells source it), replacing its own earlier lines.
 
+## Umbraco CLI
+
+The `umbraco-cli` skill (`.claude/skills/umbraco-cli/`) drives `@umbraco-cms/mcp-dev` against
+the three test sites via `--env .env.<site>` (`csp-manager`, `usync-a`, `usync-b`). The
+`.env*` files are gitignored; committed `.env.<site>.example` templates live in the skill's
+`templates/` folder.
+
 ## Dependency Updates
 
 Maximise compatibility: only bump a dependency when it brings a benefit (security fix,
