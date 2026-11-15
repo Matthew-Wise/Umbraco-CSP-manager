@@ -39,9 +39,9 @@ Once installed, Push and Pull entity actions become available in the CSP Manager
 
 These actions are available on both individual CSP policy items and the CSP Manager tree root.
 
-## Domain policies
+## Node policies
 
-Pushing a [domain policy](../features/domain-policies) also pushes its content node. The node's hostnames aren't sent as part of the policy: Umbraco doesn't give hostnames a stable key, so they can't be declared as a dependency. A domain policy can only exist for a node with a hostname, so set up the node's hostnames in Culture and Hostnames on the target first, otherwise the policy fails to import with that reason. Pushing the tree root sends every policy.
+Pushing a [node policy](../features/node-policies) also pushes its content node. A policy for one culture needs that language on the target: languages are settings, so push those first, otherwise the policy fails to import with that reason. Pushing the tree root sends every policy.
 
 {: .note }
-Publisher doesn't remove domain policies that exist only on the target. Delete them there, or sync the delete with a uSync import of the delete marker.
+Publisher doesn't remove node policies that exist only on the target. Delete them there, or sync the delete with a uSync import of the delete marker.

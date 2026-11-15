@@ -73,15 +73,18 @@ See [Troubleshooting](../troubleshooting) for more on diagnosing header construc
 **Type**: `FallbackToGlobal` \| `NoHeader`
 **Default**: `FallbackToGlobal`
 
-Controls which policy applies when a request matches a domain whose [domain policy](domain-policies) is disabled.
+Controls what happens when the [node policy](node-policies) that applies to a request is switched off.
 
 | Value | Behaviour |
 |---|---|
-| `FallbackToGlobal` | Applies the Frontend policy, as if the node had no domain policy. Disabling a domain policy retains baseline site protection. |
-| `NoHeader` | Sends no CSP header on the node's hostnames, matching the behaviour of a disabled Frontend policy. |
+| `FallbackToGlobal` | Skips the policy, as if the node had none. The content gets the policy it inherits: the nearest policy further up the content tree, or the Frontend policy. Switching a node policy off retains baseline protection. |
+| `NoHeader` | Sends no CSP header for the content a switched-off complete policy applies to, matching the behaviour of a disabled Frontend policy. |
 
 {: .warning }
-`NoHeader` is an explicit fail-open setting: disabling a domain policy removes all CSP protection from every hostname of its node. Keep the default unless you specifically require an unconstrained site.
+`NoHeader` is an explicit fail-open setting: switching a complete node policy off removes all CSP protection from its content and, unless it is for that content only, from the pages below it. Keep the default unless you specifically require unconstrained content.
+
+{: .note }
+An inherit-and-add policy only adds sources, so switching it off never removes the header: the content keeps the policy it inherits under both values.
 
 ```json
 {
@@ -91,4 +94,4 @@ Controls which policy applies when a request matches a domain whose [domain poli
 }
 ```
 
-Domains without a domain policy always use the Frontend policy; this option only applies when a configured domain policy is disabled.
+Content without a node policy on it or above it always uses the Frontend policy; this option only applies when a node policy is switched off.

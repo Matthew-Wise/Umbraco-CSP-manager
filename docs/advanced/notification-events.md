@@ -17,7 +17,7 @@ Raised when the middleware is building a CSP definition for an HTTP request, bef
 - `HttpContext` — the current HTTP context
 
 {: .note }
-When a request matches a domain with a [domain policy](../features/domain-policies), `CspDefinition` represents that domain policy. Its `ContentKey` property (the key of the content node the routed hostname belongs to) is populated, and `IsBackOffice` is `false`. To identify frontend requests regardless of whether a domain policy applies, check `!IsBackOffice` rather than comparing `Id` to `DefaultFrontEndId`.
+When a [node policy](../features/node-policies) applies to a request, `CspDefinition` is the resolved policy: a complete policy, with the sources of any inherit-and-add policies added. Its `ContentKey` property (the key of the content node of the policy nearest the page) is populated, and `IsBackOffice` is `false`. To identify frontend requests regardless of whether a node policy applies, check `!IsBackOffice` rather than comparing `Id` to `DefaultFrontEndId`.
 
 ```csharp
 using Umbraco.Cms.Core.Events;
@@ -108,7 +108,7 @@ public class CustomCspSavedHandler : INotificationHandler<CspSavedNotification>
 
 ## CspDeletedNotification
 
-Raised after a [domain policy](../features/domain-policies) has been deleted and the deletion committed. Global policies cannot be deleted, so this is only raised for domain policies.
+Raised after a [node policy](../features/node-policies) has been deleted and the deletion committed. Global policies cannot be deleted, so this is only raised for node policies.
 
 **Properties**:
 - `CspDefinition` — the definition as it was before deletion
