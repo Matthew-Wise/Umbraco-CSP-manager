@@ -400,7 +400,9 @@ internal sealed class CspService : ICspService
 
 		// An extending policy starts empty: it inherits everything. A complete policy starts as a
 		// copy of what the node gets today (a policy further up the tree, or the Frontend policy),
-		// so creating it changes no header until it is edited.
+		// so creating it changes no header until it is edited. The one exception follows from
+		// "always on" above: when what the node gets today is switched off (the Frontend policy,
+		// or a policy above it under NoHeader), the node sends no header now and does afterwards.
 		if (inheritance == CspPolicyInheritance.Replace)
 		{
 			var current = await ResolveCspDefinitionAsync(contentKey, domainContentKey: null, definition.Culture, cancellationToken)

@@ -75,10 +75,11 @@ public abstract class CspManagementApiTest<T> : ManagementApiTest<T>
 			.SingleOrDefault(service => service.GetType().Name == "UnattendedUpgradeBackgroundService");
 		Assert.That(startup, Is.Not.Null, "Umbraco's UnattendedUpgradeBackgroundService was not found. Has it been renamed?");
 
-		if (startup.ExecuteTask is { } running)
-		{
-			await running.WaitAsync(TimeSpan.FromMinutes(2));
-		}
+		// The host has started every hosted service by the time a test gets its services, so the
+		// task exists. If that ever changes, waiting for nothing would bring the hang back quietly.
+		Assert.That(startup.ExecuteTask, Is.Not.Null, "Umbraco's UnattendedUpgradeBackgroundService has not been started yet.");
+
+		await startup.ExecuteTask.WaitAsync(TimeSpan.FromMinutes(2));
 	}
 
 	protected async Task<IUserGroup> CreateCspUserGroupAsync()

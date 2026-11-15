@@ -30,7 +30,10 @@
   under `DisabledNodePolicyBehavior.NoHeader` ends the walk with no header. The merged result has the
   id, node and culture of the most specific policy, the settings (enabled, report-only, reporting,
   upgrade-insecure-requests) of the base and the sources of all of them; `'none'` is dropped from a
-  directive that gained another source.
+  directive that gained another source. An `Extend` policy only ever allows more: a fetch directive
+  it is the first to use (`script-src` on a base with only `default-src`) starts from the sources of
+  the directive it fell back to, and is left out when it fell back to nothing (the base doesn't
+  restrict it). Directives without a fallback (`frame-ancestors`, `form-action`) are added as written.
 - Keyed on the node, not the hostname: Umbraco doesn't persist `IDomain.Key`, hostnames differ per
   environment, and a multilingual site has a hostname per culture on one node. A policy is orphaned
   (kept, no effect, deletable) when its node is deleted or trashed, or its culture is no longer a
@@ -79,7 +82,9 @@ Routes live in `Controllers/` under `/umbraco/csp/api/v1` and are described by t
 
 - Stored versus effective: `GET Definitions?contentKey=&culture=` returns the policy stored for exactly
   that node and culture (no fallback, 404 if none); `GET Definitions/effective` returns what a request
-  for that page and culture gets today (resolved and merged, or the Frontend policy).
+  for that page and culture gets today (resolved and merged, or the Frontend policy). No culture
+  means the default language, as for a routed request. A merged result is not a stored policy: it
+  has an empty id, so it can't be saved over the `Extend` policy it is named after.
 - Creating: a node policy posted to `Definitions/save` with `Guid.Empty` is created with a
   server-assigned id; any other unknown node-policy id is 404. `create-from-frontend` creates a
   `Replace` policy as a copy of what the node gets today, an `Extend` policy without sources.

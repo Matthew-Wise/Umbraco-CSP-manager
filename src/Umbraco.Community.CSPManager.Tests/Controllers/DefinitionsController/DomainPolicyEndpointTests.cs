@@ -461,7 +461,10 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 			Assert.That(inherited.ContentName, Is.EqualTo("Site A"));
 			Assert.That(inherited.Sources.Select(s => s.Source), Is.EqualTo(new[] { "site-a.example.com" }));
 
-			Assert.That(extended.Id, Is.EqualTo(pageA.Id));
+			Assert.That(extended.Id, Is.EqualTo(Guid.Empty), "a combined result is not a stored policy");
+			Assert.That(extended.Sources.Select(s => s.DefinitionId), Is.All.EqualTo(Guid.Empty));
+			Assert.That(extended.ContentKey, Is.EqualTo(pageA.ContentKey));
+			Assert.That(extended.Culture, Is.EqualTo("fr-FR"));
 			Assert.That(extended.ContentName, Is.EqualTo("Page A"));
 			Assert.That(extended.Sources.Select(s => s.Source), Is.EqualTo(new[] { "site-a.example.com", "maps.example.com" }));
 
@@ -470,6 +473,63 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 			Assert.That(global.Sources.Select(s => s.Source), Is.EqualTo(new[] { "frontend.example.com" }));
 
 			Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+		});
+	}
+
+	// A routed request always has a culture: without a hostname that sets one, the default language.
+	[Test]
+	public async Task GetEffectiveDefinition_WithoutACulture_AnswersForTheDefaultLanguage()
+	{
+		var defaultLanguage = await GetRequiredService<ILanguageService>().GetDefaultIsoCodeAsync();
+		var forDefaultLanguage = await _cspService.SaveCspDefinitionAsync(new CspDefinition
+		{
+			ContentKey = _siteA.Key,
+			Culture = defaultLanguage,
+			Enabled = true,
+			Sources = [new CspDefinitionSource { Source = "default-language.example.com", Directives = [Constants.Directives.ScriptSource] }]
+		}, CancellationToken.None);
+		var french = await CreateFrenchPolicyAsync(_siteA.Key);
+		await AuthenticateAsAdminAsync();
+
+		var withoutCulture = await ReadDefinitionAsync(await Client.GetAsync(DefinitionsUrl(x => x.GetEffectiveDefinition(_pageA.Key, null, CancellationToken.None))));
+		var padded = await ReadDefinitionAsync(await Client.GetAsync(DefinitionsUrl(x => x.GetEffectiveDefinition(_pageA.Key, " fr-fr ", CancellationToken.None))));
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(withoutCulture.Id, Is.EqualTo(forDefaultLanguage.Id));
+			Assert.That(padded.Id, Is.EqualTo(french.Id), "the culture is trimmed and matched whatever its case");
+		});
+	}
+
+	// The combined result has the sources of the whole chain. It must not be possible to post it
+	// back and so copy everything the extending policy inherits into that policy.
+	[Test]
+	public async Task GetEffectiveDefinition_CombinedResult_CannotBeSavedOverTheExtendingPolicy()
+	{
+		await _cspService.SaveCspDefinitionAsync(new CspDefinition
+		{
+			ContentKey = _siteA.Key,
+			Enabled = true,
+			Sources = [new CspDefinitionSource { Source = "site-a.example.com", Directives = [Constants.Directives.ScriptSource] }]
+		}, CancellationToken.None);
+		var extending = await _cspService.SaveCspDefinitionAsync(new CspDefinition
+		{
+			ContentKey = _pageA.Key,
+			Inheritance = CspPolicyInheritance.Extend,
+			Enabled = true,
+			Sources = [new CspDefinitionSource { Source = "maps.example.com", Directives = [Constants.Directives.ScriptSource] }]
+		}, CancellationToken.None);
+		await AuthenticateAsAdminAsync();
+
+		var effective = await ReadDefinitionAsync(await Client.GetAsync(DefinitionsUrl(x => x.GetEffectiveDefinition(_pageA.Key, null, CancellationToken.None))));
+		var response = await PostSaveAsync(effective);
+
+		var stored = await _cspService.GetCspDefinitionAsync(extending.Id, CancellationToken.None);
+		Assert.Multiple(() =>
+		{
+			Assert.That(effective.Sources.Select(s => s.Source), Is.EqualTo(new[] { "site-a.example.com", "maps.example.com" }));
+			Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+			Assert.That(stored!.Sources.Select(s => s.Source), Is.EqualTo(new[] { "maps.example.com" }));
 		});
 	}
 

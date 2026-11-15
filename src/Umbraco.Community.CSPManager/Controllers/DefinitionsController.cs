@@ -85,13 +85,22 @@ public class DefinitionsController : CspManagerControllerBase
 	/// nearest policy further up the content tree, or the global frontend policy, with the sources
 	/// of every policy that extends it.
 	/// </summary>
+	/// <remarks>
+	/// The answer is for the page on its own site. A page that is served on another site's hostname
+	/// (a shared "not found" page) can get that site's policy there instead.
+	/// </remarks>
 	/// <param name="contentKey">The key of the content node.</param>
-	/// <param name="culture">The ISO code of the request's culture. Leave out for a request without a culture.</param>
+	/// <param name="culture">
+	/// The ISO code of the request's culture. Leave out for the default language, which is what
+	/// Umbraco gives a request that no hostname gives a culture.
+	/// </param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>
-	/// The effective policy. Its id, content node and culture are those of the most specific policy
+	/// The effective policy. Its content node and culture are those of the most specific policy
 	/// that applies, so they say where the policy comes from; for the global frontend policy the
-	/// content node is <c>null</c>.
+	/// content node is <c>null</c>. Its id is that policy's id when the result is one stored policy
+	/// as it is. A result that combines a policy with the policies extending it is not a stored
+	/// policy and has an empty id, so that it can't be saved over one of them.
 	/// </returns>
 	/// <response code="404">The content node doesn't exist or is in the recycle bin.</response>
 	[HttpGet("Definitions/effective")]
@@ -108,10 +117,27 @@ public class DefinitionsController : CspManagerControllerBase
 			return NotFound();
 		}
 
+		// A routed request always has a culture: the hostname's, or else the default language.
+		culture = string.IsNullOrWhiteSpace(culture) ? await _languageService.GetDefaultIsoCodeAsync() : culture.Trim();
+
 		var definition = await _cspService.ResolveCspDefinitionAsync(contentKey, domainContentKey: null, culture, cancellationToken)
 			?? await _cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, cancellationToken);
 
-		return await ToApiDefinitionAsync(definition);
+		var effective = await ToApiDefinitionAsync(definition);
+
+		// Resolution only returns an extending policy as the most specific part of a combined
+		// result. That result has the sources of the whole chain: saved under the extending
+		// policy's id it would copy everything it inherits into it.
+		if (definition.Inheritance == CspPolicyInheritance.Extend)
+		{
+			effective.Id = Guid.Empty;
+			foreach (var source in effective.Sources)
+			{
+				source.DefinitionId = Guid.Empty;
+			}
+		}
+
+		return effective;
 	}
 
 	/// <summary>

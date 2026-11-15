@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Umbraco.Community.CSPManager.Models;
 
 namespace Umbraco.Community.CSPManager.Services;
@@ -64,6 +65,29 @@ internal sealed class CspNodePolicySnapshot
 internal static class CspNodePolicyResolver
 {
 	private const string NoneSource = "'none'";
+
+	// What a browser uses for a fetch directive a policy doesn't have, nearest first (CSP Level 3,
+	// "directive fallback list"). Directives that aren't listed have no fallback. child-src is
+	// simplified to default-src: for workers a browser would look at script-src first.
+	private static readonly FrozenDictionary<string, string[]> FallbackDirectives = new Dictionary<string, string[]>
+	{
+		[Constants.Directives.ScriptSourceElement] = [Constants.Directives.ScriptSource, Constants.Directives.DefaultSource],
+		[Constants.Directives.ScriptSourceAttribute] = [Constants.Directives.ScriptSource, Constants.Directives.DefaultSource],
+		[Constants.Directives.StyleSourceElement] = [Constants.Directives.StyleSource, Constants.Directives.DefaultSource],
+		[Constants.Directives.StyleSourceAttribute] = [Constants.Directives.StyleSource, Constants.Directives.DefaultSource],
+		[Constants.Directives.WorkerSource] = [Constants.Directives.ChildSource, Constants.Directives.ScriptSource, Constants.Directives.DefaultSource],
+		[Constants.Directives.FrameSource] = [Constants.Directives.ChildSource, Constants.Directives.DefaultSource],
+		[Constants.Directives.ChildSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.ConnectSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.FontSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.ImageSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.ManifestSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.MediaSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.ObjectSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.PreFetchSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.ScriptSource] = [Constants.Directives.DefaultSource],
+		[Constants.Directives.StyleSource] = [Constants.Directives.DefaultSource],
+	}.ToFrozenDictionary(StringComparer.Ordinal);
 
 	/// <summary>
 	/// The outcome of a walk.
@@ -160,6 +184,13 @@ internal static class CspNodePolicyResolver
 	/// A new definition with the identity (id, content node, culture) of the most specific policy,
 	/// the settings of <paramref name="baseDefinition"/> and the sources of all of them.
 	/// </returns>
+	/// <remarks>
+	/// An extending policy only ever allows more. A fetch directive it is the first to use (say
+	/// <c>script-src</c> on top of a policy with only <c>default-src</c>) would otherwise stop
+	/// falling back and lose everything it allowed so far, so that directive starts from the sources
+	/// of the directive it fell back to. When it fell back to nothing, the policy so far doesn't
+	/// restrict it and the extra sources are already allowed: the directive is left out.
+	/// </remarks>
 	public static CspDefinition Merge(CspDefinition baseDefinition, IReadOnlyList<CspDefinition> additions)
 	{
 		var mostSpecific = additions[0];
@@ -179,38 +210,102 @@ internal static class CspNodePolicyResolver
 		};
 
 		var bySource = new Dictionary<string, CspDefinitionSource>(StringComparer.Ordinal);
+		var directivesInUse = new HashSet<string>(StringComparer.Ordinal);
 
-		void AddSources(CspDefinition definition)
+		void AddSources(CspDefinition definition, HashSet<string>? leftOut)
 		{
 			foreach (var source in definition.Sources)
 			{
-				if (!bySource.TryGetValue(source.Source, out var target))
-				{
-					target = new CspDefinitionSource { DefinitionId = merged.Id, Source = source.Source, Directives = [] };
-					bySource.Add(source.Source, target);
-					merged.Sources.Add(target);
-				}
+				bySource.TryGetValue(source.Source, out var target);
 
 				foreach (var directive in source.Directives)
 				{
+					if (leftOut is not null && leftOut.Contains(directive))
+					{
+						continue;
+					}
+
+					if (target is null)
+					{
+						target = new CspDefinitionSource { DefinitionId = merged.Id, Source = source.Source, Directives = [] };
+						bySource.Add(source.Source, target);
+						merged.Sources.Add(target);
+					}
+
 					if (!target.Directives.Contains(directive))
 					{
 						target.Directives.Add(directive);
 					}
+
+					directivesInUse.Add(directive);
 				}
 			}
 		}
 
 		// Least specific first, so the header reads base, site-wide additions, page additions.
-		AddSources(baseDefinition);
+		AddSources(baseDefinition, leftOut: null);
 		for (var i = additions.Count - 1; i >= 0; i--)
 		{
-			AddSources(additions[i]);
+			var unrestricted = StartNewFetchDirectives(additions[i], merged.Sources, directivesInUse);
+			AddSources(additions[i], unrestricted);
 		}
 
 		RemoveNoneWhereSourcesWereAdded(merged.Sources);
 
 		return merged;
+	}
+
+	// Prepares the merged sources for the fetch directives that an extending policy is the first to
+	// use: each starts from the sources of the directive it fell back to until now. Returns the
+	// ones that fell back to nothing, which the policy must not add (it would restrict what the
+	// policy so far allows), or null when there are none.
+	private static HashSet<string>? StartNewFetchDirectives(
+		CspDefinition addition,
+		List<CspDefinitionSource> mergedSources,
+		HashSet<string> directivesInUse)
+	{
+		// The fallback of every new directive is decided before any of them is started, so that
+		// one new directive never starts from another one of the same policy.
+		List<(string Directive, string? FellBackTo)>? started = null;
+		foreach (var source in addition.Sources)
+		{
+			foreach (var directive in source.Directives)
+			{
+				if (!directivesInUse.Contains(directive)
+					&& FallbackDirectives.TryGetValue(directive, out var fallbacks)
+					&& started?.Exists(s => s.Directive == directive) != true)
+				{
+					(started ??= []).Add((directive, Array.Find(fallbacks, directivesInUse.Contains)));
+				}
+			}
+		}
+
+		if (started is null)
+		{
+			return null;
+		}
+
+		HashSet<string>? unrestricted = null;
+		foreach (var (directive, fellBackTo) in started)
+		{
+			if (fellBackTo is null)
+			{
+				(unrestricted ??= new HashSet<string>(StringComparer.Ordinal)).Add(directive);
+				continue;
+			}
+
+			foreach (var source in mergedSources)
+			{
+				if (source.Directives.Contains(fellBackTo))
+				{
+					source.Directives.Add(directive);
+				}
+			}
+
+			directivesInUse.Add(directive);
+		}
+
+		return unrestricted;
 	}
 
 	// 'none' only means something as the only value of a directive: next to another source a

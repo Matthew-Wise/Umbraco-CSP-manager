@@ -378,6 +378,7 @@ public class CspNodePolicyResolverTests
 	public void Merge_SameSourceInSeveralPolicies_CombinesItsDirectivesOnce()
 	{
 		var baseDefinition = Policy(Home, "cdn.example.com", directive: Constants.Directives.ScriptSource);
+		baseDefinition.Sources.Add(new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.StyleSource] });
 		var page = Policy(Page, "cdn.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.StyleSource);
 		page.Sources[0].Directives.Add(Constants.Directives.ScriptSource);
 
@@ -385,7 +386,7 @@ public class CspNodePolicyResolverTests
 
 		Assert.Multiple(() =>
 		{
-			Assert.That(SourcesOf(merged), Is.EqualTo(new[] { "cdn.example.com" }));
+			Assert.That(SourcesOf(merged), Is.EqualTo(new[] { "cdn.example.com", "'self'" }));
 			Assert.That(merged.Sources[0].Directives, Is.EqualTo(new[] { Constants.Directives.ScriptSource, Constants.Directives.StyleSource }));
 		});
 	}
@@ -393,16 +394,18 @@ public class CspNodePolicyResolverTests
 	[Test]
 	public void Merge_DoesNotChangeThePoliciesItCombines()
 	{
-		var baseDefinition = Policy(Home, "cdn.example.com", directive: Constants.Directives.ScriptSource);
-		var page = Policy(Page, "cdn.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.StyleSource);
+		// The page is the first to use script-src, so the merged copy of the base's source gains
+		// that directive too: the base itself must not.
+		var baseDefinition = Policy(Home, "cdn.example.com");
+		var page = Policy(Page, "cdn.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.ScriptSource);
 
 		var merged = CspNodePolicyResolver.Merge(baseDefinition, [page]);
 		merged.Sources[0].Directives.Add("mutated");
 
 		Assert.Multiple(() =>
 		{
-			Assert.That(baseDefinition.Sources[0].Directives, Is.EqualTo(new[] { Constants.Directives.ScriptSource }));
-			Assert.That(page.Sources[0].Directives, Is.EqualTo(new[] { Constants.Directives.StyleSource }));
+			Assert.That(baseDefinition.Sources[0].Directives, Is.EqualTo(new[] { Constants.Directives.DefaultSource }));
+			Assert.That(page.Sources[0].Directives, Is.EqualTo(new[] { Constants.Directives.ScriptSource }));
 		});
 	}
 
@@ -441,10 +444,142 @@ public class CspNodePolicyResolverTests
 	public void Merge_NoneOnADirectiveNothingElseUses_IsKept()
 	{
 		var baseDefinition = Policy(Home, "'none'", directive: Constants.Directives.ObjectSource);
+		baseDefinition.Sources.Add(new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.FrameSource] });
 		var page = Policy(Page, "https://www.google.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.FrameSource);
 
 		var merged = CspNodePolicyResolver.Merge(baseDefinition, [page]);
 
-		Assert.That(SourcesOf(merged), Is.EqualTo(new[] { "'none'", "https://www.google.com" }));
+		Assert.That(SourcesOf(merged), Is.EqualTo(new[] { "'none'", "'self'", "https://www.google.com" }));
+	}
+
+	// ── Merge: a directive the extending policy is the first to use ──────────
+
+	private static string[] DirectivesOf(CspDefinition definition, string source)
+		=> [.. definition.Sources.Single(s => s.Source == source).Directives];
+
+	// default-src 'self' plus a page that allows a maps script: without the fallback sources the
+	// header would be "script-src maps", which blocks the site's own scripts on that page.
+	[Test]
+	public void Merge_DirectiveTheBaseDoesNotHave_StartsFromTheDirectiveItFellBackTo()
+	{
+		var baseDefinition = Policy(Home, "'self'");
+		var page = Policy(Page, "maps.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.ScriptSource);
+
+		var merged = CspNodePolicyResolver.Merge(baseDefinition, [page]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(DirectivesOf(merged, "'self'"), Is.EqualTo(new[] { Constants.Directives.DefaultSource, Constants.Directives.ScriptSource }));
+			Assert.That(DirectivesOf(merged, "maps.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSource }));
+		});
+	}
+
+	[Test]
+	public void Merge_NewDirective_StartsFromTheNearestFallbackOnly()
+	{
+		var baseDefinition = Policy(Home, "'self'");
+		baseDefinition.Sources.Add(new CspDefinitionSource { Source = "cdn.example.com", Directives = [Constants.Directives.ScriptSource] });
+		var page = Policy(Page, "maps.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.ScriptSourceElement);
+
+		var merged = CspNodePolicyResolver.Merge(baseDefinition, [page]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(DirectivesOf(merged, "'self'"), Is.EqualTo(new[] { Constants.Directives.DefaultSource }), "script-src-elem fell back to script-src, not default-src");
+			Assert.That(DirectivesOf(merged, "cdn.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement }));
+			Assert.That(DirectivesOf(merged, "maps.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSourceElement }));
+		});
+	}
+
+	[Test]
+	public void Merge_NewDirective_IncludesWhatLessSpecificExtendingPoliciesAdded()
+	{
+		var section = Policy(Section, "cdn.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.ScriptSource);
+		var page = Policy(Page, "maps.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.ScriptSourceElement);
+
+		var merged = CspNodePolicyResolver.Merge(Policy(Home, "'self'"), [page, section]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(DirectivesOf(merged, "'self'"), Is.EqualTo(new[]
+			{
+				Constants.Directives.DefaultSource, Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement,
+			}));
+			Assert.That(DirectivesOf(merged, "cdn.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement }));
+			Assert.That(DirectivesOf(merged, "maps.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSourceElement }));
+		});
+	}
+
+	// Each new directive starts from what the policy inherits, not from its own other additions.
+	[Test]
+	public void Merge_TwoNewDirectivesInOnePolicy_EachStartsFromWhatThePolicyInherits()
+	{
+		var page = Policy(Page, "a.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.ScriptSource);
+		page.Sources.Add(new CspDefinitionSource { Source = "b.example.com", Directives = [Constants.Directives.ScriptSourceElement] });
+
+		var merged = CspNodePolicyResolver.Merge(Policy(Home, "'self'"), [page]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(DirectivesOf(merged, "'self'"), Is.EqualTo(new[]
+			{
+				Constants.Directives.DefaultSource, Constants.Directives.ScriptSource, Constants.Directives.ScriptSourceElement,
+			}));
+			Assert.That(DirectivesOf(merged, "a.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSource }));
+			Assert.That(DirectivesOf(merged, "b.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSourceElement }));
+		});
+	}
+
+	[Test]
+	public void Merge_NewDirectiveOnTopOfDefaultSrcNone_GetsOnlyTheAddedSource()
+	{
+		var page = Policy(Page, "maps.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.ScriptSource);
+
+		var merged = CspNodePolicyResolver.Merge(Policy(Home, "'none'"), [page]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(DirectivesOf(merged, "'none'"), Is.EqualTo(new[] { Constants.Directives.DefaultSource }));
+			Assert.That(DirectivesOf(merged, "maps.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSource }));
+		});
+	}
+
+	// A base with script-src only doesn't restrict styles. "style-src fonts" from an extending
+	// policy would restrict them to that one source, so the directive is left out.
+	[Test]
+	public void Merge_FetchDirectiveTheBaseDoesNotRestrict_IsLeftOut()
+	{
+		var baseDefinition = Policy(Home, "'self'", directive: Constants.Directives.ScriptSource);
+		var page = Policy(Page, "fonts.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.StyleSource);
+		page.Sources.Add(new CspDefinitionSource
+		{
+			Source = "cdn.example.com",
+			Directives = [Constants.Directives.StyleSource, Constants.Directives.ScriptSource],
+		});
+		var section = Policy(Section, "more-fonts.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.StyleSource);
+
+		var merged = CspNodePolicyResolver.Merge(baseDefinition, [page, section]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(SourcesOf(merged), Is.EqualTo(new[] { "'self'", "cdn.example.com" }));
+			Assert.That(DirectivesOf(merged, "cdn.example.com"), Is.EqualTo(new[] { Constants.Directives.ScriptSource }));
+		});
+	}
+
+	// frame-ancestors, form-action and base-uri never fall back to default-src, and restricting
+	// them from a page is a normal thing to want, so they are added as written.
+	[Test]
+	public void Merge_DirectiveWithoutFallback_IsAddedAsWritten()
+	{
+		var page = Policy(Page, "partner.example.com", inheritance: CspPolicyInheritance.Extend, directive: Constants.Directives.FrameAncestors);
+
+		var merged = CspNodePolicyResolver.Merge(Policy(Home, "'self'"), [page]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(DirectivesOf(merged, "'self'"), Is.EqualTo(new[] { Constants.Directives.DefaultSource }));
+			Assert.That(DirectivesOf(merged, "partner.example.com"), Is.EqualTo(new[] { Constants.Directives.FrameAncestors }));
+		});
 	}
 }
