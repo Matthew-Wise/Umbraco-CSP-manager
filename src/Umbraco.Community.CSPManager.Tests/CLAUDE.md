@@ -9,6 +9,19 @@
 ## Running Tests
 
 - `dotnet test` from this directory or solution root
+- One fixture: `dotnet test --filter "FullyQualifiedName~CspNodePolicyResolverTests"`
+- CI adds `--filter "Category!=LongRunning"`. No test has that category today.
+
+## Writing Tests
+
+- API tests (`Controllers/<Controller>/`): inherit `CspManagementApiTest<TController>`. It registers
+  the package and runs its migrations, and `CreateCspUserGroupAsync()` gives a group with access
+  to the CSP section.
+- Service and migration tests: `UmbracoIntegrationTest` with
+  `[UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]`, running the migrations
+  through `CspTestMigrationHelper`.
+- Pure logic (`CspNodePolicyResolverTests`): plain NUnit, no Umbraco host. Prefer this when the
+  logic allows it, since it runs in milliseconds.
 
 ## Pitfalls
 

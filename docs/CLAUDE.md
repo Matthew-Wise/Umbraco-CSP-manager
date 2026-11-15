@@ -2,6 +2,12 @@
 
 This directory is a [Just the Docs](https://just-the-docs.com/) Jekyll site deployed to GitHub Pages at `https://matthew-wise.github.io/Umbraco-CSP-manager/`.
 
+## Commands
+
+- Build (what CI runs, Ruby 3.3): `bundle install` once, then `bundle exec jekyll build` in `docs/`
+- `/write-doc-page` and `/review-docs` (`.claude/commands/`) write and review a page against the
+  style guide below
+
 ## Critical: Jekyll renders HTML as a single line
 
 Jekyll collapses the entire rendered page into a single line of HTML. This has one important consequence for any JavaScript written in `_includes` files:

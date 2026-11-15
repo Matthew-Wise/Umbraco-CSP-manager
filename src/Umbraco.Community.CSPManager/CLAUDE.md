@@ -2,7 +2,7 @@
 
 ## Architecture
 
-- **Controllers/**: API endpoints at `/csp/api/v1.0` with custom authorization
+- **Controllers/**: API endpoints at `/umbraco/csp/api/v1` with custom authorization
 - **Services/**: `ICspService` - core business logic, nonce generation, caching
 - **Middleware/**: `CspMiddleware` injects CSP headers via `Response.OnStarting()` callback
 - **Models/**: `CspDefinition` (NPoco entity), `CspDefinitionSource`, API DTOs
@@ -52,7 +52,6 @@
   `LanguageCacheRefresherNotification`). Both share the `csp-node-` prefix that `RefreshAll` clears.
   Ancestors are never cached: they come from Umbraco's live navigation structure. Saves and deletions
   publish `CspSavedNotification`/`CspDeletedNotification` post-commit and trigger a distributed refresh.
-- Cache-first retrieval with distributed cache invalidation on save
 - Cache invalidation ordering is easy to regress: `GetCachedCspDefinitionAsync` caches the
   in-flight `Task` (not the awaited result) so a concurrent save can't overwrite an invalidation
   with a stale result; `SaveCspDefinitionAsync` publishes `CspSavedNotification` only after the
@@ -71,11 +70,11 @@
   block every other source); if neither in a pair exists, `CspNonceDirectiveMissing` is logged.
   Inline event handlers/style attributes with `'unsafe-inline'` belong in `script-src-attr`/`style-src-attr`.
 - Middleware never breaks requests on failure
-- Composer pattern: `CspManagerComposer` auto-registers via `IComposer`
+- Composer pattern: `Composer` (`Composers/CspManagerComposer.cs`) auto-registers via `IComposer`
 
 ## API
 
-Routes live in `Controllers/` under `/csp/api/v1.0` and are described by the OpenAPI document
+Routes live in `Controllers/` under `/umbraco/csp/api/v1` and are described by the OpenAPI document
 (`/umbraco/openapi/csp.json`, the source of the generated client). What the routes don't show:
 
 - Stored versus effective: `GET Definitions?contentKey=&culture=` returns the policy stored for exactly

@@ -24,9 +24,19 @@ src/
 ## Tech Stack
 
 - Backend: .NET 10, Umbraco 18+, NPoco ORM
-- Frontend: Lit 3.x, Vite 7.x, Node 22+
+- Frontend: Lit 3.x, Vite 8.x, Node 24+
 - Testing: NUnit (backend), Playwright (frontend)
 - API: OpenAPI code generation via @hey-api/openapi-ts
+
+## Commands
+
+- Build everything: `dotnet build src/Umbraco.Community.CSPManager.slnx`
+- Backend tests (about 2 minutes): `dotnet test src/Umbraco.Community.CSPManager.Tests`
+- Run the test site on https://localhost:44370 (admin@example.com / 1234567890):
+  `ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Umbraco.Community.CSPManager.TestSite --launch-profile Umbraco.Web.UI`
+- Running a test site rewrites files under its folder (uSync exports, `appsettings.json`, views).
+  Don't commit them: `git checkout -- src/Umbraco.Community.CSPManager.TestSite` afterwards.
+- Client and Playwright commands: see `src/Umbraco.Community.CSPManager/Client/CLAUDE.md`
 
 ## Releasing
 
