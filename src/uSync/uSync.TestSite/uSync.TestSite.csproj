@@ -11,7 +11,6 @@
     <PackageReference Include="uSync.Complete" />
 
     <ProjectReference Include="..\..\Umbraco.Community.CSPManager\Umbraco.Community.CSPManager.csproj" />
-
     <ProjectReference Include="..\..\Umbraco.Community.CSPManager.DevSetup\Umbraco.Community.CSPManager.DevSetup.csproj" />
     <ProjectReference Include="..\Umbraco.Community.CSPManager.uSync\Umbraco.Community.CSPManager.uSync.csproj" />
     <ProjectReference Include="..\Umbraco.Community.CSPManager.uSync.Complete\Umbraco.Community.CSPManager.uSync.Complete.csproj" />
