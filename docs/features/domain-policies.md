@@ -15,7 +15,7 @@ Use domain policies when specific sites require unique directives—such as dedi
 ## Create a domain policy
 
 1. Open the **CSP Management** section in the backoffice.
-2. In the tree, open the context menu (`...`) on the **Frontend** node and select **Add Domain Policy**.
+2. In the tree, hover over the **Frontend** node and click **Add Domain Policy** (also in its `...` menu). You can also click **Add Domain Policy** on the CSP Manager dashboard.
 3. Select a content node. The list shows every node that has at least one hostname and no domain policy yet, with its hostnames.
 4. Adjust directives in the editor (pre-filled with a copy of the Frontend policy), then click **Save**. A new domain policy is always enabled, even when the Frontend policy is disabled.
 

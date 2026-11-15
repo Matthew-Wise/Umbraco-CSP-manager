@@ -6,6 +6,7 @@ import { umbConfirmModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_CSP_MANAGER_WORKSPACE_CONTEXT, type WorkspaceState } from './context/workspace.context.js';
 import { CspConstants, type PolicyType } from '@/constants';
 import { domainPolicyLabel } from '@/domain-policy-label';
+import { cspEditPolicyPath } from '@/paths';
 
 @customElement('umb-csp-management-workspace')
 export class UmbCspManagementWorkspaceElement extends UmbLitElement {
@@ -94,7 +95,7 @@ export class UmbCspManagementWorkspaceElement extends UmbLitElement {
 						message: this.localize.term('cspManagerDomainPolicy_deletedMessage', domainLabel),
 					},
 				});
-				history.pushState(null, '', `section/csp-manager/workspace/csp-policy/edit/${CspConstants.policyTypes.frontend.value}`);
+				history.pushState(null, '', cspEditPolicyPath(CspConstants.policyTypes.frontend.value));
 			} else {
 				this.#notificationContext?.peek('danger', {
 					data: {

@@ -1,4 +1,5 @@
 import { CspConstants } from '@/constants';
+import { CSP_MANAGER_SECTION_PATHNAME } from '@/paths';
 
 export const manifests: Array<UmbExtensionManifest> = [
 	{
@@ -8,7 +9,7 @@ export const manifests: Array<UmbExtensionManifest> = [
 		weight: CspConstants.weights.high,
 		meta: {
 			label: CspConstants.section.label,
-			pathname: 'csp-manager',
+			pathname: CSP_MANAGER_SECTION_PATHNAME,
 		},
 	},
 	{

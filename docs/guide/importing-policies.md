@@ -16,7 +16,7 @@ Importing **replaces all existing sources** in the selected policy and saves imm
 
 ## Opening the import dialog
 
-In the CSP Management tree, hover over a policy node — either **Frontend** or **Back Office** — or click the **...** button on the node, then select **Import...**.
+In the CSP Management tree, click the **...** button on a policy node (**Frontend** or **Back Office**) and select **Import...**. On **Back Office**, **Import...** is the node's only action, so it also appears when you hover over the node.
 
 ## Parsing a policy string
 

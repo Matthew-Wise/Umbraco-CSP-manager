@@ -3,6 +3,7 @@ import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { CspConstants, isGlobalPolicyId } from '@/constants';
 import { domainPolicyLabel } from '@/domain-policy-label';
+import { cspEditPolicyPath } from '@/paths';
 import { UmbCspDefinitionRepository } from '../repository/csp-definition.repository.js';
 import { UmbCspDirectivesRepository } from '../repository/csp-directives.repository.js';
 import { IMPORT_CSP_MODAL } from '../modals/import-csp-modal.token.js';
@@ -61,7 +62,7 @@ export class UmbImportCspEntityAction extends UmbEntityActionBase<never> {
 
 		if (!error) {
 			window.dispatchEvent(new CustomEvent('csp:definition-saved', { detail: { unique } }));
-			history.pushState(null, '', `section/csp-manager/workspace/csp-policy/edit/${unique}`);
+			history.pushState(null, '', cspEditPolicyPath(unique));
 		}
 	}
 }

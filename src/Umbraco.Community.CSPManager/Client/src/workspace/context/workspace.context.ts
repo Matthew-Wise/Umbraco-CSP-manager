@@ -10,6 +10,7 @@ import { UMB_ACTION_EVENT_CONTEXT } from '@umbraco-cms/backoffice/action';
 import { UmbRequestReloadChildrenOfEntityEvent, UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
 import type { CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
+import { CSP_CREATE_DOMAIN_POLICY_WORKSPACE_PATH_PATTERN, CSP_EDIT_POLICY_WORKSPACE_PATH_PATTERN, cspEditPolicyPath } from '@/paths';
 import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { CspConstants, isGlobalPolicyId, type PolicyType } from '@/constants';
@@ -92,7 +93,7 @@ export class UmbCspManagerWorkspaceContext
 
 		this.routes.setRoutes([
 			{
-				path: 'edit/:unique',
+				path: CSP_EDIT_POLICY_WORKSPACE_PATH_PATTERN.toString(),
 				component: () => import('../csp-management-workspace.element.js'),
 				setup: (_component, info) => {
 					const unique = info.match.params.unique;
@@ -100,7 +101,7 @@ export class UmbCspManagerWorkspaceContext
 				},
 			},
 			{
-				path: 'create/:contentKey',
+				path: CSP_CREATE_DOMAIN_POLICY_WORKSPACE_PATH_PATTERN.toString(),
 				component: () => import('../csp-management-workspace.element.js'),
 				setup: (_component, info) => {
 					this.#loadNew(decodeURIComponent(info.match.params.contentKey));
@@ -277,7 +278,7 @@ export class UmbCspManagerWorkspaceContext
 				error: undefined,
 			});
 			await this.#reloadDomainPoliciesInTree();
-			history.replaceState(null, '', `section/csp-manager/workspace/csp-policy/edit/${data.id}`);
+			history.replaceState(null, '', cspEditPolicyPath(data.id));
 			return { success: true };
 		}
 

@@ -9,14 +9,18 @@ test.beforeEach(async ({ umbracoUi }) => {
 });
 
 test.describe("Import Action Availability", () => {
-	test("Import action is shown on the Frontend tree item", async ({ umbracoUi }) => {
+	test("Import action is in the Frontend tree item's actions menu", async ({ umbracoUi }) => {
 		const csp = new CspTestHelpers(umbracoUi);
 		await expect(csp.sidebar()).toBeVisible();
 
-		const frontendItem = csp.treeItem(CspConstants.policyTypes.frontend.label);
+		const frontendLabel = CspConstants.policyTypes.frontend.label;
+		const frontendItem = csp.treeItemByLabel(frontendLabel);
 		await frontendItem.hover();
+		await frontendItem.getByRole("button", { name: `View actions for '${frontendLabel}'` }).first().click();
 
-		await expect(frontendItem.getByRole("button", { name: EntityActions.import })).toBeVisible();
+		await expect(
+			frontendItem.locator("umb-entity-actions-dropdown").first().getByRole("button", { name: EntityActions.import, exact: true }),
+		).toBeVisible();
 	});
 
 	test("Import action is shown on the Back Office tree item", async ({ umbracoUi }) => {

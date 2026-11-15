@@ -36,6 +36,13 @@ test.describe("Domain policies: tree and add action", () => {
 	test("Add Domain Policy is offered on Frontend only", async ({ umbracoUi }) => {
 		const csp = new CspTestHelpers(umbracoUi);
 
+		// Add Domain Policy outweighs Import, so it's Frontend's inline action: visible on hover
+		// without opening the "View actions for" dropdown.
+		const frontendLabel = CspConstants.policyTypes.frontend.label;
+		const frontend = csp.treeItemByLabel(frontendLabel);
+		await frontend.hover();
+		await expect(frontend.getByRole("button", { name: EntityActions.addDomainPolicy, exact: true }).first()).toBeVisible();
+
 		await csp.openEntityActionFromMenu(CspConstants.policyTypes.frontend.label, EntityActions.addDomainPolicy);
 		await expect(csp.addDomainPolicyModal().locator("umb-body-layout")).toBeVisible();
 		await csp.addDomainPolicyModal().getByRole("button", { name: "Cancel" }).click();
