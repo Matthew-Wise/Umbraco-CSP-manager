@@ -1,12 +1,11 @@
 import { LitElement, css, html, customElement } from "@umbraco-cms/backoffice/external/lit";
 import { UmbElementMixin } from "@umbraco-cms/backoffice/element-api";
+import { CspConstants } from "@/constants";
+import { cspEditPolicyPath } from "@/paths";
+import { openAddDomainPolicy } from "../modals/open-add-domain-policy.js";
 
 @customElement('umb-csp-section-dashboard')
 export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
-
-  override connectedCallback() {
-    super.connectedCallback();
-  }
 
   override render() {
     return html`
@@ -14,7 +13,7 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
         <div class="dashboard-content">
           <div class="welcome-section">
             <h2>Content Security Policy Management</h2>
-            <p>Welcome to the CSP Manager. Use the tree navigation on the left to manage your Content Security Policy settings for both front-end and back-office environments.</p>
+            <p>Welcome to the CSP Manager. Use the tree navigation on the left to manage your Content Security Policy settings for front-end and back-office environments, and for individual sites with domain policies.</p>
           </div>
           
           <div class="info-cards">
@@ -24,7 +23,7 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
                 <p>Configure Content Security Policy for your website visitors. This controls what resources can be loaded on your public-facing pages.</p>
                 <uui-button
                   look="primary"
-                  href="/umbraco/section/csp-manager/workspace/csp-policy/edit/frontend"
+                  href=${cspEditPolicyPath(CspConstants.policyTypes.frontend.value)}
                   label="Configure Front-end CSP"
                 >
                   Configure Front-end CSP
@@ -38,10 +37,24 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
                 <p>Configure Content Security Policy for the Umbraco back-office. This controls what resources can be loaded in the admin interface.</p>
                 <uui-button
                   look="primary"
-                  href="/umbraco/section/csp-manager/workspace/csp-policy/edit/backoffice"
+                  href=${cspEditPolicyPath(CspConstants.policyTypes.backoffice.value)}
                   label="Configure Back-office CSP"
                 >
                   Configure Back-office CSP
+                </uui-button>
+              </div>
+            </uui-card>
+
+            <uui-card>
+              <div class="card-content">
+                <h3>Domain policies</h3>
+                <p>Give a site its own policy. A domain policy belongs to a content node with a hostname and replaces the Front-end CSP for requests to any of that node's hostnames. Existing domain policies are listed under Frontend in the tree.</p>
+                <uui-button
+                  look="primary"
+                  label=${this.localize.term("cspManagerDomainPolicy_addAction")}
+                  @click=${() => openAddDomainPolicy(this)}
+                >
+                  ${this.localize.term("cspManagerDomainPolicy_addAction")}
                 </uui-button>
               </div>
             </uui-card>

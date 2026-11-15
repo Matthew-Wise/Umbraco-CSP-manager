@@ -121,7 +121,9 @@ export class CspTestHelpers {
 		const item = this.treeItemByLabel(itemLabel);
 		await item.hover();
 		await item.getByRole("button", { name: `View actions for '${itemLabel}'` }).first().click();
-		await this.umbracoUi.page.getByRole("button", { name: actionLabel, exact: true }).click();
+		// Scoped to the item's own dropdown: another tree item's inline action can have the same label
+		// (Back Office's inline Import..., say), and a page-wide match would find that one first.
+		await item.locator("umb-entity-actions-dropdown").first().getByRole("button", { name: actionLabel, exact: true }).click();
 	}
 
 	/** The add domain policy modal (sidebar). */
@@ -137,7 +139,13 @@ export class CspTestHelpers {
 	 */
 	async openImportModal(policy: PolicyKey): Promise<void> {
 		await expect(this.sidebar()).toBeVisible();
-		await this.openEntityAction(POLICY_LABELS[policy], EntityActions.import);
+		// Frontend's inline action is Add Domain Policy, so Import is in its "..." menu. Back Office
+		// has only Import, which Umbraco renders inline with no menu.
+		if (policy === "frontend") {
+			await this.openEntityActionFromMenu(POLICY_LABELS[policy], EntityActions.import);
+		} else {
+			await this.openEntityAction(POLICY_LABELS[policy], EntityActions.import);
+		}
 		await this.waitForModalOpen();
 	}
 
