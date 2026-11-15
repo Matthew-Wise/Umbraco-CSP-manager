@@ -26,16 +26,18 @@ testing, A and B are paired (each one's `appsettings.Development.json` points at
    Don't point them at any other site, and don't commit any other `.env*` file.
 2. **Site running.** The CLI talks to a live site. If a request fails to connect, start it:
    `dotnet run --project <project> --launch-profile Umbraco.Web.UI`.
-3. **API user.** Each site has its own SQLite database, so the API user (client ID
-   `umbraco-back-office-mcp` by default) must exist in each site's backoffice under
-   Users > API users, with the same secret as the env file. An authentication error
-   usually means it doesn't.
+3. **API user.** Each site has its own SQLite database. In Development, each site creates
+   the `umbraco-back-office-mcp` API user on startup if it's missing (`DevApiUserSeeder.cs`).
+   An authentication error usually means the env file and `TestSite:ApiUser` disagree.
 
 ## Cloud sessions
 
-A cloud session can't reach the user's localhost, so it has to run the site itself
-(`dotnet run ... &`). The SQLite databases aren't committed, so a fresh clone installs an
-empty site with no API user and the CLI will fail to authenticate until one is created.
+A cloud session can't reach the user's localhost, so it runs the site itself in the
+background (`ASPNETCORE_ENVIRONMENT=Development dotnet run --project <project> --launch-profile Umbraco.Web.UI &`)
+and waits for `/umbraco/management/api/v1/server/status` to return 200. The SQLite databases
+aren't committed, so a fresh clone installs an empty site. Each site's `DevApiUserSeeder`
+then creates the API user from `TestSite:ApiUser` in `appsettings.Development.json` (the same
+values as the env file), so the CLI can log in straight away.
 
 ## Commands
 
@@ -54,12 +56,3 @@ npx @umbraco-cms/mcp-dev@latest --env .env.usync-a --call <tool-name> --call-arg
 ```
 
 `--list-tools`, `--describe-tool` and `--debug-config` don't need the site running.
-
-## Safety
-
-- Default to reading. For anything that changes data, say what you're about to change and
-  on which site before running it. Add `--umbraco-dry-run` to preview a change, or
-  `--umbraco-readonly` to drop every mutation tool when you only need to look.
-- `NODE_TLS_REJECT_UNAUTHORIZED=0` in the env files accepts the sites' self-signed dev
-  certificate. It is only for these localhost URLs; never point these files at a remote site.
-- These are dev-only sites and credentials. Don't reuse the files or the secret anywhere else.
