@@ -12,7 +12,6 @@ using Umbraco.Community.CSPManager.Logging;
 using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Notifications;
 using Umbraco.Community.CSPManager.Services;
-using Umbraco.Extensions;
 
 namespace Umbraco.Community.CSPManager.Middleware;
 
@@ -122,8 +121,7 @@ public class CspMiddleware
 			{
 				Log.CspOnStartingFired(_logger, context.Request.Path);
 
-				isBackOfficeRequest = context.Request.IsBackOfficeRequest() ||
-					context.Request.Path.StartsWithSegments("/umbraco");
+				isBackOfficeRequest = BackOfficePathMatcher.IsBackOfficeRequest(context.Request.Path);
 
 				if (isBackOfficeRequest && _cspOptions.DisableBackOfficeHeader)
 				{
