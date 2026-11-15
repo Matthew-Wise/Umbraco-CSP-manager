@@ -72,7 +72,7 @@ dotnet add package Umbraco.Community.CSPManager -v 0.0.0-ci.<run_number> --prere
 workflow is path-filtered, so each one names its job `build` and the filters are
 kept collectively exhaustive: `csp-manager.yml` (main package), `usync.yml` (uSync +
 main package sources), `docs-build.yml` (`docs/**` + the docs workflows) and
-`repo-hygiene.yml` (`.github/**`, `.claude/**`, root `*.md` and dotfiles, runs actionlint). A PR
+`repo-hygiene.yml` (`.github/**`, `.claude/**`, root `*.md`, `.env.*` and dotfiles, runs actionlint). A PR
 that matches none of them never reports `build` and sits pending forever, so when
 adding a new top-level path, add it to one of those filters. `claude-code-review.yml`
 skips bot, draft and fork PRs on purpose.
@@ -106,9 +106,9 @@ to `~/.bashrc` instead (session shells source it), replacing its own earlier lin
 ## Umbraco CLI
 
 The `umbraco-cli` skill (`.claude/skills/umbraco-cli/`) drives `@umbraco-cms/mcp-dev` against
-the three test sites via `--env .env.<site>` (`csp-manager`, `usync-a`, `usync-b`). The
-`.env*` files are gitignored; committed `.env.<site>.example` templates live in the skill's
-`templates/` folder.
+the three test sites via `--env .env.<site>` (`csp-manager`, `usync-a`, `usync-b`). Those
+three files are committed on purpose so cloud sessions have them: they hold only dev
+credentials for localhost test sites. Any other `.env*` stays gitignored.
 
 ## Dependency Updates
 

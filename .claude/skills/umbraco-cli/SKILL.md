@@ -21,16 +21,21 @@ testing, A and B are paired (each one's `appsettings.Development.json` points at
 
 ## Before calling the CLI
 
-1. **Env file.** The `.env.<site>` files are gitignored and hold the API user's secret.
-   If the one you need is missing, copy `.claude/skills/umbraco-cli/templates/.env.<site>.example`
-   to the repo root as `.env.<site>` and ask the user for the client secret. Never invent
-   one, never commit a `.env*` file, and never print the secret back in chat.
+1. **Env file.** The three `.env.<site>` files are committed in the repo root. They hold
+   dev-only credentials for these localhost sites, so it's fine to use them as they are.
+   Don't point them at any other site, and don't commit any other `.env*` file.
 2. **Site running.** The CLI talks to a live site. If a request fails to connect, start it:
    `dotnet run --project <project> --launch-profile Umbraco.Web.UI`.
 3. **API user.** Each site has its own SQLite database, so the API user (client ID
    `umbraco-back-office-mcp` by default) must exist in each site's backoffice under
    Users > API users, with the same secret as the env file. An authentication error
    usually means it doesn't.
+
+## Cloud sessions
+
+A cloud session can't reach the user's localhost, so it has to run the site itself
+(`dotnet run ... &`). The SQLite databases aren't committed, so a fresh clone installs an
+empty site with no API user and the CLI will fail to authenticate until one is created.
 
 ## Commands
 

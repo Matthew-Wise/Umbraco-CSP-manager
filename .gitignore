@@ -380,7 +380,10 @@ umbraco-package-schema.json
 appsettings-schema.json
 appsettings-schema.*.json
 
-# Local secrets (e.g. Umbraco CLI / Developer MCP API user credentials)
+# Local secrets. The per-site Umbraco CLI files (.env.csp-manager etc.) are committed
+# on purpose: they only hold dev credentials for the localhost test sites.
 .env
 .env.*
-!.env.*.example
+!.env.csp-manager
+!.env.usync-a
+!.env.usync-b
