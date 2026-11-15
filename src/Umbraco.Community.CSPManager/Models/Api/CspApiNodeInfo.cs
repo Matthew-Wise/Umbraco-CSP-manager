@@ -1,10 +1,9 @@
 namespace Umbraco.Community.CSPManager.Models.Api;
 
 /// <summary>
-/// A content node a node policy can belong to, with its hostnames in Culture &amp; Hostnames (none
-/// for a page inside a site) and whether it has a node policy for all cultures. A node policy
-/// belongs to the node, so it covers every one of these hostnames unless the node also has a policy
-/// for the hostname's culture.
+/// A content node with at least one hostname in Culture &amp; Hostnames, and whether it has a node
+/// policy for all cultures. A node policy belongs to the node, so it covers every one of these
+/// hostnames unless the node also has a policy for the hostname's culture.
 /// </summary>
 public sealed class CspApiNodeInfo
 {

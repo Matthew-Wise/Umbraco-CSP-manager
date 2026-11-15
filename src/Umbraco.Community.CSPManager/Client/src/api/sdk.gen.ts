@@ -10,6 +10,9 @@ import type {
 	GetDefinitionsByIdErrors,
 	GetDefinitionsByIdResponses,
 	GetDefinitionsData,
+	GetDefinitionsDraftData,
+	GetDefinitionsDraftErrors,
+	GetDefinitionsDraftResponses,
 	GetDefinitionsEffectiveData,
 	GetDefinitionsEffectiveErrors,
 	GetDefinitionsEffectiveResponses,
@@ -21,9 +24,6 @@ import type {
 	GetDirectivesData,
 	GetDirectivesErrors,
 	GetDirectivesResponses,
-	GetNodesByContentKeyData,
-	GetNodesByContentKeyErrors,
-	GetNodesByContentKeyResponses,
 	GetNodesData,
 	GetNodesErrors,
 	GetNodesResponses,
@@ -100,6 +100,16 @@ export class Definitions {
 		});
 	}
 
+	public static getDefinitionsDraft<ThrowOnError extends boolean = true>(
+		options?: Options<GetDefinitionsDraftData, ThrowOnError>,
+	): RequestResult<GetDefinitionsDraftResponses, GetDefinitionsDraftErrors, ThrowOnError> {
+		return (options?.client ?? client).get<GetDefinitionsDraftResponses, GetDefinitionsDraftErrors, ThrowOnError>({
+			security: [{ scheme: 'bearer', type: 'http' }],
+			url: '/umbraco/csp/api/v1/Definitions/draft',
+			...options,
+		});
+	}
+
 	public static getDefinitionsEffective<ThrowOnError extends boolean = true>(
 		options?: Options<GetDefinitionsEffectiveData, ThrowOnError>,
 	): RequestResult<GetDefinitionsEffectiveResponses, GetDefinitionsEffectiveErrors, ThrowOnError> {
@@ -162,16 +172,6 @@ export class Nodes {
 		return (options?.client ?? client).get<GetNodesResponses, GetNodesErrors, ThrowOnError>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/csp/api/v1/Nodes',
-			...options,
-		});
-	}
-
-	public static getNodesByContentKey<ThrowOnError extends boolean = true>(
-		options: Options<GetNodesByContentKeyData, ThrowOnError>,
-	): RequestResult<GetNodesByContentKeyResponses, GetNodesByContentKeyErrors, ThrowOnError> {
-		return (options.client ?? client).get<GetNodesByContentKeyResponses, GetNodesByContentKeyErrors, ThrowOnError>({
-			security: [{ scheme: 'bearer', type: 'http' }],
-			url: '/umbraco/csp/api/v1/Nodes/{contentKey}',
 			...options,
 		});
 	}

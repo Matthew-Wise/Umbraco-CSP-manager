@@ -54,7 +54,6 @@ export const TestNodes = {
  * hostname of the homepage, e.g. `/en-gb/test-pages/with-nonce`.
  */
 export const TestPages = {
-	testPages: { name: "Test Pages", path: "/test-pages" },
 	withNonce: { name: "With Nonce", contentKey: "bc5af91c-f263-4703-8a26-5c94b44518da", path: "/test-pages/with-nonce" },
 	withoutNonce: { name: "Without Nonce", path: "/test-pages/without-nonce" },
 } as const;

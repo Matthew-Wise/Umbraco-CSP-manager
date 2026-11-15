@@ -298,6 +298,49 @@ public class DefinitionsController : CspManagerControllerBase
 	}
 
 	/// <summary>
+	/// Builds the node policy that <c>create-from-frontend</c> would create, without saving it: a
+	/// draft to edit first. Post it to <c>Definitions/save</c> to create the policy.
+	/// </summary>
+	/// <param name="contentKey">The key of a content node that has no node policy for the culture yet.</param>
+	/// <param name="culture">The ISO code of one of the site's languages. Leave out for a policy for all cultures.</param>
+	/// <param name="inheritance">
+	/// <see cref="CspPolicyInheritance.Replace"/> (the default) for a complete policy, as a copy of
+	/// the policy the node gets today; <see cref="CspPolicyInheritance.Extend"/> for a policy
+	/// without sources, which adds its own sources to that policy.
+	/// </param>
+	/// <param name="appliesTo">
+	/// <see cref="CspPolicyScope.Descendants"/> (the default) for the node and the pages below it;
+	/// <see cref="CspPolicyScope.NodeOnly"/> for the node alone.
+	/// </param>
+	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+	/// <returns>The unsaved node policy, with the empty id.</returns>
+	/// <response code="400">
+	/// The node doesn't exist or is in the recycle bin, the culture isn't a language, or the node
+	/// already has a policy for the culture.
+	/// </response>
+	[HttpGet("Definitions/draft")]
+	[MapToApiVersion("1.0")]
+	[ProducesResponseType(typeof(CspApiDefinition), 200)]
+	[ProducesResponseType(typeof(ProblemDetails), 400)]
+	public async Task<IActionResult> GetDraft(
+		[FromQuery] Guid contentKey,
+		[FromQuery] string? culture = null,
+		[FromQuery] CspPolicyInheritance inheritance = CspPolicyInheritance.Replace,
+		[FromQuery] CspPolicyScope appliesTo = CspPolicyScope.Descendants,
+		CancellationToken cancellationToken = default)
+	{
+		try
+		{
+			var draft = await _cspService.BuildCspDefinitionForNodeAsync(contentKey, culture, inheritance, appliesTo, cancellationToken);
+			return Ok(await ToApiDefinitionAsync(draft));
+		}
+		catch (CspDefinitionValidationException ex)
+		{
+			return CspValidationProblem(ex);
+		}
+	}
+
+	/// <summary>
 	/// Deletes a node policy. The global frontend and backoffice policies cannot be deleted.
 	/// </summary>
 	/// <param name="id">The id of the node policy.</param>
@@ -337,18 +380,21 @@ public class DefinitionsController : CspManagerControllerBase
 		}
 
 		var node = _domainNodes.GetContentNodes([contentKey]).GetValueOrDefault(contentKey);
-		// The hostnames only say where the policy applies: most nodes with a policy have none.
-		var domainNode = await _domainNodes.GetDomainNodeAsync(contentKey);
+		// The hostnames only say where the policy applies: most nodes with a policy have none, and
+		// a node that is gone or in the recycle bin is never served on its hostnames.
+		var hostnames = node is { IsUsable: true } ? await _domainNodes.GetHostnamesAsync(contentKey) : [];
+		// The languages are only needed for a policy for one culture.
+		var languages = definition.Culture is null ? null : await GetLanguageIsoCodesAsync();
 		return CspApiDefinition.FromCspDefinition(
 			definition,
 			node?.Name,
-			domainNode?.Domains.Select(d => new CspApiDomainName { Name = d.Name, Culture = d.Culture }),
+			hostnames.Select(d => new CspApiDomainName { Name = d.Name, Culture = d.Culture }),
 			_options.CurrentValue.DisabledNodePolicyBehavior,
-			IsOrphaned(node, definition.Culture, definition.Culture is null ? null : await GetLanguageIsoCodesAsync()));
+			IsOrphaned(node, definition.Culture, languages));
 	}
 
 	// A policy applies to nothing when its node is never served (deleted, or in the recycle bin)
-	// or its culture is no longer a language. The languages are only needed for a culture policy.
+	// or its culture is no longer a language.
 	private static bool IsOrphaned(CspDomainNodeLookup.ContentNode? node, string? culture, HashSet<string>? languages)
 		=> node is not { IsUsable: true } || (culture is not null && languages?.Contains(culture) != true);
 

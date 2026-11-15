@@ -1,6 +1,7 @@
 import { css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { CspPolicyInheritance, CspPolicyScope, DisabledNodePolicyBehavior, type CspApiDefinition } from '@/api';
+import { hasReportingDirective } from '@/utils/csp-string';
 import {
 	UmbCspManagerWorkspaceContext,
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
@@ -25,6 +26,10 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 	@state()
 	private _isNodePolicy = false;
 
+	/** An "inherit and add" policy takes everything but its sources and its switch from the policy it adds to. */
+	@state()
+	private _isExtending = false;
+
 	private _workspaceContext?: UmbCspManagerWorkspaceContext;
 
 	constructor() {
@@ -38,6 +43,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 				this.observe(context.state, (state) => {
 					this._workspaceState = state;
 					this._isNodePolicy = context.isNodePolicy();
+					this._isExtending = context.isExtending();
 				});
 			}
 		});
@@ -70,7 +76,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 	// policy when the server is configured with DisabledNodePolicyBehavior NoHeader, no header).
 	// Text bindings only: the content name is user content.
 	private _renderNodeStatusSummary(definition: CspApiDefinition) {
-		const extending = definition.inheritance === CspPolicyInheritance.EXTEND;
+		const extending = this._isExtending;
 		const label = this._scopeLabel();
 		const reach =
 			definition.appliesTo === CspPolicyScope.NODE_ONLY
@@ -109,21 +115,19 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 			return this.localize.term('cspManagerNodePolicy_statusActive');
 		}
 
-		return this._disabledMeansNoHeader && this._workspaceState.definition?.inheritance !== CspPolicyInheritance.EXTEND
+		return this._disabledMeansNoHeader && !this._isExtending
 			? this.localize.term('cspManagerNodePolicy_statusInactiveNoHeader')
 			: this.localize.term('cspManagerNodePolicy_statusInactiveFallback');
 	}
 
 	// What kind of policy this is and how far it reaches. Its content and culture can't change.
 	private _renderNodePolicyOptions(definition: CspApiDefinition) {
-		const extending = definition.inheritance === CspPolicyInheritance.EXTEND;
-
 		return html`
 			<uui-form-layout-item>
 				<uui-label slot="label">${this.localize.term('cspManagerNodePolicy_inheritanceLabel')}</uui-label>
 				<span slot="description">
 					${this.localize.term(
-						extending
+						this._isExtending
 							? 'cspManagerNodePolicy_inheritanceExtendDescription'
 							: 'cspManagerNodePolicy_inheritanceReplaceDescription',
 					)}
@@ -168,7 +172,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 	// Report-only mode and reporting belong to a complete policy: an extending one takes them from
 	// the policy it adds to, so there is nothing to set.
 	private _renderReportingSettings(definition: CspApiDefinition) {
-		if (definition.inheritance === CspPolicyInheritance.EXTEND) {
+		if (this._isExtending) {
 			return html`<p class="extend-info" data-mark="csp-extend-settings-info">
 				${this.localize.term('cspManagerNodePolicy_extendSettingsInfo')}
 			</p>`;
@@ -215,7 +219,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 				</div>
 			</uui-form-layout-item>
 
-			${this._hasReportingDirective(definition)
+			${hasReportingDirective(definition)
 				? html`
 						<uui-form-layout-item>
 							<uui-label slot="label">Report URI</uui-label>
@@ -232,10 +236,6 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 					`
 				: ''}
 		`;
-	}
-
-	private _hasReportingDirective(definition: CspApiDefinition): boolean {
-		return !!definition.reportingDirective && definition.reportingDirective !== 'none';
 	}
 
 	render() {

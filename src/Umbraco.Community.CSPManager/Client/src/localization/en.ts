@@ -19,9 +19,9 @@ export default {
 		addModalExists: 'This content already has a policy for %0%. It can only have one.',
 		addModalOpenExisting: 'Open that policy',
 		addModalContinue: 'Continue',
-		addModalLoadFailed: 'The content and languages could not be loaded.',
+		addModalLoadFailed: 'The sites and their policies could not be loaded.',
 		createUnavailable:
-			'A node policy cannot be created here. The content was deleted or moved to the recycle bin, or it already has a CSP policy for this culture.',
+			'A node policy cannot be created here. The content was deleted or moved to the recycle bin, the culture is not one of the languages of the site, or the content already has a CSP policy for this culture.',
 		deletedContent: 'Deleted content (%0%…)',
 		labelWithCulture: '%0% (%1%)',
 		allCultures: 'All cultures',
@@ -35,7 +35,8 @@ export default {
 		inheritanceLabel: 'Policy type',
 		inheritanceReplace: 'Complete policy',
 		inheritanceReplaceDescription:
-			'Replaces the policy the content inherits. A new one starts as a copy of what the content gets today.',
+			'Replaces the policy the content inherits: only the sources and settings of this policy apply.',
+		addModalReplaceStart: 'It starts as a copy of what the content gets today.',
 		inheritanceExtend: 'Inherit and add',
 		inheritanceExtendDescription:
 			'Keeps the policy the content inherits and adds the sources of this policy to it. Sources can only be added, never removed.',

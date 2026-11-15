@@ -1,11 +1,10 @@
 import { css, customElement, html, nothing, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { UmbLanguageCollectionRepository } from '@umbraco-cms/backoffice/language';
+import { UMB_APP_LANGUAGE_CONTEXT, type UmbLanguageDetailModel } from '@umbraco-cms/backoffice/language';
 import type { CspApiDefinition } from '@/api';
 import { CspConstants } from '@/constants';
-import { nodePolicyLabel } from '@/node-policy-label';
+import { languageLabel, nodePolicyContentName, nodePolicyLabel } from '@/node-policy-label';
 import { cspEditPolicyPath } from '@/paths';
-import { UmbCspDefinitionRepository } from '@/repository/csp-definition.repository.js';
 import { asCspHeaderValue, directivesOf } from '@/utils/csp-string';
 import {
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
@@ -13,11 +12,11 @@ import {
 	type WorkspaceState,
 } from '../../context/workspace.context.js';
 
-interface LanguageOption {
-	isoCode: string;
-	name: string;
-	isDefault: boolean;
-}
+/**
+ * A result that combines a policy with the policies extending it isn't one stored policy: the
+ * server gives it the empty id, so that it can't be saved over one of them.
+ */
+const isCombined = (effective: CspApiDefinition): boolean => effective.id === CspConstants.nodePolicy.newId;
 
 /**
  * Shows what a frontend request for the content node of a node policy gets today: the policy the
@@ -26,20 +25,15 @@ interface LanguageOption {
  */
 @customElement('umb-csp-effective-view')
 export class UmbCspEffectiveViewElement extends UmbLitElement {
-	#repository = new UmbCspDefinitionRepository(this);
 	#workspaceContext?: UmbCspManagerWorkspaceContext;
-	// What the shown result was loaded for, so it is only loaded again when one of these changes.
-	#loadedFor?: { contentKey: string; culture: string | null; saved: CspApiDefinition | null };
-	#loadVersion = 0;
+	// The request the shown result is for. The workspace hands out the same one until the answer can change.
+	#request?: Promise<CspApiDefinition | undefined>;
 
 	@state()
 	private _workspaceState?: WorkspaceState;
 
 	@state()
-	private _hasUnsavedChanges = false;
-
-	@state()
-	private _languages: LanguageOption[] = [];
+	private _languages: UmbLanguageDetailModel[] = [];
 
 	/** The culture of the request to show. Starts as the policy's own, or the default language. */
 	@state()
@@ -51,9 +45,6 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 	@state()
 	private _loading = true;
 
-	@state()
-	private _failed = false;
-
 	constructor() {
 		super();
 
@@ -64,7 +55,6 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 			this.observe(context.state, (workspaceState) => {
 				const previousKey = this._workspaceState?.definition?.contentKey;
 				this._workspaceState = workspaceState;
-				this._hasUnsavedChanges = context.hasUnsavedChanges();
 
 				const definition = workspaceState.definition;
 				if (definition?.contentKey !== previousKey) {
@@ -76,39 +66,25 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 			});
 		});
 
-		this.#loadLanguages();
-	}
-
-	async #loadLanguages() {
-		const { data } = await new UmbLanguageCollectionRepository(this).requestAllItems();
-		this._languages = (data?.items ?? []).map((language) => ({
-			isoCode: language.unique,
-			name: language.name,
-			isDefault: language.isDefault,
-		}));
+		// The languages the backoffice has already loaded.
+		this.consumeContext(UMB_APP_LANGUAGE_CONTEXT, (context) => {
+			this.observe(context?.languages, (languages) => (this._languages = languages ?? []));
+		});
 	}
 
 	async #loadEffective() {
-		const definition = this._workspaceState?.definition;
-		const contentKey = definition?.contentKey;
-		if (!contentKey) return;
+		// The answer only changes when a policy is saved, not with every edit. The workspace keeps
+		// it until then, so getting the same request back means there is nothing new to show.
+		const request = this.#workspaceContext?.getEffective(this._culture);
+		if (!request || request === this.#request) return;
 
-		// The answer only changes when a policy is saved, so follow the saved copy, not every edit.
-		const saved = this._workspaceState?.persistedDefinition ?? null;
-		const loadedFor = this.#loadedFor;
-		if (loadedFor?.contentKey === contentKey && loadedFor.culture === this._culture && loadedFor.saved === saved) {
-			return;
-		}
-
-		this.#loadedFor = { contentKey, culture: this._culture, saved };
-		const version = ++this.#loadVersion;
+		this.#request = request;
 		this._loading = true;
 
-		const { data } = await this.#repository.getEffective(contentKey, this._culture);
-		if (version !== this.#loadVersion) return;
+		const effective = await request;
+		if (request !== this.#request) return;
 
-		this._effective = data;
-		this._failed = !data;
+		this._effective = effective;
 		this._loading = false;
 	}
 
@@ -119,7 +95,7 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 
 	/** The selected culture, or the default language when the policy is for all cultures. */
 	get #selectedCulture(): string | undefined {
-		return this._culture ?? this._languages.find((language) => language.isDefault)?.isoCode;
+		return this._culture ?? this._languages.find((language) => language.isDefault)?.unique;
 	}
 
 	override render() {
@@ -131,21 +107,21 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 		return html`
 			<uui-box headline=${this.localize.term('cspManagerEffective_headline')}>
 				<p class="intro">
-					${this.localize.term('cspManagerEffective_intro', nodePolicyLabel(this.localize, { ...definition, culture: null }))}
+					${this.localize.term('cspManagerEffective_intro', nodePolicyContentName(this.localize, definition))}
 				</p>
 				${this.#renderNote()} ${this.#renderCulture()} ${this.#renderResult()}
 			</uui-box>
 		`;
 	}
 
+	// The result follows the saved policies, so say when what is being edited isn't saved.
 	#renderNote() {
-		if (this._workspaceState?.isNew) {
-			return html`<p class="note" data-mark="csp-effective-note">${this.localize.term('cspManagerEffective_notSavedYet')}</p>`;
+		if (!this.#workspaceContext?.hasUnsavedChanges()) {
+			return nothing;
 		}
 
-		return this._hasUnsavedChanges
-			? html`<p class="note" data-mark="csp-effective-note">${this.localize.term('cspManagerEffective_unsaved')}</p>`
-			: nothing;
+		const term = this._workspaceState?.isNew ? 'cspManagerEffective_notSavedYet' : 'cspManagerEffective_unsaved';
+		return html`<p class="note" data-mark="csp-effective-note">${this.localize.term(term)}</p>`;
 	}
 
 	#renderCulture() {
@@ -156,10 +132,10 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 		const selected = this.#selectedCulture?.toLowerCase();
 		const options = this._languages.map((language) => ({
 			name: language.isDefault
-				? this.localize.term('cspManagerEffective_defaultLanguage', `${language.name} (${language.isoCode})`)
-				: `${language.name} (${language.isoCode})`,
-			value: language.isoCode,
-			selected: language.isoCode.toLowerCase() === selected,
+				? this.localize.term('cspManagerEffective_defaultLanguage', languageLabel(language))
+				: languageLabel(language),
+			value: language.unique,
+			selected: language.unique.toLowerCase() === selected,
 		}));
 
 		return html`
@@ -182,7 +158,7 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 		}
 
 		const effective = this._effective;
-		if (this._failed || !effective) {
+		if (!effective) {
 			return html`<p class="error">${this.localize.term('cspManagerEffective_loadFailed')}</p>`;
 		}
 
@@ -197,8 +173,7 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 		`;
 	}
 
-	// The server names the most specific policy that applies. A combined result (that policy added
-	// to what it inherits) has no id, because it isn't one stored policy.
+	// The server names the most specific policy that applies.
 	#renderFrom(effective: CspApiDefinition) {
 		if (!effective.contentKey) {
 			return html`
@@ -208,7 +183,7 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 		}
 
 		const label = nodePolicyLabel(this.localize, effective);
-		const combined = effective.id === CspConstants.nodePolicy.newId;
+		const combined = isCombined(effective);
 
 		return html`
 			<span>

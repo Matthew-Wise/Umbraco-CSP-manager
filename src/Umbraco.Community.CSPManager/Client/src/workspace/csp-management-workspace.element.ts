@@ -55,14 +55,14 @@ export class UmbCspManagementWorkspaceElement extends UmbLitElement {
 		});
 	}
 
-	/** The content node's name, or a "deleted content" label. Rendered as text only. */
-	private get _domainLabel(): string {
+	/** The content node's name (or a "deleted content" label) and the policy's culture. Rendered as text only. */
+	private get _nodeLabel(): string {
 		return nodePolicyLabel(this.localize, this._workspaceState.definition ?? {});
 	}
 
 	private get _headline(): string {
 		return this._isNodePolicy
-			? this.localize.term('cspManagerNodePolicy_workspaceHeadline', this._domainLabel)
+			? this.localize.term('cspManagerNodePolicy_workspaceHeadline', this._nodeLabel)
 			: `${this._policyType.label} CSP Management`;
 	}
 
@@ -72,8 +72,8 @@ export class UmbCspManagementWorkspaceElement extends UmbLitElement {
 		const confirmed = await umbConfirmModal(this, {
 			headline: this.localize.term('cspManagerNodePolicy_deleteConfirmHeadline'),
 			// A TemplateResult, not a string: umbConfirmModal renders string content as HTML, and the
-			// domain name is user content. The text binding escapes it.
-			content: html`${this.localize.term('cspManagerNodePolicy_deleteConfirmContent', this._domainLabel)}`,
+			// content name is user content. The text binding escapes it.
+			content: html`${this.localize.term('cspManagerNodePolicy_deleteConfirmContent', this._nodeLabel)}`,
 			color: 'danger',
 			confirmLabel: this.localize.term('cspManagerNodePolicy_deleteAction'),
 		})
@@ -82,7 +82,7 @@ export class UmbCspManagementWorkspaceElement extends UmbLitElement {
 		if (!confirmed) return;
 
 		this._deleting = true;
-		const domainLabel = this._domainLabel;
+		const nodeLabel = this._nodeLabel;
 
 		try {
 			const context = await this.getContext(UMB_CSP_MANAGER_WORKSPACE_CONTEXT);
@@ -92,7 +92,7 @@ export class UmbCspManagementWorkspaceElement extends UmbLitElement {
 				this.#notificationContext?.peek('positive', {
 					data: {
 						headline: this.localize.term('cspManagerNodePolicy_deletedHeadline'),
-						message: this.localize.term('cspManagerNodePolicy_deletedMessage', domainLabel),
+						message: this.localize.term('cspManagerNodePolicy_deletedMessage', nodeLabel),
 					},
 				});
 				history.pushState(null, '', cspEditPolicyPath(CspConstants.policyTypes.frontend.value));
@@ -125,7 +125,7 @@ export class UmbCspManagementWorkspaceElement extends UmbLitElement {
 				this.#notificationContext?.peek('positive', {
 					data: {
 						headline: 'Changes Saved',
-						message: `CSP ${this._isNodePolicy ? this._domainLabel : this._policyType.label} configuration has been saved successfully.`,
+						message: `CSP ${this._isNodePolicy ? this._nodeLabel : this._policyType.label} configuration has been saved successfully.`,
 					},
 				});
 			} else {

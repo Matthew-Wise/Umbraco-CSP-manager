@@ -1,6 +1,6 @@
 import { UmbPathPattern } from '@umbraco-cms/backoffice/router';
 import { UMB_WORKSPACE_PATH_PATTERN } from '@umbraco-cms/backoffice/workspace';
-import { CspPolicyInheritance } from './api';
+import type { CspPolicyInheritance } from './api';
 import { CspConstants } from './constants';
 
 /**
@@ -34,16 +34,16 @@ export const CSP_CREATE_NODE_POLICY_WORKSPACE_PATH_PATTERN = new UmbPathPattern<
 export const cspEditPolicyPath = (unique: string) =>
 	CSP_EDIT_POLICY_WORKSPACE_PATH_PATTERN.generateAbsolute({ unique: encodeURIComponent(unique) });
 
-export const cspCreateNodePolicyPath = (
-	contentKey: string,
-	culture: string | null = null,
-	inheritance: CspPolicyInheritance = CspPolicyInheritance.REPLACE,
-) =>
+export const cspCreateNodePolicyPath = (contentKey: string, culture: string | null, inheritance: CspPolicyInheritance) =>
 	CSP_CREATE_NODE_POLICY_WORKSPACE_PATH_PATTERN.generateAbsolute({
 		contentKey: encodeURIComponent(contentKey),
 		culture: encodeURIComponent(culture ?? CspConstants.nodePolicy.allCulturesSegment),
 		inheritance,
 	});
+
+/** The culture of a create route's `culture` segment: `null` for all cultures. */
+export const cultureFromCreatePathSegment = (segment: string): string | null =>
+	segment === CspConstants.nodePolicy.allCulturesSegment ? null : decodeURIComponent(segment);
 
 /** The content workspace of a document, for "open content item" links. */
 export const documentEditPath = (contentKey: string) =>

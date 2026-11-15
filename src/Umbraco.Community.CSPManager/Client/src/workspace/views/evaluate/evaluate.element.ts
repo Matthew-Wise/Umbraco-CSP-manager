@@ -1,9 +1,12 @@
 import { css, html, customElement, nothing, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { UMB_CSP_MANAGER_WORKSPACE_CONTEXT, type WorkspaceState } from '../../context/workspace.context.js';
-import { CspPolicyInheritance, type CspApiDefinition } from '@/api';
-import { nodePolicyLabel } from '@/node-policy-label';
-import { UmbCspDefinitionRepository } from '@/repository/csp-definition.repository.js';
+import {
+	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
+	type UmbCspManagerWorkspaceContext,
+	type WorkspaceState,
+} from '../../context/workspace.context.js';
+import type { CspApiDefinition } from '@/api';
+import { nodePolicyContentName } from '@/node-policy-label';
 import { sourcesAsCspString } from '@/utils/csp-string';
 import { CspEvaluator } from 'csp_evaluator/dist/evaluator.js';
 import { CspParser } from 'csp_evaluator/dist/parser.js';
@@ -51,42 +54,39 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 	@state()
 	private _effective?: CspApiDefinition;
 
-	#repository = new UmbCspDefinitionRepository(this);
-	#effectiveFor?: CspApiDefinition | null;
+	@state()
+	private _isExtending = false;
+
+	#workspaceContext?: UmbCspManagerWorkspaceContext;
+	// The request the shown result is for. The workspace hands out the same one until the answer can change.
+	#request?: Promise<CspApiDefinition | undefined>;
 
 	constructor() {
 		super();
 
 		this.consumeContext(UMB_CSP_MANAGER_WORKSPACE_CONTEXT, (context) => {
+			this.#workspaceContext = context;
 			if (context) {
 				this.observe(context.state, (state) => {
 					this._workspaceState = state;
+					this._isExtending = context.isExtending();
 					this.#loadEffective();
 				});
 			}
 		});
 	}
 
-	get #isExtending(): boolean {
-		return this._workspaceState.definition?.inheritance === CspPolicyInheritance.EXTEND;
-	}
-
 	async #loadEffective() {
-		const definition = this._workspaceState.definition;
-		if (!this.#isExtending || !definition?.contentKey) {
-			this._effective = undefined;
-			this.#effectiveFor = undefined;
-			return;
-		}
+		const request = this._isExtending
+			? this.#workspaceContext?.getEffective(this._workspaceState.definition?.culture ?? null)
+			: undefined;
+		if (request === this.#request) return;
 
-		// The server works it out from the saved policies, so it only changes when this one is saved.
-		const saved = this._workspaceState.persistedDefinition;
-		if (this.#effectiveFor === saved) return;
-		this.#effectiveFor = saved;
-
-		const { data } = await this.#repository.getEffective(definition.contentKey, definition.culture);
-		if (this.#effectiveFor === saved) {
-			this._effective = data;
+		this.#request = request;
+		this._effective = undefined;
+		const effective = await request;
+		if (request === this.#request) {
+			this._effective = effective;
 		}
 	}
 
@@ -101,7 +101,7 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 
 	/** The policy to evaluate: this one, or for an extending policy what its content gets. */
 	get #evaluated(): Pick<CspApiDefinition, 'sources'> | undefined {
-		return this.#isExtending ? this._effective : (this._workspaceState.definition ?? undefined);
+		return this._isExtending ? this._effective : (this._workspaceState.definition ?? undefined);
 	}
 
 	#getFindings(csp: string): GroupedFindings {
@@ -145,16 +145,16 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 		}
 
 		const evaluated = this.#evaluated;
-		if (this.#isExtending && !evaluated) {
+		if (this._isExtending && !evaluated) {
 			return html`<uui-loader></uui-loader>`;
 		}
 
 		// An inherit-and-add policy is evaluated as what the request gets, so say so.
-		const note = this.#isExtending
+		const note = this._isExtending
 			? html`<p data-mark="csp-evaluates-effective">
 					${this.localize.term(
 						'cspManagerEffective_evaluatesEffective',
-						nodePolicyLabel(this.localize, { ...this._workspaceState.definition, culture: null }),
+						nodePolicyContentName(this.localize, this._workspaceState.definition ?? {}),
 					)}
 				</p>`
 			: nothing;

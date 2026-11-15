@@ -62,9 +62,8 @@ test.describe("Node policies: tree and add action", () => {
 		await frontend.hover();
 		await expect(frontend.getByRole("button", { name: EntityActions.addNodePolicy, exact: true }).first()).toBeVisible();
 
-		await csp.openEntityActionFromMenu(CspConstants.policyTypes.frontend.label, EntityActions.addNodePolicy);
-		await expect(csp.addNodePolicyModal().locator("umb-body-layout")).toBeVisible();
-		await csp.addNodePolicyModal().getByRole("button", { name: "Cancel" }).click();
+		const modal = await csp.openAddNodePolicyModal();
+		await modal.getByRole("button", { name: "Cancel" }).click();
 		await expect(csp.addNodePolicyModal()).toHaveCount(0);
 
 		// Back Office's only action is Import, so Umbraco renders it inline with no "View actions for"
@@ -104,12 +103,12 @@ test.describe("Node policies: tree and add action", () => {
 		await expect(exists).toContainText("already has a policy for All cultures");
 		await expect(continueButton).toHaveAttribute("disabled");
 
-		await modal.locator('[data-mark="csp-node-policy-culture"] select').selectOption(TestCultures.enGb);
+		await csp.addNodePolicyCulture().selectOption(TestCultures.enGb);
 		await expect(exists).toHaveCount(0);
 		await expect(continueButton).not.toHaveAttribute("disabled");
 
 		// Back to all cultures: the existing policy is one click away.
-		await modal.locator('[data-mark="csp-node-policy-culture"] select').selectOption({ label: "All cultures" });
+		await csp.addNodePolicyCulture().selectOption({ label: "All cultures" });
 		await exists.getByRole("button", { name: "Open that policy" }).click();
 		await expect(umbracoUi.page).toHaveURL(new RegExp(`/edit/${existing.id}`));
 		await expect(csp.addNodePolicyModal()).toHaveCount(0);
@@ -136,7 +135,7 @@ test.describe("Node policies: create, edit, delete", () => {
 		await expect(nodeInfo.locator('[data-mark="csp-node-orphaned"]')).toHaveCount(0);
 		expect(await api.getNodePolicies()).toHaveLength(0);
 
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
+		await csp.save();
 
 		// Saved: the server assigned the id, the route switched to edit, the tree shows the child.
 		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/[0-9a-f-]{36}/);
@@ -168,7 +167,7 @@ test.describe("Node policies: create, edit, delete", () => {
 
 		await csp.createDraftForSite(TestNodes.testPages);
 		await expect(csp.workspace().getByLabel("CSP Source")).toHaveValue("site.example.com");
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
+		await csp.save();
 		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/[0-9a-f-]{36}/);
 
 		const created = (await api.getNodePolicies()).find((p) => p.contentName === TestNodes.testPages)!;
@@ -214,7 +213,7 @@ test.describe("Node policies: create, edit, delete", () => {
 		await expect(umbracoUi.page.locator('[data-mark="csp-extend-settings-info"]')).toBeVisible();
 		await expect(csp.workspace().locator('uui-toggle[label="Report Only Mode"]')).toHaveCount(0);
 
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
+		await csp.save();
 		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/[0-9a-f-]{36}/);
 		await csp.expandTreeItem(CspConstants.policyTypes.frontend.label);
 		await expect(csp.treeItemByLabel(`${withNonce.name} (${TestCultures.enGb})`)).toBeVisible();
@@ -233,9 +232,7 @@ test.describe("Node policies: create, edit, delete", () => {
 
 	test("Editing a node policy changes the header on that node only", async ({ umbracoUi, page }) => {
 		const api = new CspApiHelpers(page.request);
-		await api.saveDefinition(
-			frontendWith("global.example.com"),
-		);
+		await api.saveDefinition(frontendWith("global.example.com"));
 		const policy = await api.createNodePolicy(
 			CspDefinitionBuilder.nodePolicy(await contentKeyOf(api, TestNodes.testPages))
 				.enabled()
@@ -255,8 +252,7 @@ test.describe("Node policies: create, edit, delete", () => {
 		const newSource = csp.workspace().getByLabel("CSP Source").last();
 		await newSource.fill("node-only.example.com");
 		await csp.workspace().locator('uui-checkbox[label="script-src"]').last().click();
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
-		await expect(umbracoUi.page.locator("uui-toast-notification").filter({ hasText: "Changes Saved" })).toBeVisible();
+		await csp.saveAndExpectSaved();
 
 		// The nested site gets its own policy; the homepage's hostnames keep the Frontend policy.
 		const onNode = await headerOn(page, TestDomains.testPages);
@@ -271,9 +267,7 @@ test.describe("Node policies: create, edit, delete", () => {
 	// must all get the same policy without one policy per hostname.
 	test("A node's policy applies to every one of its hostnames", async ({ page }) => {
 		const api = new CspApiHelpers(page.request);
-		await api.saveDefinition(
-			CspDefinitionBuilder.frontend().enabled().withSource("global.example.com", ["default-src"]).build(),
-		);
+		await api.saveDefinition(frontendWith("global.example.com"));
 		await api.createNodePolicy(
 			CspDefinitionBuilder.nodePolicy(await contentKeyOf(api, TestNodes.homepage))
 				.enabled()
@@ -333,10 +327,9 @@ test.describe("Node policies: create, edit, delete", () => {
 		await expect(summary).toHaveText(`This policy applies to ${TestNodes.testPages} and the pages below it.`);
 		await csp.workspace().locator('[data-mark="csp-applies-to"] uui-radio[value="NodeOnly"]').click();
 		await expect(summary).toHaveText(`This policy applies to ${TestNodes.testPages}.`);
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
-		await expect(umbracoUi.page.locator("uui-toast-notification").filter({ hasText: "Changes Saved" })).toBeVisible();
+		await csp.saveAndExpectSaved();
 
-		expect(await headerOn(page, TestDomains.enGb + TestPages.testPages.path)).toContain("section.example.com");
+		expect(await headerOn(page, TestDomains.enGb + TestDomains.testPages)).toContain("section.example.com");
 		const belowAfter = await headerOn(page, below);
 		expect(belowAfter).toContain("global.example.com");
 		expect(belowAfter).not.toContain("section.example.com");
@@ -344,9 +337,7 @@ test.describe("Node policies: create, edit, delete", () => {
 
 	test("Deleting a node policy asks for confirmation and falls back to Frontend", async ({ umbracoUi, page }) => {
 		const api = new CspApiHelpers(page.request);
-		await api.saveDefinition(
-			CspDefinitionBuilder.frontend().enabled().withSource("global.example.com", ["default-src"]).build(),
-		);
+		await api.saveDefinition(frontendWith("global.example.com"));
 		const policy = await api.createNodePolicy(
 			CspDefinitionBuilder.nodePolicy(await contentKeyOf(api, TestNodes.homepage))
 				.enabled()
@@ -399,26 +390,27 @@ test.describe("Node policies: create, edit, delete", () => {
 		await confirm.getByRole("button", { name: "Cancel" }).click();
 	});
 
-	// A draft waits for the content node and the policy it starts from. A response that arrives after the
+	// A draft is built by the server. A response that arrives after the
 	// user has opened another policy must not turn that policy into a draft: the draft counts as
 	// unsaved changes, so Save would be enabled and would create a node policy instead.
 	test("Opening another policy while a draft is loading keeps that policy", async ({ umbracoUi, page }) => {
 		const api = new CspApiHelpers(page.request);
 		const contentKey = await contentKeyOf(api, TestNodes.homepage);
 
-		let releaseDomains!: () => void;
-		const domainsReleased = new Promise<void>((resolve) => (releaseDomains = resolve));
-		let markDomainsRequested!: () => void;
-		const domainsRequested = new Promise<void>((resolve) => (markDomainsRequested = resolve));
-		await umbracoUi.page.route(`**/umbraco/csp/api/v1/Nodes/${contentKey}`, async (route) => {
-			markDomainsRequested();
-			await domainsReleased;
+		const draftRequest = "**/umbraco/csp/api/v1/Definitions/draft?*";
+		let releaseDraft!: () => void;
+		const draftReleased = new Promise<void>((resolve) => (releaseDraft = resolve));
+		let markDraftRequested!: () => void;
+		const draftRequested = new Promise<void>((resolve) => (markDraftRequested = resolve));
+		await umbracoUi.page.route(draftRequest, async (route) => {
+			markDraftRequested();
+			await draftReleased;
 			await route.continue();
 		});
 
 		const csp = new CspTestHelpers(umbracoUi);
 		await umbracoUi.page.goto(createUrl(contentKey));
-		await domainsRequested;
+		await draftRequested;
 
 		await csp.treeItemByLabel(CspConstants.policyTypes.frontend.label).click();
 		await expect(umbracoUi.page).toHaveURL(new RegExp(`/edit/${CspConstants.policyTypes.frontend.value}$`));
@@ -427,9 +419,9 @@ test.describe("Node policies: create, edit, delete", () => {
 		// Let the draft's request finish now that the user has moved on. Wait until the page has
 		// received the whole body, then let it run the task that hands the body to the workspace,
 		// so the checks below see the result of applying it rather than the state before it.
-		const nodesResponse = umbracoUi.page.waitForResponse(`**/umbraco/csp/api/v1/Nodes/${contentKey}`);
-		releaseDomains();
-		await (await nodesResponse).finished();
+		const draftResponse = umbracoUi.page.waitForResponse(draftRequest);
+		releaseDraft();
+		await (await draftResponse).finished();
 		await umbracoUi.page.evaluate(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 		await expect(csp.workspaceEditor()).toHaveAttribute("headline", `${CspConstants.policyTypes.frontend.label} CSP Management`);
@@ -446,6 +438,9 @@ test.describe("Node policies: create, edit, delete", () => {
 		await umbracoUi.page.goto(createUrl(crypto.randomUUID()));
 
 		const unavailable = "A node policy cannot be created here.";
+		await expect(csp.workspace().getByText(unavailable)).toBeVisible();
+		// The same for a culture that isn't one of the site's languages.
+		await umbracoUi.page.goto(createUrl(await contentKeyOf(api, TestNodes.homepage), "nl-NL"));
 		await expect(csp.workspace().getByText(unavailable)).toBeVisible();
 		await expect(umbracoUi.page.locator('[data-mark="csp-node-info"]')).toHaveCount(0);
 		// Every view reports the same error, not a generic "no definition" message.
@@ -599,9 +594,7 @@ test.describe("Node policies: what a request gets", () => {
 test.describe("Node policies: switching back to the inherited policy", () => {
 	test("Turning a node policy off falls back to Frontend, turning it on overrides again", async ({ umbracoUi, page }) => {
 		const api = new CspApiHelpers(page.request);
-		await api.saveDefinition(
-			frontendWith("global.example.com"),
-		);
+		await api.saveDefinition(frontendWith("global.example.com"));
 		const policy = await api.createNodePolicy(
 			CspDefinitionBuilder.nodePolicy(await contentKeyOf(api, TestNodes.homepage))
 				.enabled()
@@ -609,7 +602,7 @@ test.describe("Node policies: switching back to the inherited policy", () => {
 				.build(),
 		);
 		const csp = new CspTestHelpers(umbracoUi);
-		const headerOnDomain = () => headerOn(page, TestDomains.enGb);
+		const headerOnSite = () => headerOn(page, TestDomains.enGb);
 
 		await umbracoUi.page.goto(editUrl(policy.id));
 		await csp.workspaceTab(WorkspaceTabs.settings).click();
@@ -622,18 +615,17 @@ test.describe("Node policies: switching back to the inherited policy", () => {
 		await toggle.click();
 		await expect(summary).toContainText(`Requests for ${TestNodes.homepage} and the pages below it get the inherited policy`);
 		await expect(toggle).toHaveAttribute("label", "Use the inherited policy");
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
-		await expect(umbracoUi.page.locator("uui-toast-notification").filter({ hasText: "Changes Saved" })).toBeVisible();
+		await csp.saveAndExpectSaved();
 		await csp.expandTreeItem(CspConstants.policyTypes.frontend.label);
 		await expect(csp.treeItemByLabel(`${TestNodes.homepage} (inactive)`)).toBeVisible();
-		expect(await headerOnDomain()).toContain("global.example.com");
-		expect(await headerOnDomain()).not.toContain("domain-only.example.com");
+		expect(await headerOnSite()).toContain("global.example.com");
+		expect(await headerOnSite()).not.toContain("domain-only.example.com");
 
 		// On again: the node policy overrides the Frontend policy.
 		await toggle.click();
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
+		await csp.save();
 		await expect(csp.treeItemByLabel(TestNodes.homepage)).toBeVisible();
-		expect(await headerOnDomain()).toContain("domain-only.example.com");
-		expect(await headerOnDomain()).not.toContain("global.example.com");
+		expect(await headerOnSite()).toContain("domain-only.example.com");
+		expect(await headerOnSite()).not.toContain("global.example.com");
 	});
 });

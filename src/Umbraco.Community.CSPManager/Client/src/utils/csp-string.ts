@@ -21,9 +21,19 @@ export function directivesOf(definition: SourcesOnly): Map<string, string[]> {
 	return directives;
 }
 
+const sourceLists = (definition: SourcesOnly): string[] =>
+	[...directivesOf(definition)].map(([name, sources]) => `${name} ${sources.join(' ')}`);
+
 /** The source lists of a definition as a policy value, e.g. `default-src 'self'; img-src data:;`. */
 export function sourcesAsCspString(definition: SourcesOnly): string {
-	return [...directivesOf(definition)].map(([name, sources]) => `${name} ${sources.join(' ')}; `).join('');
+	return sourceLists(definition)
+		.map((list) => `${list}; `)
+		.join('');
+}
+
+/** Whether a definition reports violations: "No reporting" is stored as no directive, or as `none`. */
+export function hasReportingDirective(definition: Pick<CspApiDefinition, 'reportingDirective'>): boolean {
+	return !!definition.reportingDirective && definition.reportingDirective !== 'none';
 }
 
 /**
@@ -31,9 +41,9 @@ export function sourcesAsCspString(definition: SourcesOnly): string {
  * response: the source lists, then reporting and upgrade-insecure-requests.
  */
 export function asCspHeaderValue(definition: WithSettings): string {
-	const parts = [...directivesOf(definition)].map(([name, sources]) => `${name} ${sources.join(' ')}`);
+	const parts = sourceLists(definition);
 
-	if (definition.reportingDirective && definition.reportingDirective !== 'none' && definition.reportUri) {
+	if (hasReportingDirective(definition) && definition.reportUri) {
 		parts.push(`${definition.reportingDirective} ${definition.reportUri}`);
 	}
 

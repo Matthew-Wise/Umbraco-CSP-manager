@@ -1,20 +1,17 @@
 import { css, customElement, html, nothing, repeat, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { UmbLanguageCollectionRepository } from '@umbraco-cms/backoffice/language';
+import { UMB_APP_LANGUAGE_CONTEXT, type UmbLanguageDetailModel } from '@umbraco-cms/backoffice/language';
 import type { UmbInputDocumentElement } from '@umbraco-cms/backoffice/document';
 // Registers <umb-input-document>, which the backoffice only loads once the Content section has been opened.
 import '@umbraco-cms/backoffice/document';
 import { CspPolicyInheritance, type CspApiNodeInfo, type CspApiNodePolicy } from '@/api';
-import { CspConstants } from '@/constants';
 import { cspEditPolicyPath } from '@/paths';
-import { cultureLabel } from '@/node-policy-label';
+import { cultureLabel, languageLabel } from '@/node-policy-label';
 import { UmbCspDefinitionRepository } from '../repository/csp-definition.repository.js';
 import type { AddNodePolicyModalData, AddNodePolicyModalValue } from './add-node-policy-modal.token.js';
 
-interface LanguageOption {
-	isoCode: string;
-	name: string;
-}
+// uui-select keeps the empty value for its placeholder, so "all cultures" needs a value of its own.
+const ALL_CULTURES_OPTION = 'all-cultures';
 
 /**
  * Chooses what a new node policy is for: a content node (any node; the sites are offered as
@@ -34,7 +31,7 @@ export class UmbCspAddNodePolicyModalElement extends UmbModalBaseElement<
 	private _policies: CspApiNodePolicy[] = [];
 
 	@state()
-	private _languages: LanguageOption[] = [];
+	private _languages: UmbLanguageDetailModel[] = [];
 
 	@state()
 	private _loading = true;
@@ -51,6 +48,15 @@ export class UmbCspAddNodePolicyModalElement extends UmbModalBaseElement<
 	@state()
 	private _inheritance: CspPolicyInheritance = CspPolicyInheritance.REPLACE;
 
+	constructor() {
+		super();
+
+		// The languages the backoffice has already loaded.
+		this.consumeContext(UMB_APP_LANGUAGE_CONTEXT, (context) => {
+			this.observe(context?.languages, (languages) => (this._languages = languages ?? []));
+		});
+	}
+
 	override connectedCallback() {
 		super.connectedCallback();
 		this.#load();
@@ -58,21 +64,16 @@ export class UmbCspAddNodePolicyModalElement extends UmbModalBaseElement<
 
 	async #load() {
 		const repository = new UmbCspDefinitionRepository(this);
-		const [sites, policies, languages] = await Promise.all([
-			repository.getNodes(),
-			repository.getNodePolicies(),
-			new UmbLanguageCollectionRepository(this).requestAllItems(),
-		]);
+		const [sites, policies] = await Promise.all([repository.getNodes(), repository.getNodePolicies()]);
 		this._loading = false;
 
-		if (!sites.data || !policies.data || !languages.data) {
+		if (!sites.data || !policies.data) {
 			this._failed = true;
 			return;
 		}
 
 		this._sites = sites.data;
 		this._policies = policies.data;
-		this._languages = languages.data.items.map((language) => ({ isoCode: language.unique, name: language.name }));
 	}
 
 	/** The policy the chosen node already has for the chosen culture, if any: there can only be one. */
@@ -159,7 +160,7 @@ export class UmbCspAddNodePolicyModalElement extends UmbModalBaseElement<
 				<p class="hint">
 					${this._inheritance === CspPolicyInheritance.EXTEND
 						? this.localize.term('cspManagerNodePolicy_inheritanceExtendDescription')
-						: this.localize.term('cspManagerNodePolicy_inheritanceReplaceDescription')}
+						: `${this.localize.term('cspManagerNodePolicy_inheritanceReplaceDescription')} ${this.localize.term('cspManagerNodePolicy_addModalReplaceStart')}`}
 				</p>
 			</uui-form-layout-item>
 			${this.#renderExisting()}
@@ -198,14 +199,12 @@ export class UmbCspAddNodePolicyModalElement extends UmbModalBaseElement<
 			return nothing;
 		}
 
-		// uui-select keeps the empty value for its placeholder, so "all cultures" needs one of its own.
-		const allCultures = CspConstants.nodePolicy.allCulturesSegment;
 		const options = [
-			{ name: cultureLabel(this.localize, null), value: allCultures, selected: this._culture === null },
+			{ name: cultureLabel(this.localize, null), value: ALL_CULTURES_OPTION, selected: this._culture === null },
 			...this._languages.map((language) => ({
-				name: `${language.name} (${language.isoCode})`,
-				value: language.isoCode,
-				selected: this._culture === language.isoCode,
+				name: languageLabel(language),
+				value: language.unique,
+				selected: this._culture === language.unique,
 			})),
 		];
 
@@ -220,7 +219,7 @@ export class UmbCspAddNodePolicyModalElement extends UmbModalBaseElement<
 					.options=${options}
 					@change=${(e: Event) => {
 						const value = (e.target as HTMLSelectElement).value;
-						this._culture = value === allCultures ? null : value;
+						this._culture = value === ALL_CULTURES_OPTION ? null : value;
 					}}></uui-select>
 			</uui-form-layout-item>
 		`;

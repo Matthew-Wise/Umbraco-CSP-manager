@@ -105,11 +105,11 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 			("GET Definitions/{id}", () => Client.GetAsync(DefinitionsUrl(x => x.GetDefinitionById(policy.Id, CancellationToken.None)))),
 			("GET Definitions/effective", () => Client.GetAsync(DefinitionsUrl(x => x.GetEffectiveDefinition(_siteA.Key, null, CancellationToken.None)))),
 			("GET Definitions/node-policies", () => Client.GetAsync(DefinitionsUrl(x => x.GetNodePolicies(CancellationToken.None)))),
+			("GET Definitions/draft", () => Client.GetAsync(DraftUrl(_siteB.Key))),
 			("POST Definitions/create-from-frontend", () => Client.PostAsync(DefinitionsUrl(x => x.CreateFromFrontend(_siteB.Key, null, CspPolicyInheritance.Replace, CspPolicyScope.Descendants, CancellationToken.None)), null)),
 			("POST Definitions/save (create)", () => PostSaveAsync(NewPolicyBody(_siteB.Key))),
 			("DELETE Definitions/{id}", () => Client.DeleteAsync(DefinitionsUrl(x => x.DeleteDefinition(policy.Id, CancellationToken.None)))),
 			("GET Nodes", () => Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNodes(CancellationToken.None)))),
-			("GET Nodes/{contentKey}", () => Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(_siteA.Key, CancellationToken.None)))),
 		};
 
 		foreach (var (name, send) in requests)
@@ -572,7 +572,8 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 			.Content.ReadFromJsonAsync<List<CspApiNodeInfo>>(JsonSerializerOptions);
 
 		var definitionB = await ReadDefinitionAsync(await Client.GetAsync(DefinitionsUrl(x => x.GetDefinitionById(policyB.Id, CancellationToken.None))));
-		var nodeB = await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(_siteB.Key, CancellationToken.None)));
+		var draftA = await Client.GetAsync(DraftUrl(_siteA.Key));
+		var draftForTrashed = await Client.GetAsync(DraftUrl(_siteB.Key, "fr-FR"));
 
 		var b = policies.Single(p => p.Id == policyB.Id);
 		Assert.Multiple(() =>
@@ -582,38 +583,101 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 			Assert.That(nodes.Select(n => n.ContentKey), Is.EqualTo(new[] { _siteA.Key }));
 			Assert.That(definitionB.IsOrphaned, Is.True);
 			Assert.That(definitionB.ContentName, Is.EqualTo("Site B"));
-			Assert.That(nodeB.StatusCode, Is.EqualTo(HttpStatusCode.NotFound), "a node in the recycle bin can't get a new policy");
+			Assert.That(draftA.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+			Assert.That(draftForTrashed.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest), "a node in the recycle bin can't get a new policy");
 		});
 	}
 
-	// Any content node can have a policy, so the UI has to be able to look up one that has no hostname.
+	// ── Draft ────────────────────────────────────────────────────────────────
+
+	private string DraftUrl(
+		Guid contentKey,
+		string culture = null,
+		CspPolicyInheritance inheritance = CspPolicyInheritance.Replace,
+		CspPolicyScope appliesTo = CspPolicyScope.Descendants)
+		=> DefinitionsUrl(x => x.GetDraft(contentKey, culture, inheritance, appliesTo, CancellationToken.None));
+
+	// The draft is what the UI opens for a new policy: what create-from-frontend would create, but
+	// only saved once the editor says so.
 	[Test]
-	public async Task GetNode_ReturnsAnyContentNodeWithItsHostnamesAndPolicy()
+	public async Task GetDraft_ForACompletePolicy_IsACopyOfWhatTheNodeGetsTodayAndIsNotSaved()
 	{
-		var policyA = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
-		await CreateFrenchPolicyAsync(_pageA.Key);
+		await _cspService.SaveCspDefinitionAsync(new CspDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Enabled = false,
+			ReportOnly = true,
+			Sources = [new CspDefinitionSource { Source = "frontend.example.com", Directives = [Constants.Directives.ScriptSource] }]
+		}, CancellationToken.None);
 		await AuthenticateAsAdminAsync();
 
-		async Task<CspApiNodeInfo> GetNodeAsync(Guid key)
-			=> await (await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(key, CancellationToken.None))))
-				.Content.ReadFromJsonAsync<CspApiNodeInfo>(JsonSerializerOptions);
+		var response = await Client.GetAsync(DraftUrl(_siteA.Key));
 
-		var site = await GetNodeAsync(_siteA.Key);
-		var page = await GetNodeAsync(_pageA.Key);
-		var missing = await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(Guid.NewGuid(), CancellationToken.None)));
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+		var draft = await ReadDefinitionAsync(response);
+		Assert.Multiple(() =>
+		{
+			Assert.That(draft.Id, Is.EqualTo(Guid.Empty), "saving it creates the policy");
+			Assert.That(draft.ContentKey, Is.EqualTo(_siteA.Key));
+			Assert.That(draft.ContentName, Is.EqualTo("Site A"));
+			Assert.That(draft.Domains.Select(d => d.Name), Is.EqualTo(new[] { "a.example.com" }));
+			Assert.That(draft.Culture, Is.Null);
+			Assert.That(draft.Enabled, Is.True, "a new policy should apply, whatever it starts from");
+			Assert.That(draft.ReportOnly, Is.True);
+			Assert.That(draft.IsOrphaned, Is.False);
+			Assert.That(draft.Sources.Select(s => s.Source), Is.EqualTo(new[] { "frontend.example.com" }));
+			Assert.That(draft.Sources.Select(s => s.DefinitionId), Is.All.EqualTo(Guid.Empty));
+		});
+		Assert.That(await _cspService.GetAllNodePoliciesAsync(CancellationToken.None), Is.Empty);
+
+		// The draft goes back through the save unchanged.
+		var saved = await ReadDefinitionAsync(await PostSaveAsync(draft));
+		Assert.That(saved.Id, Is.Not.EqualTo(Guid.Empty));
+		Assert.That(await _cspService.GetAllNodePoliciesAsync(CancellationToken.None), Has.Count.EqualTo(1));
+	}
+
+	// Any content node can have a policy, so also a page without a hostname.
+	[Test]
+	public async Task GetDraft_ForACultureAsAnExtendingPolicyForOnePage_StartsEmpty()
+	{
+		await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
+		await AuthenticateAsAdminAsync();
+
+		var response = await Client.GetAsync(DraftUrl(_pageA.Key, "fr-fr", CspPolicyInheritance.Extend, CspPolicyScope.NodeOnly));
+
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+		var draft = await ReadDefinitionAsync(response);
+		Assert.Multiple(() =>
+		{
+			Assert.That(draft.Id, Is.EqualTo(Guid.Empty));
+			Assert.That(draft.ContentName, Is.EqualTo("Page A"));
+			Assert.That(draft.Domains, Is.Empty);
+			Assert.That(draft.Culture, Is.EqualTo("fr-FR"), "in the language's own spelling");
+			Assert.That(draft.Inheritance, Is.EqualTo(CspPolicyInheritance.Extend));
+			Assert.That(draft.AppliesTo, Is.EqualTo(CspPolicyScope.NodeOnly));
+			Assert.That(draft.Sources, Is.Empty);
+		});
+	}
+
+	[Test]
+	public async Task GetDraft_ThatCouldNotBeSaved_ReturnsBadRequest()
+	{
+		await CreateFrenchPolicyAsync(_siteA.Key);
+		await AuthenticateAsAdminAsync();
+
+		var taken = await Client.GetAsync(DraftUrl(_siteA.Key, "fr-FR"));
+		var unknownCulture = await Client.GetAsync(DraftUrl(_siteA.Key, "nl-NL"));
+		var unknownNode = await Client.GetAsync(DraftUrl(Guid.NewGuid()));
+		var otherCulture = await Client.GetAsync(DraftUrl(_siteA.Key));
 
 		Assert.Multiple(() =>
 		{
-			Assert.That(site.ContentName, Is.EqualTo("Site A"));
-			Assert.That(site.Domains.Select(d => d.Name), Is.EqualTo(new[] { "a.example.com" }));
-			Assert.That(site.CspDefinitionId, Is.EqualTo(policyA.Id));
-
-			Assert.That(page.ContentName, Is.EqualTo("Page A"));
-			Assert.That(page.Domains, Is.Empty);
-			Assert.That(page.HasCspPolicy, Is.False, "it only has a policy for one culture");
-
-			Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+			Assert.That(taken.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+			Assert.That(unknownCulture.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+			Assert.That(unknownNode.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+			Assert.That(otherCulture.StatusCode, Is.EqualTo(HttpStatusCode.OK), "the node has no policy for all cultures yet");
 		});
+		Assert.That(await taken.Content.ReadAsStringAsync(), Does.Contain("A policy already exists for this content node and culture."));
 	}
 
 	[Test]

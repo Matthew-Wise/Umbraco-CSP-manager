@@ -4,7 +4,7 @@ import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
 import type { UmbModalManagerContext } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
-import { CspPolicyInheritance, CspPolicyScope, type CspApiDefinitionSource } from '@/api';
+import { CspPolicyScope, type CspApiDefinitionSource } from '@/api';
 import { cultureLabel } from '@/node-policy-label';
 import { documentEditPath } from '@/paths';
 import {
@@ -34,6 +34,10 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	@state()
 	private _isNodePolicy = false;
 
+	/** An "inherit and add" policy: only its sources and its on/off switch are its own. */
+	@state()
+	private _isExtending = false;
+
 	@state()
 	private _expandedSources = new Set<number>();
 
@@ -51,6 +55,7 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 			this.observe(context.state, (state) => {
 				this._workspaceState = state;
 				this._isNodePolicy = context.isNodePolicy();
+				this._isExtending = context.isExtending();
 				if (state.error) {
 					this._invalidSources = (state.error.cause as string[] | undefined) ?? [];
 				} else {
@@ -315,11 +320,6 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 				</div>
 			</uui-box>
 		`;
-	}
-
-	/** An "inherit and add" policy: only its sources and its on/off switch are its own. */
-	private get _isExtending(): boolean {
-		return this._workspaceState.definition?.inheritance === CspPolicyInheritance.EXTEND;
 	}
 
 	override render() {

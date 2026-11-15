@@ -1,7 +1,8 @@
 import { UmbRepositoryBase } from "@umbraco-cms/backoffice/repository";
 import type { UmbControllerHost } from "@umbraco-cms/backoffice/controller-api";
 import { tryExecute } from "@umbraco-cms/backoffice/resources";
-import { Definitions, Nodes, type CspApiDefinition } from '../api';
+import { Definitions, Nodes, type CspApiDefinition, type CspPolicyInheritance } from '../api';
+import { hasReportingDirective } from '../utils/csp-string';
 
 export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	constructor(host: UmbControllerHost) {
@@ -75,12 +76,16 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	}
 
 	/**
-	 * Get one content node (with or without a hostname) a node policy can be created for
+	 * Get an unsaved node policy for a content node, as the server would create it: a complete
+	 * policy is a copy of what the node gets today, an extending one has no sources. Fails when
+	 * the node, or the culture, can't have a new policy.
 	 */
-	async getNode(contentKey: string) {
-		const { data, error } = await tryExecute(this, Nodes.getNodesByContentKey({ path: { contentKey } }), {
-			disableNotifications: true,
-		});
+	async getDraft(contentKey: string, culture: string | null, inheritance: CspPolicyInheritance) {
+		const { data, error } = await tryExecute(
+			this,
+			Definitions.getDefinitionsDraft({ query: { contentKey, culture: culture ?? undefined, inheritance } }),
+			{ disableNotifications: true },
+		);
 
 		if (data) {
 			return { data };
@@ -148,8 +153,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
  * can't fail validation for a setting that is off.
  */
 export function withoutUnusedReporting(definition: CspApiDefinition): CspApiDefinition {
-	const directive = definition.reportingDirective;
-	if (directive && directive !== 'none') {
+	if (hasReportingDirective(definition)) {
 		return definition;
 	}
 

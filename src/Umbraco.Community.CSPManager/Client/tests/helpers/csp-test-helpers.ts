@@ -89,6 +89,17 @@ export class CspTestHelpers {
 		return this.workspaceEditor().locator(Selectors.tab).filter({ hasText: tabLabel });
 	}
 
+	/** Clicks the workspace's Save button. */
+	async save(): Promise<void> {
+		await this.workspace().getByRole("button", { name: "Save", exact: true }).click();
+	}
+
+	/** Saves an existing policy and waits for the confirmation. */
+	async saveAndExpectSaved(): Promise<void> {
+		await this.save();
+		await expect(this.umbracoUi.page.locator("uui-toast-notification").filter({ hasText: "Changes Saved" })).toBeVisible();
+	}
+
 	/** The CSP Manager section dashboard. */
 	dashboard(): Locator {
 		return this.umbracoUi.page.locator(Selectors.dashboard);
@@ -131,6 +142,11 @@ export class CspTestHelpers {
 		return this.umbracoUi.page.locator(Selectors.addNodePolicyModal);
 	}
 
+	/** The culture select of the add node policy modal. */
+	addNodePolicyCulture(): Locator {
+		return this.addNodePolicyModal().locator('[data-mark="csp-node-policy-culture"] select');
+	}
+
 	/** Opens the add node policy modal from the Frontend tree item. */
 	async openAddNodePolicyModal(): Promise<Locator> {
 		await this.openEntityActionFromMenu(POLICY_LABELS.frontend, EntityActions.addNodePolicy);
@@ -146,7 +162,7 @@ export class CspTestHelpers {
 	async continueToDraft(options: { culture?: string; extending?: boolean } = {}): Promise<void> {
 		const modal = this.addNodePolicyModal();
 		if (options.culture) {
-			await modal.locator('[data-mark="csp-node-policy-culture"] select').selectOption(options.culture);
+			await this.addNodePolicyCulture().selectOption(options.culture);
 		}
 		if (options.extending) {
 			await modal.locator('[data-mark="csp-node-policy-inheritance"] uui-radio[value="Extend"]').click();

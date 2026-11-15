@@ -8,9 +8,14 @@ import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { UMB_DISCARD_CHANGES_MODAL, umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_ACTION_EVENT_CONTEXT } from '@umbraco-cms/backoffice/action';
 import { UmbRequestReloadChildrenOfEntityEvent, UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
-import { CspPolicyInheritance, CspPolicyScope, type CspApiDefinition } from '@/api';
+import { CspPolicyInheritance, type CspApiDefinition } from '@/api';
 import { UmbCspDefinitionContext, UmbCspDirectivesContext } from '@/contexts/index';
-import { CSP_CREATE_NODE_POLICY_WORKSPACE_PATH_PATTERN, CSP_EDIT_POLICY_WORKSPACE_PATH_PATTERN, cspEditPolicyPath } from '@/paths';
+import {
+	CSP_CREATE_NODE_POLICY_WORKSPACE_PATH_PATTERN,
+	CSP_EDIT_POLICY_WORKSPACE_PATH_PATTERN,
+	cspEditPolicyPath,
+	cultureFromCreatePathSegment,
+} from '@/paths';
 import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { CspConstants, isGlobalPolicyId, type PolicyType } from '@/constants';
@@ -42,6 +47,13 @@ export class UmbCspManagerWorkspaceContext
 	// Bumped by every route load. A response that arrives after the route has changed again (e.g. the
 	// user clicks another policy while a draft is still loading) must not overwrite the newer state.
 	#loadVersion = 0;
+	// What a request for the policy's content gets, per culture, as worked out from the saved copy
+	// in `saved`: asked for by more than one view, and only different once a policy is saved.
+	#effective?: {
+		contentKey: string;
+		saved: CspApiDefinition | null;
+		byCulture: Map<string, Promise<CspApiDefinition | undefined>>;
+	};
 
 	#state = new UmbObjectState<WorkspaceState>({
 		definition: null,
@@ -77,6 +89,46 @@ export class UmbCspManagerWorkspaceContext
 		return this.#state.getValue().isNew === true || (this.#policyId !== null && !isGlobalPolicyId(this.#policyId));
 	}
 
+	/**
+	 * True for an "inherit and add" node policy: only its sources and its on/off switch are its own,
+	 * the rest comes from the policy it adds to.
+	 */
+	isExtending(): boolean {
+		return this.#state.getValue().definition?.inheritance === CspPolicyInheritance.EXTEND;
+	}
+
+	/**
+	 * What a frontend request for the content of this node policy gets today, for a culture (the
+	 * default language when `null`). The server works it out from the saved policies, so the
+	 * answer is kept until this policy is saved or loaded again; unsaved edits don't change it.
+	 * Resolves to `undefined` when there is no node policy, or the request failed.
+	 */
+	getEffective(culture: string | null): Promise<CspApiDefinition | undefined> {
+		const { definition, persistedDefinition: saved } = this.#state.getValue();
+		const contentKey = definition?.contentKey;
+		if (!contentKey) {
+			return Promise.resolve(undefined);
+		}
+
+		if (this.#effective?.contentKey !== contentKey || this.#effective.saved !== saved) {
+			this.#effective = { contentKey, saved, byCulture: new Map() };
+		}
+
+		const { byCulture } = this.#effective;
+		const key = (culture ?? '').toLowerCase();
+		let request = byCulture.get(key);
+		if (!request) {
+			request = this.#cspDefinitionContext.getEffective(contentKey, culture).then(({ data }) => {
+				// A failure isn't an answer: ask again next time.
+				if (!data) byCulture.delete(key);
+				return data;
+			});
+			byCulture.set(key, request);
+		}
+
+		return request;
+	}
+
 	constructor(host: UmbControllerHost) {
 		super(host);
 
@@ -107,7 +159,7 @@ export class UmbCspManagerWorkspaceContext
 					const { contentKey, culture, inheritance } = info.match.params;
 					this.#loadNew(
 						decodeURIComponent(contentKey),
-						culture === CspConstants.nodePolicy.allCulturesSegment ? null : decodeURIComponent(culture),
+						cultureFromCreatePathSegment(culture),
 						inheritance === CspPolicyInheritance.EXTEND ? CspPolicyInheritance.EXTEND : CspPolicyInheritance.REPLACE,
 					);
 				},
@@ -124,11 +176,11 @@ export class UmbCspManagerWorkspaceContext
 	}
 
 	/**
-	 * Builds an unsaved draft for a new node policy. A complete policy starts as a copy of what the
-	 * node gets today (the server works that out: a policy further up the content tree, or the
-	 * Frontend policy), so saving it unedited changes no header. An extending policy starts empty:
-	 * it inherits everything. Nothing is persisted until save(); the id stays empty so the server
-	 * assigns it.
+	 * Opens an unsaved draft for a new node policy. The server builds it: a complete policy starts
+	 * as a copy of what the node gets today (a policy further up the content tree, or the Frontend
+	 * policy), so saving it unedited changes no header; an extending policy starts empty, since it
+	 * inherits everything. Nothing is persisted until save(); the draft has the empty id, so the
+	 * server assigns one then.
 	 */
 	async #loadNew(contentKey: string, culture: string | null, inheritance: CspPolicyInheritance) {
 		const version = ++this.#loadVersion;
@@ -136,11 +188,8 @@ export class UmbCspManagerWorkspaceContext
 		this.#allowNavigateAway = false;
 		this.#state.update({ loading: true, error: undefined, isNew: true, definition: null, persistedDefinition: null });
 
-		const extending = inheritance === CspPolicyInheritance.EXTEND;
-		const [nodeResult, policiesResult, effectiveResult] = await Promise.all([
-			this.#cspDefinitionContext.getNode(contentKey),
-			this.#cspDefinitionContext.getNodePolicies(),
-			extending ? undefined : this.#cspDefinitionContext.getEffective(contentKey, culture),
+		const [{ data: draft }] = await Promise.all([
+			this.#cspDefinitionContext.getDraft(contentKey, culture, inheritance),
 			this.loadDirectives(),
 		]);
 
@@ -148,41 +197,15 @@ export class UmbCspManagerWorkspaceContext
 			return;
 		}
 
-		// A stale or hand-typed URL: the node was deleted or trashed, or already has a policy for
-		// this culture. Shown now rather than as a 400 on save.
-		const node = nodeResult.data;
-		const taken = policiesResult.data?.some(
-			(policy) => policy.contentKey === contentKey && (policy.culture ?? '').toLowerCase() === (culture ?? '').toLowerCase(),
-		);
-		if (!node || !policiesResult.data || taken || (!extending && !effectiveResult?.data)) {
+		// A stale or hand-typed URL: the content was deleted or trashed, the culture isn't a
+		// language, or the content already has a policy for it. Shown now rather than as a 400 on save.
+		if (!draft) {
 			this.#state.update({
 				loading: false,
 				error: new UmbError(this.#localize.term('cspManagerNodePolicy_createUnavailable')),
 			});
 			return;
 		}
-
-		const newId = CspConstants.nodePolicy.newId;
-		const inherited = effectiveResult?.data;
-		const draft: CspApiDefinition = {
-			id: newId,
-			// Always on: a new node policy should apply, whether or not the policy it starts from is on.
-			enabled: true,
-			isBackOffice: false,
-			contentKey,
-			culture,
-			inheritance,
-			appliesTo: CspPolicyScope.DESCENDANTS,
-			contentName: node.contentName,
-			domains: node.domains,
-			isOrphaned: false,
-			disabledNodePolicyBehavior: null,
-			reportOnly: inherited?.reportOnly ?? false,
-			reportingDirective: inherited?.reportingDirective ?? null,
-			reportUri: inherited?.reportUri ?? null,
-			upgradeInsecureRequests: inherited?.upgradeInsecureRequests ?? false,
-			sources: (inherited?.sources ?? []).map((s) => ({ ...s, definitionId: newId, directives: [...s.directives] })),
-		};
 
 		this.#state.update({
 			definition: draft,

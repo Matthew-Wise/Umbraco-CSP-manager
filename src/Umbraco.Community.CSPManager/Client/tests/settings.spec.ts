@@ -31,8 +31,7 @@ test.describe("Reporting settings", () => {
 		await csp.workspace().locator('uui-radio[value="none"]').click();
 		await expect(reportUri).toHaveCount(0);
 
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
-		await expect(umbracoUi.page.locator("uui-toast-notification").filter({ hasText: "Changes Saved" })).toBeVisible();
+		await csp.saveAndExpectSaved();
 
 		const saved = await api.getDefinition("frontend");
 		expect(saved.reportingDirective ?? null).toBeNull();
@@ -48,7 +47,7 @@ test.describe("Reporting settings", () => {
 		await csp.workspaceTab(WorkspaceTabs.settings).click();
 		await csp.workspace().locator('uui-radio[value="none"]').click();
 
-		await csp.workspace().getByRole("button", { name: "Save", exact: true }).click();
+		await csp.save();
 		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/[0-9a-f-]{36}/);
 
 		const policies = await api.getNodePolicies();
