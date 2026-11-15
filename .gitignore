@@ -379,3 +379,6 @@ src/**/App_Plugins/UmbracoCommunityCSPManager/
 umbraco-package-schema.json
 appsettings-schema.json
 appsettings-schema.*.json
+
+# Local secrets (e.g. Umbraco CLI / Developer MCP API user credentials)
+.env
