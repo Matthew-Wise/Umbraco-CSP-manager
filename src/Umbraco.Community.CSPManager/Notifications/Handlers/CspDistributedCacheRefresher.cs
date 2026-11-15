@@ -27,15 +27,14 @@ public class CspDistributedCacheRefresher
 	public override Guid RefresherUniqueId => UniqueId;
 	public override string Name => "CspDistCacheRefresher";
 
-	// Not filtered by server role: a save can be raised on any server, so a subscriber-only guard
+	// Payloads are CspSavedNotification for both saves and deletes: they only identify the cache
+	// entry to clear. Not filtered by server role: a save can be raised on any server, so a subscriber-only guard
 	// left the raising server's own instruction ignored and serving a stale policy.
 	public override void Refresh(CspSavedNotification[] payloads)
 	{
 		foreach (var payload in payloads)
 		{
-			var cacheKey = payload.CspDefinition.IsBackOffice
-				? Constants.BackOfficeCacheKey
-				: Constants.FrontEndCacheKey;
+			var cacheKey = CspCacheKeys.For(payload.CspDefinition);
 			Log.ClearingCspCache(_logger, cacheKey);
 			_runtimeCache.ClearByKey(cacheKey);
 		}
@@ -45,5 +44,9 @@ public class CspDistributedCacheRefresher
 		Log.ClearingAllCspCaches(_logger);
 		_runtimeCache.ClearByKey(Constants.BackOfficeCacheKey);
 		_runtimeCache.ClearByKey(Constants.FrontEndCacheKey);
+
+		// ClearByKey matches on "starts with", so this clears every node policy entry, including
+		// the cached "no policy" results.
+		_runtimeCache.ClearByKey(Constants.NodeCacheKeyPrefix);
 	}
 }

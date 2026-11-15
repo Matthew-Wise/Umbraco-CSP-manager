@@ -64,14 +64,29 @@ jobs:
           VERSION="${{ inputs.version }}"
           MAJOR="${VERSION%%.*}"
           CEILING="$((MAJOR + 1)).0.0"
+          # The oldest CSP Manager release with the API the supporting packages use.
+          PROPS_FLOOR="$(sed -n 's:.*<CspManagerDependencyFloor[^>]*>\(.*\)</CspManagerDependencyFloor>.*:\1:p' src/Directory.Build.props)"
+          if [[ -z "$PROPS_FLOOR" || "${PROPS_FLOOR%%.*}" != "$MAJOR" ]]; then
+            echo "::error::CspManagerDependencyFloor ('$PROPS_FLOOR') in src/Directory.Build.props is missing or not in major $MAJOR"
+            exit 1
+          fi
           if [[ "$VERSION" == *-* ]]; then
             # Prerelease: floor at the exact version so dependents (and consumers)
-            # resolve the prerelease, not an older stable in the same major.
+            # resolve the prerelease, not an older stable in the same major. A
+            # prerelease of the floor itself (e.g. 18.2.0-beta-1 for floor 18.2.0) is
+            # fine; one of an older version (e.g. 18.1.1-beta-1) would depend on a CSP
+            # Manager without that API, so the supporting packages can't use it.
+            BASE="${VERSION%%-*}"
+            LOWEST="$(printf '%s\n%s\n' "$BASE" "$PROPS_FLOOR" | sort -V | head -n1)"
+            if [[ "${{ inputs.package }}" != "csp-manager" && "$LOWEST" != "$PROPS_FLOOR" ]]; then
+              echo "::error::$VERSION is a prerelease of $BASE, older than CspManagerDependencyFloor $PROPS_FLOOR, so uSync can't depend on it. Release $PROPS_FLOOR-<tag> or later."
+              exit 1
+            fi
             FLOOR="$VERSION"
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
-            # Stable: float across the whole major line.
-            FLOOR="${MAJOR}.0.0"
+            # Stable: the floor in src/Directory.Build.props.
+            FLOOR="$PROPS_FLOOR"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
           echo "floor=$FLOOR" >> "$GITHUB_OUTPUT"
@@ -82,6 +97,14 @@ jobs:
       - name: Pack CSP Manager
         if: inputs.package == 'all' || inputs.package == 'csp-manager'
         run: dotnet pack "$MAIN_PROJECT" -c Release -p:Version=${{ inputs.version }} --output ./build-out/csp
+
+      - name: Verify CSP Manager package contains the backoffice client
+        if: inputs.package == 'all' || inputs.package == 'csp-manager'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: >-
+          unzip -l "./build-out/csp/Umbraco.Community.CSPManager.$VERSION.nupkg"
+          | grep -q 'staticwebassets/App_Plugins/UmbracoCommunityCSPManager/umbraco-package.json'
 
       # --- uSync (depends on main) ---
       - name: Register CSP Manager as a local feed
@@ -112,6 +135,14 @@ jobs:
           -p:CspManagerDependencyFloor=${{ steps.meta.outputs.floor }}
           -p:CspManagerDependencyCeiling=${{ steps.meta.outputs.ceiling }}
           --output ./build-out/complete
+
+      - name: Verify uSync Complete package contains the backoffice client
+        if: inputs.package == 'all' || inputs.package == 'usync-complete'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: >-
+          unzip -l "./build-out/complete/Umbraco.Community.CSPManager.uSync.Complete.$VERSION.nupkg"
+          | grep -q 'staticwebassets/App_Plugins/uSyncCspComplete/umbraco-package.json'
 
       - name: Upload CSP Manager package
         if: inputs.package == 'all' || inputs.package == 'csp-manager'

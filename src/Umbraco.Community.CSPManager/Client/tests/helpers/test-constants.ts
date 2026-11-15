@@ -6,6 +6,7 @@ export const Selectors = {
 	workspaceEditor: "umb-workspace-editor",
 	dashboard: "umb-csp-section-dashboard",
 	importModal: "umb-csp-import-modal",
+	addDomainPolicyModal: "umb-csp-add-domain-policy-modal",
 	dialogLayout: "uui-dialog-layout",
 	tab: "uui-tab",
 } as const;
@@ -26,6 +27,24 @@ export const DashboardButtons = {
 /** Entity action labels */
 export const EntityActions = {
 	import: "Import...",
+	addDomainPolicy: "Add Domain Policy",
+} as const;
+
+/**
+ * Hostnames seeded on the test site (uSync/v18/Domains). The homepage is a multilingual site with a
+ * hostname per culture; Test Pages, below it, has its own hostname (a nested site).
+ */
+export const TestDomains = {
+	enGb: "/en-gb",
+	enUs: "/en-us",
+	hostname: "csp-test.localhost:44370",
+	testPages: "/test-pages",
+} as const;
+
+/** The content nodes those hostnames are assigned to: domain policies belong to these. */
+export const TestNodes = {
+	homepage: "Homepage",
+	testPages: "Test Pages",
 } as const;
 
 /**

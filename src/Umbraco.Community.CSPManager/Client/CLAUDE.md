@@ -12,6 +12,7 @@
 - `npm test` - Run Playwright E2E tests
 - `npm run test:ui` - Playwright UI mode for debugging
 - `npm run test:headed` - See browser during tests
+- `CspApiHelpers` sets up auth cookies and bearer placeholder headers in E2E specs
 - Custom test ID attribute: `data-mark`
 
 ## Architecture
@@ -20,6 +21,7 @@
 - Manifest-based extension registration (all manifests aggregated in `bundle.manifests.ts`)
 - Observable state via `UmbObjectState` with `observe()` subscriptions
 - Repository pattern: repositories handle API calls, contexts manage state
+- Domain policies: child nodes under Frontend sharing `csp-policy` entity type and workspace (`isGlobalPolicyId()` distinguishes them). "Add Domain Policy" picks a content node with a hostname and copies the frontend policy to draft `create/{contentKey}`; policies are labelled with the node name (`domainPolicyLabel`).
 - `src/api/` is auto-generated from OpenAPI spec - do not edit manually
 
 ## Umbraco v18 Patterns

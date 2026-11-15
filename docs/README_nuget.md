@@ -12,12 +12,13 @@ A Content Security Policy management package for Umbraco CMS. Manage CSP headers
 ## Features
 
 - **Frontend & Backoffice CSP Management** — Configure separate policies for your site frontend and Umbraco backoffice
+- **Domain-Specific Policies** — Give a content node its own CSP, used on every hostname the node has in Culture and Hostnames
 - **Intuitive Backoffice Interface** — Easy-to-use management screens within the Umbraco backoffice
 - **Policy Import** — Paste an existing CSP header value to import it directly into the backoffice
 - **CSP Evaluation Tools** — Test and validate your policies before deployment
 - **Nonce Support** — Built-in tag helpers for script, style, and link nonces
 - **Flexible Configuration** — Customise CSP directives to match your requirements
-- **Notification Events** — Extend behaviour with `CspWritingNotification` and `CspSavedNotification`
+- **Notification Events** — Extend behaviour with `CspWritingNotification`, `CspSavedNotification`, and `CspDeletedNotification`
 - **uSync Integration** — Sync CSP policies across environments using uSync
 
 ## Installation
