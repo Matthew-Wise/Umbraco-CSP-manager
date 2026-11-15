@@ -15,6 +15,7 @@ export type CspApiDefinition = {
 	appliesTo: CspPolicyScope;
 	contentName?: null | string;
 	domains: Array<CspApiDomainName>;
+	isOrphaned: boolean;
 	disabledNodePolicyBehavior?: null | DisabledNodePolicyBehavior;
 	reportingDirective?: null | string;
 	reportUri?: null | string;
@@ -372,3 +373,36 @@ export type GetNodesResponses = {
 };
 
 export type GetNodesResponse = GetNodesResponses[keyof GetNodesResponses];
+
+export type GetNodesByContentKeyData = {
+	body?: never;
+	path: {
+		contentKey: string;
+	};
+	query?: never;
+	url: '/umbraco/csp/api/v1/Nodes/{contentKey}';
+};
+
+export type GetNodesByContentKeyErrors = {
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+	/**
+	 * Not Found
+	 */
+	404: unknown;
+};
+
+export type GetNodesByContentKeyResponses = {
+	/**
+	 * OK
+	 */
+	200: CspApiNodeInfo;
+};
+
+export type GetNodesByContentKeyResponse = GetNodesByContentKeyResponses[keyof GetNodesByContentKeyResponses];

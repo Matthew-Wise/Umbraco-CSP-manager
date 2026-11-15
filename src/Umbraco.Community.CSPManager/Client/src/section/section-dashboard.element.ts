@@ -2,7 +2,7 @@ import { LitElement, css, html, customElement } from "@umbraco-cms/backoffice/ex
 import { UmbElementMixin } from "@umbraco-cms/backoffice/element-api";
 import { CspConstants } from "@/constants";
 import { cspEditPolicyPath } from "@/paths";
-import { openAddDomainPolicy } from "../modals/open-add-domain-policy.js";
+import { openAddNodePolicy } from "../modals/open-add-node-policy.js";
 
 @customElement('umb-csp-section-dashboard')
 export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
@@ -13,7 +13,7 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
         <div class="dashboard-content">
           <div class="welcome-section">
             <h2>Content Security Policy Management</h2>
-            <p>Welcome to the CSP Manager. Use the tree navigation on the left to manage your Content Security Policy settings for front-end and back-office environments, and for individual sites with domain policies.</p>
+            <p>Welcome to the CSP Manager. Use the tree navigation on the left to manage your Content Security Policy settings for front-end and back-office environments, and for individual sites and pages with node policies.</p>
           </div>
           
           <div class="info-cards">
@@ -47,14 +47,14 @@ export class UmbCspSectionDashboardElement extends UmbElementMixin(LitElement) {
 
             <uui-card>
               <div class="card-content">
-                <h3>Domain policies</h3>
-                <p>Give a site its own policy. A domain policy belongs to a content node with a hostname and replaces the Front-end CSP for requests to any of that node's hostnames. Existing domain policies are listed under Frontend in the tree.</p>
+                <h3>Node policies</h3>
+                <p>Give a site or a page its own policy, for all cultures or for one. A node policy belongs to a content node and either replaces the policy that node inherits or adds sources to it, for the node alone or for the pages below it as well. Existing node policies are listed under Frontend in the tree.</p>
                 <uui-button
                   look="primary"
-                  label=${this.localize.term("cspManagerDomainPolicy_addAction")}
-                  @click=${() => openAddDomainPolicy(this)}
+                  label=${this.localize.term("cspManagerNodePolicy_addAction")}
+                  @click=${() => openAddNodePolicy(this)}
                 >
-                  ${this.localize.term("cspManagerDomainPolicy_addAction")}
+                  ${this.localize.term("cspManagerNodePolicy_addAction")}
                 </uui-button>
               </div>
             </uui-card>

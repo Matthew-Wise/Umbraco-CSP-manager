@@ -29,15 +29,19 @@ export class UmbCspDefinitionContext extends UmbContextBase {
 		return await this.#repository.save(definition);
 	}
 
-	async getDomainPolicies() {
-		return await this.#repository.getDomainPolicies();
+	async getNodePolicies() {
+		return await this.#repository.getNodePolicies();
 	}
 
-	async getNodes() {
-		return await this.#repository.getNodes();
+	async getNode(contentKey: string) {
+		return await this.#repository.getNode(contentKey);
 	}
 
-	async deleteDomainPolicy(id: string) {
+	async getEffective(contentKey: string, culture?: string | null) {
+		return await this.#repository.getEffective(contentKey, culture);
+	}
+
+	async deleteNodePolicy(id: string) {
 		return await this.#repository.delete(id);
 	}
 }

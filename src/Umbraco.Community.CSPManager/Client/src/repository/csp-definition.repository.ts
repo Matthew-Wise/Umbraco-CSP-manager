@@ -28,7 +28,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	}
 
 	/**
-	 * Get a CSP definition (global or domain policy) by its id
+	 * Get a CSP definition (global or node policy) by its id
 	 */
 	async getById(id: string) {
 		const { data, error } = await tryExecute(
@@ -47,9 +47,9 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	}
 
 	/**
-	 * Get every domain policy (including orphaned ones whose content node lost its hostnames)
+	 * Get every node policy (including orphaned ones, whose content node or language is gone)
 	 */
-	async getDomainPolicies() {
+	async getNodePolicies() {
 		const { data, error } = await tryExecute(this, Definitions.getDefinitionsNodePolicies(), {
 			disableNotifications: false,
 		});
@@ -62,7 +62,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	}
 
 	/**
-	 * Get the content nodes (with their hostnames) a domain policy can be created for
+	 * Get the content nodes with a hostname (the sites), the usual nodes to create a node policy for
 	 */
 	async getNodes() {
 		const { data, error } = await tryExecute(this, Nodes.getNodes(), { disableNotifications: false });
@@ -75,7 +75,40 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	}
 
 	/**
-	 * Delete a domain policy
+	 * Get one content node (with or without a hostname) a node policy can be created for
+	 */
+	async getNode(contentKey: string) {
+		const { data, error } = await tryExecute(this, Nodes.getNodesByContentKey({ path: { contentKey } }), {
+			disableNotifications: true,
+		});
+
+		if (data) {
+			return { data };
+		}
+
+		return { error };
+	}
+
+	/**
+	 * Get the policy a frontend request for a content node gets today, from the saved policies.
+	 * Without a culture the server answers for the default language.
+	 */
+	async getEffective(contentKey: string, culture?: string | null) {
+		const { data, error } = await tryExecute(
+			this,
+			Definitions.getDefinitionsEffective({ query: { contentKey, culture: culture ?? undefined } }),
+			{ disableNotifications: true },
+		);
+
+		if (data) {
+			return { data };
+		}
+
+		return { error };
+	}
+
+	/**
+	 * Delete a node policy
 	 */
 	async delete(id: string) {
 		const { error } = await tryExecute(
@@ -90,7 +123,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 	}
 
 	/**
-	 * Save CSP definition. A domain policy posted with the empty id is created and gets its id from the server.
+	 * Save CSP definition. A node policy posted with the empty id is created and gets its id from the server.
 	 */
 	async save(definition: CspApiDefinition) {
 		const { data, error } = await tryExecute(

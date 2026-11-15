@@ -2,7 +2,7 @@ import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { CspConstants, isGlobalPolicyId } from '@/constants';
-import { domainPolicyLabel } from '@/domain-policy-label';
+import { nodePolicyLabel } from '@/node-policy-label';
 import { cspEditPolicyPath } from '@/paths';
 import { UmbCspDefinitionRepository } from '../repository/csp-definition.repository.js';
 import { UmbCspDirectivesRepository } from '../repository/csp-directives.repository.js';
@@ -23,11 +23,11 @@ export class UmbImportCspEntityAction extends UmbEntityActionBase<never> {
 		const definitionRepository = new UmbCspDefinitionRepository(this);
 		const directivesRepository = new UmbCspDirectivesRepository(this);
 
-		// A domain policy is loaded by its own id: falling back to the Frontend policy here would
+		// A node policy is loaded by its own id: falling back to the Frontend policy here would
 		// import into (and overwrite) the global policy instead.
-		const isDomainPolicy = !isGlobalPolicyId(unique);
+		const isNodePolicy = !isGlobalPolicyId(unique);
 		const [{ data: definition }, { data: directives }] = await Promise.all([
-			isDomainPolicy ? definitionRepository.getById(unique) : definitionRepository.get(isBackOffice),
+			isNodePolicy ? definitionRepository.getById(unique) : definitionRepository.get(isBackOffice),
 			directivesRepository.getAll(),
 		]);
 
@@ -35,7 +35,7 @@ export class UmbImportCspEntityAction extends UmbEntityActionBase<never> {
 
 		const result = await umbOpenModal(this, IMPORT_CSP_MODAL, {
 			data: {
-				policyLabel: isDomainPolicy ? domainPolicyLabel(new UmbLocalizationController(this), definition) : policyType.label,
+				policyLabel: isNodePolicy ? nodePolicyLabel(new UmbLocalizationController(this), definition) : policyType.label,
 				availableDirectives: directives ?? [],
 			},
 		}).catch(() => null);

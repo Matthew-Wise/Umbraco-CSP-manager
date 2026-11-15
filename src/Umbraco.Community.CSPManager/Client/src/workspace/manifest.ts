@@ -49,6 +49,28 @@ export const manifests: Array<UmbExtensionManifest> = [
 	},
 	{
 		type: 'workspaceView',
+		alias: `${CspConstants.workspace.alias}View.Effective`,
+		name: 'CSP Effective Policy View',
+		js: () => import('./views/effective/effective.element.js'),
+		weight: 40,
+		meta: {
+			label: '#cspManagerEffective_viewLabel',
+			pathname: 'effective',
+			icon: CspConstants.icons.effective,
+		},
+		conditions: [
+			{
+				alias: CspConstants.umbraco.conditions.workspaceAlias,
+				match: CspConstants.workspace.alias,
+			},
+			// Only a node policy inherits anything: the two global policies are what they are.
+			{
+				alias: CspConstants.nodePolicy.conditionAlias,
+			},
+		],
+	},
+	{
+		type: 'workspaceView',
 		alias: `${CspConstants.workspace.alias}View.Evaluate`,
 		name: 'CSP Evaluate View',
 		js: () => import('./views/evaluate/evaluate.element.js'),

@@ -57,7 +57,7 @@ export class CspTestHelpers {
 
 	/**
 	 * The tree item with exactly this label. Unlike `treeItem`, it doesn't also match a parent
-	 * whose text includes the label (e.g. Frontend, which contains its domain policies).
+	 * whose text includes the label (e.g. Frontend, which contains its node policies).
 	 */
 	treeItemByLabel(label: string): Locator {
 		return this.sidebar().locator(`${Selectors.menuItem}[label="${label}"]`);
@@ -126,9 +126,40 @@ export class CspTestHelpers {
 		await item.locator("umb-entity-actions-dropdown").first().getByRole("button", { name: actionLabel, exact: true }).click();
 	}
 
-	/** The add domain policy modal (sidebar). */
-	addDomainPolicyModal(): Locator {
-		return this.umbracoUi.page.locator(Selectors.addDomainPolicyModal);
+	/** The add node policy modal (sidebar). */
+	addNodePolicyModal(): Locator {
+		return this.umbracoUi.page.locator(Selectors.addNodePolicyModal);
+	}
+
+	/** Opens the add node policy modal from the Frontend tree item. */
+	async openAddNodePolicyModal(): Promise<Locator> {
+		await this.openEntityActionFromMenu(POLICY_LABELS.frontend, EntityActions.addNodePolicy);
+		const modal = this.addNodePolicyModal();
+		await expect(modal.locator("umb-body-layout")).toBeVisible();
+		return modal;
+	}
+
+	/**
+	 * With a content node chosen in the add node policy modal: sets the culture (default: all
+	 * cultures) and the policy type (default: complete policy), then continues to the draft.
+	 */
+	async continueToDraft(options: { culture?: string; extending?: boolean } = {}): Promise<void> {
+		const modal = this.addNodePolicyModal();
+		if (options.culture) {
+			await modal.locator('[data-mark="csp-node-policy-culture"] select').selectOption(options.culture);
+		}
+		if (options.extending) {
+			await modal.locator('[data-mark="csp-node-policy-inheritance"] uui-radio[value="Extend"]').click();
+		}
+		await modal.locator('[data-mark="csp-add-node-policy-continue"]').click();
+		await expect(this.umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/create\//);
+	}
+
+	/** Starts a draft node policy for one of the sites, through the modal's shortcuts. */
+	async createDraftForSite(siteName: string, options: { culture?: string; extending?: boolean } = {}): Promise<void> {
+		const modal = await this.openAddNodePolicyModal();
+		await modal.locator(`uui-ref-node[name="${siteName}"]`).click();
+		await this.continueToDraft(options);
 	}
 
 	// ── Import Modal ──────────────────────────────────────────────────────────
@@ -139,7 +170,7 @@ export class CspTestHelpers {
 	 */
 	async openImportModal(policy: PolicyKey): Promise<void> {
 		await expect(this.sidebar()).toBeVisible();
-		// Frontend's inline action is Add Domain Policy, so Import is in its "..." menu. Back Office
+		// Frontend's inline action is Add Node Policy, so Import is in its "..." menu. Back Office
 		// has only Import, which Umbraco renders inline with no menu.
 		if (policy === "frontend") {
 			await this.openEntityActionFromMenu(POLICY_LABELS[policy], EntityActions.import);

@@ -3,8 +3,8 @@ import type { UmbTreeItemModel, UmbTreeRootItemsRequestArgs, UmbTreeChildrenOfRe
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UmbCspDefinitionRepository } from '@/repository/csp-definition.repository.js';
-import type { CspApiNodePolicy } from '@/api';
-import { domainPolicyLabel } from '@/domain-policy-label';
+import { CspPolicyInheritance, type CspApiNodePolicy } from '@/api';
+import { nodePolicyLabel } from '@/node-policy-label';
 
 export interface CspTreeItemModel extends UmbTreeItemModel {
 	icon: string;
@@ -25,8 +25,8 @@ export class CspTreeDataSource {
 	}
 
 	async getRootItems(_args: UmbTreeRootItemsRequestArgs) {
-		// Domain policies hang under Frontend; only show the expand arrow when there are any.
-		const { data: domainPolicies } = await this.#repository.getDomainPolicies();
+		// Node policies hang under Frontend; only show the expand arrow when there are any.
+		const { data: nodePolicies } = await this.#repository.getNodePolicies();
 
 		const items: CspTreeItemModel[] = [
 			{
@@ -45,7 +45,7 @@ export class CspTreeDataSource {
 				unique: CspConstants.policyTypes.frontend.value,
 				entityType: CspConstants.workspace.entityType,
 				name: CspConstants.policyTypes.frontend.label,
-				hasChildren: (domainPolicies?.length ?? 0) > 0,
+				hasChildren: (nodePolicies?.length ?? 0) > 0,
 				icon: CspConstants.policyTypes.frontend.icon,
 				isFolder: false,
 				parent: {
@@ -66,12 +66,12 @@ export class CspTreeDataSource {
 	}
 
 	async getChildrenOf(args: UmbTreeChildrenOfRequestArgs) {
-		// Only the Frontend node has children: the domain policies that override it.
+		// Only the Frontend node has children: the node policies, which replace or add to it.
 		if (args.parent.unique !== CspConstants.policyTypes.frontend.value) {
 			return { data: { items: [], total: 0, totalBefore: 0, totalAfter: 0 } };
 		}
 
-		const { data: policies, error } = await this.#repository.getDomainPolicies();
+		const { data: policies, error } = await this.#repository.getNodePolicies();
 		if (error || !policies) {
 			return { error };
 		}
@@ -89,7 +89,7 @@ export class CspTreeDataSource {
 	}
 
 	async getAncestorsOf(args: UmbTreeAncestorsOfRequestArgs) {
-		// A domain policy sits under Frontend; the global policies are at the root.
+		// A node policy sits under Frontend; the global policies are at the root.
 		if (!args.treeItem.unique || args.treeItem.unique === CspConstants.policyTypes.frontend.value || args.treeItem.unique === CspConstants.policyTypes.backoffice.value) {
 			return { data: [] };
 		}
@@ -111,22 +111,28 @@ export class CspTreeDataSource {
 
 	#toTreeItem(policy: CspApiNodePolicy): CspTreeItemModel {
 		// The name is rendered by the tree item as text; never as HTML. A policy is labelled with its
-		// content node, since it covers every hostname (culture) of that node.
-		const label = domainPolicyLabel(this.#localize, policy);
-		// An orphan (node without hostname) applies to nothing; an inactive policy is kept but the
-		// node's hostnames use the Frontend policy (or no header).
-		const name = policy.isOrphaned && policy.contentName
-			? this.#localize.term('cspManagerDomainPolicy_treeNoHostname', label)
-			: policy.enabled || policy.isOrphaned
+		// content node and, when it is for one culture, that culture.
+		const label = nodePolicyLabel(this.#localize, policy);
+		// An orphan (its content or language is gone) applies to nothing; an inactive policy is
+		// kept, but its content gets the policy it inherits (or no header).
+		const name = policy.isOrphaned
+			? policy.contentName
+				? this.#localize.term('cspManagerNodePolicy_treeOrphaned', label)
+				: label
+			: policy.enabled
 				? label
-				: this.#localize.term('cspManagerDomainPolicy_treeInactive', label);
+				: this.#localize.term('cspManagerNodePolicy_treeInactive', label);
 
 		return {
 			unique: policy.id,
 			entityType: CspConstants.workspace.entityType,
 			name,
 			hasChildren: false,
-			icon: policy.isOrphaned ? CspConstants.icons.orphanedDomainPolicy : CspConstants.icons.domainPolicy,
+			icon: policy.isOrphaned
+				? CspConstants.icons.orphanedNodePolicy
+				: policy.inheritance === CspPolicyInheritance.EXTEND
+					? CspConstants.icons.extendingNodePolicy
+					: CspConstants.icons.nodePolicy,
 			isFolder: false,
 			parent: frontendParent,
 		};

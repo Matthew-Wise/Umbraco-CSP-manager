@@ -1,13 +1,13 @@
 import { css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
-import { DisabledNodePolicyBehavior, type CspApiDefinition } from '@/api';
+import { CspPolicyInheritance, CspPolicyScope, DisabledNodePolicyBehavior, type CspApiDefinition } from '@/api';
 import {
 	UmbCspManagerWorkspaceContext,
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
 	type WorkspaceState,
 } from '../../context/workspace.context.js';
 import { CspConstants, type PolicyType } from '@/constants';
-import { domainPolicyLabel } from '@/domain-policy-label';
+import { nodePolicyLabel } from '@/node-policy-label';
 
 @customElement('umb-csp-settings-view')
 export class UmbCspSettingsViewElement extends UmbLitElement {
@@ -23,7 +23,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 	private _policyType: PolicyType = CspConstants.policyTypes.frontend;
 
 	@state()
-	private _isDomainPolicy = false;
+	private _isNodePolicy = false;
 
 	private _workspaceContext?: UmbCspManagerWorkspaceContext;
 
@@ -37,7 +37,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 			if (context) {
 				this.observe(context.state, (state) => {
 					this._workspaceState = state;
-					this._isDomainPolicy = context.isDomainPolicy();
+					this._isNodePolicy = context.isNodePolicy();
 				});
 			}
 		});
@@ -55,8 +55,8 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 	}
 
 	private _scopeLabel(): string {
-		if (this._isDomainPolicy) {
-			return domainPolicyLabel(this.localize, this._workspaceState.definition ?? {});
+		if (this._isNodePolicy) {
+			return nodePolicyLabel(this.localize, this._workspaceState.definition ?? {});
 		}
 
 		return this._policyType === CspConstants.policyTypes.backoffice ? 'back office' : 'frontend';
@@ -66,20 +66,31 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 		return this._workspaceState.definition?.disabledNodePolicyBehavior === DisabledNodePolicyBehavior.NO_HEADER;
 	}
 
-	// A domain policy is a switch between its own policy and the Frontend one (or, when the server is
-	// configured with DisabledNodePolicyBehavior NoHeader, no header). Text bindings only: the
-	// domain name is user content.
-	private _renderDomainStatusSummary(definition: CspApiDefinition) {
-		const domain = this._scopeLabel();
+	// A node policy is a switch between itself and what its content inherits (or, for a complete
+	// policy when the server is configured with DisabledNodePolicyBehavior NoHeader, no header).
+	// Text bindings only: the content name is user content.
+	private _renderNodeStatusSummary(definition: CspApiDefinition) {
+		const extending = definition.inheritance === CspPolicyInheritance.EXTEND;
+		const label = this._scopeLabel();
+		const reach =
+			definition.appliesTo === CspPolicyScope.NODE_ONLY
+				? label
+				: this.localize.term('cspManagerNodePolicy_scopeDescendants', label);
+
 		if (!definition.enabled) {
-			return this._disabledMeansNoHeader
-				? this.localize.term('cspManagerDomainPolicy_summaryNoHeader', domain)
-				: this.localize.term('cspManagerDomainPolicy_summaryFallback', domain);
+			// Switching an extending policy off only takes its sources away again.
+			return this._disabledMeansNoHeader && !extending
+				? this.localize.term('cspManagerNodePolicy_summaryNoHeader', reach)
+				: this.localize.term('cspManagerNodePolicy_summaryFallback', reach);
+		}
+
+		if (extending) {
+			return this.localize.term('cspManagerNodePolicy_summaryExtendActive', reach);
 		}
 
 		return definition.reportOnly
-			? this.localize.term('cspManagerDomainPolicy_summaryActiveReportOnly', domain)
-			: this.localize.term('cspManagerDomainPolicy_summaryActive', domain);
+			? this.localize.term('cspManagerNodePolicy_summaryActiveReportOnly', reach)
+			: this.localize.term('cspManagerNodePolicy_summaryActive', reach);
 	}
 
 	private _renderGlobalStatusSummary(definition: CspApiDefinition) {
@@ -90,17 +101,137 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 	}
 
 	private _statusToggleText(enabled: boolean): string {
-		if (!this._isDomainPolicy) {
+		if (!this._isNodePolicy) {
 			return enabled ? 'Enabled' : 'Disabled';
 		}
 
 		if (enabled) {
-			return this.localize.term('cspManagerDomainPolicy_statusActive');
+			return this.localize.term('cspManagerNodePolicy_statusActive');
 		}
 
-		return this._disabledMeansNoHeader
-			? this.localize.term('cspManagerDomainPolicy_statusInactiveNoHeader')
-			: this.localize.term('cspManagerDomainPolicy_statusInactiveFallback');
+		return this._disabledMeansNoHeader && this._workspaceState.definition?.inheritance !== CspPolicyInheritance.EXTEND
+			? this.localize.term('cspManagerNodePolicy_statusInactiveNoHeader')
+			: this.localize.term('cspManagerNodePolicy_statusInactiveFallback');
+	}
+
+	// What kind of policy this is and how far it reaches. Its content and culture can't change.
+	private _renderNodePolicyOptions(definition: CspApiDefinition) {
+		const extending = definition.inheritance === CspPolicyInheritance.EXTEND;
+
+		return html`
+			<uui-form-layout-item>
+				<uui-label slot="label">${this.localize.term('cspManagerNodePolicy_inheritanceLabel')}</uui-label>
+				<span slot="description">
+					${this.localize.term(
+						extending
+							? 'cspManagerNodePolicy_inheritanceExtendDescription'
+							: 'cspManagerNodePolicy_inheritanceReplaceDescription',
+					)}
+				</span>
+				<div class="setting-control">
+					<uui-radio-group
+						data-mark="csp-inheritance"
+						.value=${definition.inheritance}
+						@change=${(e: Event) =>
+							this._updateDefinitionSetting('inheritance', (e.target as HTMLInputElement).value as CspPolicyInheritance)}>
+						<uui-radio
+							value=${CspPolicyInheritance.REPLACE}
+							label=${this.localize.term('cspManagerNodePolicy_inheritanceReplace')}></uui-radio>
+						<uui-radio
+							value=${CspPolicyInheritance.EXTEND}
+							label=${this.localize.term('cspManagerNodePolicy_inheritanceExtend')}></uui-radio>
+					</uui-radio-group>
+				</div>
+			</uui-form-layout-item>
+
+			<uui-form-layout-item>
+				<uui-label slot="label">${this.localize.term('cspManagerNodePolicy_appliesToLabel')}</uui-label>
+				<span slot="description">${this.localize.term('cspManagerNodePolicy_appliesToDescription')}</span>
+				<div class="setting-control">
+					<uui-radio-group
+						data-mark="csp-applies-to"
+						.value=${definition.appliesTo}
+						@change=${(e: Event) =>
+							this._updateDefinitionSetting('appliesTo', (e.target as HTMLInputElement).value as CspPolicyScope)}>
+						<uui-radio
+							value=${CspPolicyScope.DESCENDANTS}
+							label=${this.localize.term('cspManagerNodePolicy_appliesToDescendants')}></uui-radio>
+						<uui-radio
+							value=${CspPolicyScope.NODE_ONLY}
+							label=${this.localize.term('cspManagerNodePolicy_appliesToNodeOnly')}></uui-radio>
+					</uui-radio-group>
+				</div>
+			</uui-form-layout-item>
+		`;
+	}
+
+	// Report-only mode and reporting belong to a complete policy: an extending one takes them from
+	// the policy it adds to, so there is nothing to set.
+	private _renderReportingSettings(definition: CspApiDefinition) {
+		if (definition.inheritance === CspPolicyInheritance.EXTEND) {
+			return html`<p class="extend-info" data-mark="csp-extend-settings-info">
+				${this.localize.term('cspManagerNodePolicy_extendSettingsInfo')}
+			</p>`;
+		}
+
+		return html`
+			<uui-form-layout-item>
+				<uui-label slot="label">Report Only Mode</uui-label>
+				<span slot="description">
+					When enabled, violations are reported but not blocked. Use this to test policies before enforcing them.
+				</span>
+				<div class="setting-control">
+					<uui-toggle
+						label="Report Only Mode"
+						.checked=${definition.reportOnly}
+						.disabled=${!definition.enabled}
+						@change=${(e: Event) => this._updateDefinitionSetting('reportOnly', (e.target as HTMLInputElement).checked)}>
+						${definition.reportOnly ? 'Report Only' : 'Enforced'}
+					</uui-toggle>
+				</div>
+			</uui-form-layout-item>
+
+			<uui-form-layout-item>
+				<uui-label slot="label">Reporting Directive</uui-label>
+				<span slot="description">
+					Choose how CSP violations are reported.
+					<a
+						href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/report-to"
+						target="_blank">
+						Learn more about CSP reporting
+					</a>
+				</span>
+				<div class="setting-control">
+					<uui-radio-group
+						.value=${definition.reportingDirective || 'none'}
+						@change=${(e: Event) => {
+							const value = (e.target as HTMLInputElement).value;
+							this._updateDefinitionSetting('reportingDirective', value === 'none' ? null : value);
+						}}>
+						<uui-radio value="none" label="No reporting"></uui-radio>
+						<uui-radio value="report-to" label="report-to (recommended)"></uui-radio>
+						<uui-radio value="report-uri" label="report-uri (deprecated)"></uui-radio>
+					</uui-radio-group>
+				</div>
+			</uui-form-layout-item>
+
+			${this._hasReportingDirective(definition)
+				? html`
+						<uui-form-layout-item>
+							<uui-label slot="label">Report URI</uui-label>
+							<span slot="description"> The endpoint where violation reports will be sent </span>
+							<div class="setting-control">
+								<uui-input
+									label="Report URI"
+									.value=${definition.reportUri || ''}
+									placeholder="https://example.com/csp-report"
+									@input=${(e: Event) => this._updateDefinitionSetting('reportUri', (e.target as HTMLInputElement).value)}>
+								</uui-input>
+							</div>
+						</uui-form-layout-item>
+					`
+				: ''}
+		`;
 	}
 
 	private _hasReportingDirective(definition: CspApiDefinition): boolean {
@@ -128,8 +259,8 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 					</p>
 					<div class="status-summary" data-mark="csp-status-summary">
 						<p>
-							${this._isDomainPolicy
-								? this._renderDomainStatusSummary(definition)
+							${this._isNodePolicy
+								? this._renderNodeStatusSummary(definition)
 								: this._renderGlobalStatusSummary(definition)}
 						</p>
 					</div>
@@ -138,9 +269,9 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 				<div class="settings-grid">
 					<uui-form-layout-item>
 						<uui-label slot="label">
-							${this._isDomainPolicy ? this.localize.term('cspManagerDomainPolicy_statusLabel') : 'CSP Status'}
+							${this._isNodePolicy ? this.localize.term('cspManagerNodePolicy_statusLabel') : 'CSP Status'}
 						</uui-label>
-						${this._isDomainPolicy
+						${this._isNodePolicy
 							? ''
 							: html`<span slot="description">Enable or disable the Content Security Policy header</span>`}
 						<div class="setting-control">
@@ -155,64 +286,8 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 						</div>
 					</uui-form-layout-item>
 
-					<uui-form-layout-item>
-						<uui-label slot="label">Report Only Mode</uui-label>
-						<span slot="description">
-							When enabled, violations are reported but not blocked. Use this to test policies before enforcing them.
-						</span>
-						<div class="setting-control">
-							<uui-toggle
-								label="Report Only Mode"
-								.checked=${definition.reportOnly}
-								.disabled=${!definition.enabled}
-								@change=${(e: Event) =>
-									this._updateDefinitionSetting('reportOnly', (e.target as HTMLInputElement).checked)}>
-								${definition.reportOnly ? 'Report Only' : 'Enforced'}
-							</uui-toggle>
-						</div>
-					</uui-form-layout-item>
-
-					<uui-form-layout-item>
-						<uui-label slot="label">Reporting Directive</uui-label>
-						<span slot="description">
-							Choose how CSP violations are reported.
-							<a
-								href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/report-to"
-								target="_blank">
-								Learn more about CSP reporting
-							</a>
-						</span>
-						<div class="setting-control">
-							<uui-radio-group
-								.value=${definition.reportingDirective || 'none'}
-								@change=${(e: Event) => {
-									const value = (e.target as HTMLInputElement).value;
-									this._updateDefinitionSetting('reportingDirective', value === 'none' ? null : value);
-								}}>
-								<uui-radio value="none" label="No reporting"></uui-radio>
-								<uui-radio value="report-to" label="report-to (recommended)"></uui-radio>
-								<uui-radio value="report-uri" label="report-uri (deprecated)"></uui-radio>
-							</uui-radio-group>
-						</div>
-					</uui-form-layout-item>
-
-					${this._hasReportingDirective(definition)
-						? html`
-								<uui-form-layout-item>
-									<uui-label slot="label">Report URI</uui-label>
-									<span slot="description"> The endpoint where violation reports will be sent </span>
-									<div class="setting-control">
-										<uui-input
-											label="Report URI"
-											.value=${definition.reportUri || ''}
-											placeholder="https://example.com/csp-report"
-											@input=${(e: Event) =>
-												this._updateDefinitionSetting('reportUri', (e.target as HTMLInputElement).value)}>
-										</uui-input>
-									</div>
-								</uui-form-layout-item>
-							`
-						: ''}
+					${this._isNodePolicy ? this._renderNodePolicyOptions(definition) : ''}
+					${this._renderReportingSettings(definition)}
 				</div>
 
 				<div class="settings-info">
@@ -271,6 +346,11 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 
 			.settings-info {
 				margin-top: var(--uui-size-space-6);
+			}
+
+			.extend-info {
+				margin: 0;
+				color: var(--uui-color-text-alt);
 			}
 
 			.settings-info ul {

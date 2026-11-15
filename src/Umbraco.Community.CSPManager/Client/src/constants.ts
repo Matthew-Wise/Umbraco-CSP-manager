@@ -34,14 +34,19 @@ export const CspConstants = {
 		sources: 'icon-list',
 		settings: 'icon-settings',
 		evaluate: 'icon-locate',
-		domainPolicy: 'icon-link',
-		orphanedDomainPolicy: 'icon-alert',
+		effective: 'icon-eye',
+		nodePolicy: 'icon-document',
+		extendingNodePolicy: 'icon-add',
+		orphanedNodePolicy: 'icon-alert',
 	},
-	domainPolicy: {
-		addEntityActionAlias: `${packageAlias}.EntityAction.AddDomainPolicy`,
-		addModalAlias: `${packageAlias}.Modal.AddDomainPolicy`,
-		/** Id a new (unsaved) domain policy is posted with; the server assigns the real one. */
+	nodePolicy: {
+		addEntityActionAlias: `${packageAlias}.EntityAction.AddNodePolicy`,
+		addModalAlias: `${packageAlias}.Modal.AddNodePolicy`,
+		conditionAlias: `${packageAlias}.Condition.NodePolicy`,
+		/** Id a new (unsaved) node policy is posted with; the server assigns the real one. */
 		newId: '00000000-0000-0000-0000-000000000000',
+		/** Stands for "all cultures" where a culture is part of a URL. */
+		allCulturesSegment: 'invariant',
 	},
 	weights: {
 		high: 100,
@@ -65,6 +70,6 @@ export const CspConstants = {
 
 export type PolicyType = (typeof CspConstants.policyTypes)[keyof typeof CspConstants.policyTypes];
 
-/** True for the two global policy ids; anything else is a domain policy. */
+/** True for the two global policy ids; anything else is a node policy. */
 export const isGlobalPolicyId = (unique: string | null | undefined): boolean =>
 	unique === CspConstants.policyTypes.frontend.value || unique === CspConstants.policyTypes.backoffice.value;
