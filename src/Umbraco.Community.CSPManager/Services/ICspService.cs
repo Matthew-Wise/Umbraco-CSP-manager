@@ -164,6 +164,32 @@ public interface ICspService
 		CancellationToken cancellationToken);
 
 	/// <summary>
+	/// Builds the node policy that <see cref="CreateCspDefinitionForNodeAsync(Guid, string?, CspPolicyInheritance, CspPolicyScope, CancellationToken)"/>
+	/// would create, without saving it: a draft to edit first. It has the empty id, so saving it
+	/// with <see cref="SaveCspDefinitionAsync"/> creates the policy.
+	/// </summary>
+	/// <param name="contentKey">The key of the content node.</param>
+	/// <param name="culture">The ISO code of one of the site's languages, or <c>null</c> for all cultures.</param>
+	/// <param name="inheritance">
+	/// <see cref="CspPolicyInheritance.Replace"/> starts the policy as a copy of the policy the node
+	/// gets today for that culture; <see cref="CspPolicyInheritance.Extend"/> starts it without
+	/// sources, since it inherits them.
+	/// </param>
+	/// <param name="appliesTo">Whether the policy also applies to the pages below the node.</param>
+	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+	/// <returns>The unsaved node policy.</returns>
+	/// <exception cref="CspDefinitionValidationException">
+	/// The node doesn't exist, is in the recycle bin, the culture isn't a language, or the node
+	/// already has a policy for that culture.
+	/// </exception>
+	Task<CspDefinition> BuildCspDefinitionForNodeAsync(
+		Guid contentKey,
+		string? culture,
+		CspPolicyInheritance inheritance,
+		CspPolicyScope appliesTo,
+		CancellationToken cancellationToken);
+
+	/// <summary>
 	/// Deletes a node policy and publishes a <see cref="Notifications.CspDeletedNotification"/>.
 	/// Does nothing if there is no definition with that id.
 	/// </summary>

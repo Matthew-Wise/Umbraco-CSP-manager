@@ -4,7 +4,9 @@ import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
 import type { UmbModalManagerContext } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
-import type { CspApiDefinitionSource } from '@/api';
+import { CspPolicyScope, type CspApiDefinitionSource } from '@/api';
+import { cultureLabel } from '@/node-policy-label';
+import { documentEditPath } from '@/paths';
 import {
 	UmbCspManagerWorkspaceContext,
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
@@ -30,7 +32,11 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 	private _invalidSources: Array<string> = [];
 
 	@state()
-	private _isDomainPolicy = false;
+	private _isNodePolicy = false;
+
+	/** An "inherit and add" policy: only its sources and its on/off switch are its own. */
+	@state()
+	private _isExtending = false;
 
 	@state()
 	private _expandedSources = new Set<number>();
@@ -48,7 +54,8 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 
 			this.observe(context.state, (state) => {
 				this._workspaceState = state;
-				this._isDomainPolicy = context.isDomainPolicy();
+				this._isNodePolicy = context.isNodePolicy();
+				this._isExtending = context.isExtending();
 				if (state.error) {
 					this._invalidSources = (state.error.cause as string[] | undefined) ?? [];
 				} else {
@@ -252,38 +259,61 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		this.#workspaceContext?.updateDefinition(updatedDefinition);
 	}
 
-	// Only what the user can't see elsewhere: which hostnames the policy covers (every culture of the
-	// node), why an orphaned policy does nothing, and a link to the content node. Text bindings only.
-	private _renderDomainInfo() {
+	// What the policy is for (the content node, culture, kind and reach) and, when the node has
+	// hostnames, those. An orphaned policy says why it does nothing instead. Text bindings only.
+	private _renderNodeInfo() {
 		const definition = this._workspaceState.definition!;
-		const isOrphaned = !this._workspaceState.isNew && definition.domains.length === 0;
 		// A deleted node has no name; there is nothing to link to then.
 		const nodeExists = !!definition.contentName && !!definition.contentKey;
 
 		return html`
 			<uui-box
-				class="domain-info"
-				data-mark="csp-domain-info"
-				headline=${this.localize.term('cspManagerDomainPolicy_domainInfoHeadline')}>
-				<div class="domain-info-content">
-					${isOrphaned
-						? html`<p>${this.localize.term('cspManagerDomainPolicy_orphanedPolicyInfo')}</p>`
+				class="node-info"
+				data-mark="csp-node-info"
+				headline=${this.localize.term('cspManagerNodePolicy_nodeInfoHeadline')}>
+				<div class="node-info-content">
+					${definition.isOrphaned
+						? html`<p data-mark="csp-node-orphaned">${this.localize.term('cspManagerNodePolicy_orphanedPolicyInfo')}</p>`
 						: html`
-								<div class="hostnames">
-									<span>${this.localize.term('cspManagerDomainPolicy_appliesTo')}</span>
-									<ul data-mark="csp-domain-hostnames">
-										${definition.domains.map((domain) => html`<li>${domain.name}</li>`)}
-									</ul>
-								</div>
+								<dl>
+									<dt>${this.localize.term('cspManagerNodePolicy_cultureLabel')}</dt>
+									<dd data-mark="csp-node-culture">${cultureLabel(this.localize, definition.culture)}</dd>
+									<dt>${this.localize.term('cspManagerNodePolicy_inheritanceLabel')}</dt>
+									<dd data-mark="csp-node-inheritance">
+										${this.localize.term(
+											this._isExtending
+												? 'cspManagerNodePolicy_inheritanceExtend'
+												: 'cspManagerNodePolicy_inheritanceReplace',
+										)}
+									</dd>
+									<dt>${this.localize.term('cspManagerNodePolicy_appliesToLabel')}</dt>
+									<dd data-mark="csp-node-applies-to">
+										${this.localize.term(
+											definition.appliesTo === CspPolicyScope.NODE_ONLY
+												? 'cspManagerNodePolicy_appliesToNodeOnly'
+												: 'cspManagerNodePolicy_appliesToDescendants',
+										)}
+									</dd>
+									${definition.domains.length > 0
+										? html`
+												<dt>${this.localize.term('cspManagerNodePolicy_hostnamesLabel')}</dt>
+												<dd>
+													<ul data-mark="csp-node-hostnames">
+														${definition.domains.map((domain) => html`<li>${domain.name}</li>`)}
+													</ul>
+												</dd>
+											`
+										: ''}
+								</dl>
 							`}
 					${nodeExists
 						? html`
 								<uui-button
 									look="secondary"
-									href=${`section/content/workspace/document/edit/${encodeURIComponent(definition.contentKey!)}`}
-									label=${this.localize.term('cspManagerDomainPolicy_openContent')}>
+									href=${documentEditPath(definition.contentKey!)}
+									label=${this.localize.term('cspManagerNodePolicy_openContent')}>
 									<uui-icon name="icon-document"></uui-icon>
-									${this.localize.term('cspManagerDomainPolicy_openContent')}
+									${this.localize.term('cspManagerNodePolicy_openContent')}
 								</uui-button>
 							`
 						: ''}
@@ -302,7 +332,24 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 		}
 
 		return html`
-			${this._isDomainPolicy ? this._renderDomainInfo() : ''}
+			${this._isNodePolicy ? this._renderNodeInfo() : ''}
+			${this._isExtending ? '' : this._renderDirectives()}
+			<uui-box headline="Sources">
+				<p data-mark="csp-sources-intro">
+					${this._isExtending
+						? this.localize.term('cspManagerNodePolicy_extendSourcesIntro')
+						: 'Manage CSP sources and their directives. Each source defines what content can be loaded and which CSP directives apply to it.'}
+				</p>
+				${this._renderSources()}
+			</uui-box>
+		`;
+	}
+
+	// upgrade-insecure-requests belongs to a complete policy: an extending one takes it from its base.
+	private _renderDirectives() {
+		if (!this._workspaceState.definition) return '';
+
+		return html`
 			<uui-box headline="Directives">
 				<uui-form-layout-item>
 					<uui-label slot="label" for="insecure-requests">Upgrade Insecure Requests</uui-label>
@@ -321,11 +368,13 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 					</div>
 				</uui-form-layout-item>
 			</uui-box>
-			<uui-box headline="Sources">
-				<p>
-					Manage CSP sources and their directives. Each source defines what content can be loaded and which CSP
-					directives apply to it.
-				</p>
+		`;
+	}
+
+	private _renderSources() {
+		if (!this._workspaceState.definition) return '';
+
+		return html`
 				${this._workspaceState.definition.sources.length === 0
 					? html`
 							<div class="empty-state">
@@ -428,31 +477,41 @@ export class UmbCspDefaultViewElement extends UmbLitElement {
 					<uui-icon name="add"></uui-icon>
 					Add Source
 				</uui-button>
-			</uui-box>
 		`;
 	}
 
 	static styles = [
 		css`
-			.domain-info-content {
+			.node-info-content {
 				display: flex;
-				align-items: center;
+				align-items: flex-start;
 				justify-content: space-between;
 				gap: var(--uui-size-space-4);
 			}
 
-			.hostnames {
+			.node-info-content dl {
 				flex: 1;
+				display: grid;
+				grid-template-columns: max-content 1fr;
+				gap: var(--uui-size-space-2) var(--uui-size-space-5);
+				margin: 0;
+			}
+
+			.node-info-content dt {
 				color: var(--uui-color-text-alt);
 			}
 
-			.hostnames ul {
-				margin: var(--uui-size-space-1) 0 0;
-				padding-left: var(--uui-size-space-5);
-				color: var(--uui-color-text);
+			.node-info-content dd {
+				margin: 0;
 			}
 
-			.domain-info-content p {
+			.node-info-content ul {
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+
+			.node-info-content p {
 				margin: 0;
 				flex: 1;
 				color: var(--uui-color-text-alt);

@@ -32,13 +32,13 @@ test.describe("CSP Manager Section & Dashboard", () => {
 		});
 	}
 
-	test("Add Domain Policy opens the content picker", async ({ umbracoUi }) => {
+	test("Add Node Policy opens the content picker", async ({ umbracoUi }) => {
 		const csp = new CspTestHelpers(umbracoUi);
 
-		await csp.dashboard().getByRole("button", { name: EntityActions.addDomainPolicy, exact: true }).click();
+		await csp.dashboard().getByRole("button", { name: EntityActions.addNodePolicy, exact: true }).click();
 
-		await expect(csp.addDomainPolicyModal().locator("umb-body-layout")).toBeVisible();
-		await csp.addDomainPolicyModal().getByRole("button", { name: "Cancel" }).click();
-		await expect(csp.addDomainPolicyModal()).toHaveCount(0);
+		await expect(csp.addNodePolicyModal().locator("umb-body-layout")).toBeVisible();
+		await csp.addNodePolicyModal().getByRole("button", { name: "Cancel" }).click();
+		await expect(csp.addNodePolicyModal()).toHaveCount(0);
 	});
 });

@@ -17,16 +17,16 @@ export const manifests: Array<UmbExtensionManifest> = [
 	{
 		type: 'entityAction',
 		kind: 'default',
-		alias: CspConstants.domainPolicy.addEntityActionAlias,
-		name: 'Add Domain Policy Entity Action',
-		api: () => import('./add-domain-policy.action.js'),
+		alias: CspConstants.nodePolicy.addEntityActionAlias,
+		name: 'Add Node Policy Entity Action',
+		api: () => import('./add-node-policy.action.js'),
 		forEntityTypes: [CspConstants.entityTypes.cspPolicy],
 		// Above Import (900), so on Frontend this is the inline action and Import sits in the "..." menu.
 		// Back Office doesn't get this action, so Import stays inline there.
 		weight: 1000,
 		meta: {
 			icon: 'icon-add',
-			label: '#cspManagerDomainPolicy_addAction',
+			label: '#cspManagerNodePolicy_addAction',
 		},
 		conditions: [
 			{

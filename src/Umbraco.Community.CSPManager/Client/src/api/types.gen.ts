@@ -15,6 +15,7 @@ export type CspApiDefinition = {
 	appliesTo: CspPolicyScope;
 	contentName?: null | string;
 	domains: Array<CspApiDomainName>;
+	isOrphaned: boolean;
 	disabledNodePolicyBehavior?: null | DisabledNodePolicyBehavior;
 	reportingDirective?: null | string;
 	reportUri?: null | string;
@@ -219,6 +220,44 @@ export type PostDefinitionsCreateFromFrontendResponses = {
 
 export type PostDefinitionsCreateFromFrontendResponse =
 	PostDefinitionsCreateFromFrontendResponses[keyof PostDefinitionsCreateFromFrontendResponses];
+
+export type GetDefinitionsDraftData = {
+	body?: never;
+	path?: never;
+	query?: {
+		contentKey?: string;
+		culture?: string;
+		inheritance?: CspPolicyInheritance;
+		appliesTo?: CspPolicyScope;
+	};
+	url: '/umbraco/csp/api/v1/Definitions/draft';
+};
+
+export type GetDefinitionsDraftErrors = {
+	/**
+	 * Bad Request
+	 */
+	400: ProblemDetails;
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+};
+
+export type GetDefinitionsDraftError = GetDefinitionsDraftErrors[keyof GetDefinitionsDraftErrors];
+
+export type GetDefinitionsDraftResponses = {
+	/**
+	 * OK
+	 */
+	200: CspApiDefinition;
+};
+
+export type GetDefinitionsDraftResponse = GetDefinitionsDraftResponses[keyof GetDefinitionsDraftResponses];
 
 export type GetDefinitionsEffectiveData = {
 	body?: never;

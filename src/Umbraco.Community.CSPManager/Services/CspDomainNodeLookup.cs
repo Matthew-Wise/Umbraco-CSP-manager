@@ -67,6 +67,13 @@ internal sealed class CspDomainNodeLookup
 	}
 
 	/// <summary>
+	/// Gets the hostnames assigned to a node, without looking at the node itself: for a caller
+	/// that already knows the node exists and isn't in the recycle bin.
+	/// </summary>
+	public async Task<IReadOnlyList<DomainName>> GetHostnamesAsync(Guid contentKey)
+		=> [.. UsableDomains(await _domainService.GetAssignedDomainsAsync(contentKey, includeWildcards: false)).Select(ToDomainName)];
+
+	/// <summary>
 	/// Whether a node policy can apply to the node: it exists, isn't in the recycle bin and has a hostname.
 	/// </summary>
 	public async Task<bool> HasHostnameAsync(Guid contentKey)
@@ -100,7 +107,9 @@ internal sealed class CspDomainNodeLookup
 			.OrderBy(d => d.SortOrder);
 
 	private static DomainNode ToDomainNode(IEntitySlim node, IEnumerable<IDomain> domains)
-		=> new(node.Key, node.Name ?? string.Empty, [.. domains.Select(d => new DomainName(d.DomainName, d.LanguageIsoCode))]);
+		=> new(node.Key, node.Name ?? string.Empty, [.. domains.Select(ToDomainName)]);
+
+	private static DomainName ToDomainName(IDomain domain) => new(domain.DomainName, domain.LanguageIsoCode);
 
 	internal sealed record DomainNode(Guid Key, string Name, IReadOnlyList<DomainName> Domains);
 

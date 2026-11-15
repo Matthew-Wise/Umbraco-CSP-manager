@@ -1,5 +1,5 @@
 import { CspConstants } from "../../src/constants";
-import type { CspApiDefinition, CspApiDefinitionSource } from "../../src/api";
+import { CspPolicyInheritance, CspPolicyScope, type CspApiDefinition, type CspApiDefinitionSource } from "../../src/api";
 
 type PolicyKey = "frontend" | "backoffice";
 
@@ -22,6 +22,9 @@ export class CspDefinitionBuilder {
 	private _reportUri: string | null = null;
 	private _sources: Array<{ source: string; directives: string[] }> = [];
 	private _contentKey: string | null = null;
+	private _culture: string | null = null;
+	private _inheritance = CspPolicyInheritance.REPLACE;
+	private _appliesTo = CspPolicyScope.DESCENDANTS;
 
 	private constructor(policy: PolicyKey) {
 		const policyType = CspConstants.policyTypes[policy];
@@ -41,12 +44,28 @@ export class CspDefinitionBuilder {
 		return new CspDefinitionBuilder(policy);
 	}
 
-	/** A new domain policy for a content node: posted with the empty id, so the server assigns one. */
-	static domainPolicy(contentKey: string): CspDefinitionBuilder {
+	/**
+	 * A new node policy for a content node, for one culture or (the default) all of them: posted
+	 * with the empty id, so the server assigns one.
+	 */
+	static nodePolicy(contentKey: string, culture: string | null = null): CspDefinitionBuilder {
 		const builder = new CspDefinitionBuilder("frontend");
-		builder._id = CspConstants.domainPolicy.newId;
+		builder._id = CspConstants.nodePolicy.newId;
 		builder._contentKey = contentKey;
+		builder._culture = culture;
 		return builder;
+	}
+
+	/** An "inherit and add" policy: its sources are added to the policy the node inherits. */
+	extending(): this {
+		this._inheritance = CspPolicyInheritance.EXTEND;
+		return this;
+	}
+
+	/** For the node itself, not the pages below it. */
+	nodeOnly(): this {
+		this._appliesTo = CspPolicyScope.NODE_ONLY;
+		return this;
 	}
 
 	enabled(value = true): this {
@@ -96,7 +115,11 @@ export class CspDefinitionBuilder {
 			reportingDirective: this._reportingDirective,
 			reportUri: this._reportUri,
 			contentKey: this._contentKey,
+			culture: this._culture,
+			inheritance: this._inheritance,
+			appliesTo: this._appliesTo,
 			domains: [],
+			isOrphaned: false,
 			sources,
 		};
 	}

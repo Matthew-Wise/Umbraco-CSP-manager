@@ -7,6 +7,7 @@ import { manifests as tree } from './tree/manifest';
 import { manifests as localization } from './localization/manifest';
 import { manifests as entityActions } from './entity-actions/manifest';
 import { manifests as modals } from './modals/manifest';
+import { manifests as conditions } from './conditions/manifest';
 
 // Job of the bundle is to collate all the manifests from different parts of the extension and load other manifests
 // We load this bundle from umbraco-package.json
@@ -20,4 +21,5 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...localization,
 	...entityActions,
 	...modals,
+	...conditions,
 ];

@@ -9,8 +9,8 @@ export const manifests: Array<UmbExtensionManifest> = [
 	},
 	{
 		type: 'modal',
-		alias: CspConstants.domainPolicy.addModalAlias,
-		name: 'CSP Add Domain Policy Modal',
-		js: () => import('./add-domain-policy-modal.element.js'),
+		alias: CspConstants.nodePolicy.addModalAlias,
+		name: 'CSP Add Node Policy Modal',
+		js: () => import('./add-node-policy-modal.element.js'),
 	},
 ];

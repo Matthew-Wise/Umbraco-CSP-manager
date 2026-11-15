@@ -1,6 +1,13 @@
-import { css, html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
+import { css, html, customElement, nothing, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { UMB_CSP_MANAGER_WORKSPACE_CONTEXT, type WorkspaceState } from '../../context/workspace.context.js';
+import {
+	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
+	type UmbCspManagerWorkspaceContext,
+	type WorkspaceState,
+} from '../../context/workspace.context.js';
+import type { CspApiDefinition } from '@/api';
+import { nodePolicyContentName } from '@/node-policy-label';
+import { sourcesAsCspString } from '@/utils/csp-string';
 import { CspEvaluator } from 'csp_evaluator/dist/evaluator.js';
 import { CspParser } from 'csp_evaluator/dist/parser.js';
 import type { Finding, Severity } from 'csp_evaluator/dist/finding.js';
@@ -42,16 +49,50 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 	@state()
 	private _expandedDirectives = new Set<string>();
 
+	// An "inherit and add" policy is only a list of extra sources. Evaluating those on their own
+	// says nothing, so for such a policy this is what a request for its content gets instead.
+	@state()
+	private _effective?: CspApiDefinition;
+
+	@state()
+	private _effectiveLoading = false;
+
+	@state()
+	private _isExtending = false;
+
+	#workspaceContext?: UmbCspManagerWorkspaceContext;
+	// The request the shown result is for. The workspace hands out the same one until the answer can change.
+	#request?: Promise<CspApiDefinition | undefined>;
+
 	constructor() {
 		super();
 
 		this.consumeContext(UMB_CSP_MANAGER_WORKSPACE_CONTEXT, (context) => {
+			this.#workspaceContext = context;
 			if (context) {
 				this.observe(context.state, (state) => {
 					this._workspaceState = state;
+					this._isExtending = context.isExtending();
+					this.#loadEffective();
 				});
 			}
 		});
+	}
+
+	async #loadEffective() {
+		const request = this._isExtending
+			? this.#workspaceContext?.getEffective(this._workspaceState.definition?.culture ?? null)
+			: undefined;
+		if (request === this.#request) return;
+
+		this.#request = request;
+		this._effective = undefined;
+		this._effectiveLoading = !!request;
+		const effective = await request;
+		if (request === this.#request) {
+			this._effective = effective;
+			this._effectiveLoading = false;
+		}
 	}
 
 	private _toggleDirectiveExpansion(directive: string) {
@@ -63,24 +104,10 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 		this._expandedDirectives = new Set(this._expandedDirectives);
 	}
 
-	#getCspString = () => {
-		let cspDirectives: Record<string, Array<string>> = {};
-
-		this._workspaceState.definition?.sources.forEach(({ source, directives }) => {
-			if (directives) {
-				directives.forEach(
-					(name) => (cspDirectives[name] = cspDirectives[name] ? [source, ...cspDirectives[name]] : [source])
-				);
-			}
-		});
-
-		let cspValue = '';
-		for (const [key, values] of Object.entries(cspDirectives)) {
-			cspValue += key + ' ' + values.join(' ') + '; ';
-		}
-
-		return cspValue;
-	};
+	/** The policy to evaluate: this one, or for an extending policy what its content gets. */
+	get #evaluated(): Pick<CspApiDefinition, 'sources'> | undefined {
+		return this._isExtending ? this._effective : (this._workspaceState.definition ?? undefined);
+	}
 
 	#getFindings(csp: string): GroupedFindings {
 		const parsed = new CspParser(csp).csp;
@@ -122,19 +149,49 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 			return html`<uui-loader></uui-loader>`;
 		}
 
-		if (this._workspaceState.definition?.sources.length == 0) {
+		const evaluated = this.#evaluated;
+		if (this._isExtending && this._effectiveLoading) {
+			return html`<uui-loader></uui-loader>`;
+		}
+
+		// An inherit-and-add policy is evaluated as what the request gets from the saved policies,
+		// so say so, and say when the sources being edited aren't part of that yet.
+		const unsaved = this._workspaceState.isNew ? 'cspManagerEffective_notSavedYet' : 'cspManagerEffective_unsaved';
+		const note = this._isExtending
+			? html`<p data-mark="csp-evaluates-effective">
+						${this.localize.term(
+							'cspManagerEffective_evaluatesEffective',
+							nodePolicyContentName(this.localize, this._workspaceState.definition ?? {}),
+						)}
+					</p>
+					${this.#workspaceContext?.hasUnsavedChanges()
+						? html`<p data-mark="csp-evaluate-unsaved"><strong>${this.localize.term(unsaved)}</strong></p>`
+						: nothing}`
+			: nothing;
+
+		// The request for what the content gets failed, or its content is gone.
+		if (this._isExtending && !evaluated) {
 			return html`<uui-box headline="Evaluate">
+				${note}
+				<p>${this.localize.term('cspManagerEffective_loadFailed')}</p>
+			</uui-box>`;
+		}
+
+		if (!evaluated || evaluated.sources.length == 0) {
+			return html`<uui-box headline="Evaluate">
+				${note}
 				<div>
 					<div>No sources configured yet</div>
 				</div>
 			</uui-box>`;
 		}
 
-		const rawCsp = this.#getCspString();
+		const rawCsp = sourcesAsCspString(evaluated);
 		const findings = this.#getFindings(rawCsp);
 		const hasFindings = Object.keys(findings).length > 0;
 		return html`
 			<uui-box headline="Evaluate">
+				${note}
 				<div class="csp-container">
 					<span>${rawCsp}</span>
 				</div>

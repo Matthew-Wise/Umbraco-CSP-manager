@@ -6,7 +6,7 @@ export const Selectors = {
 	workspaceEditor: "umb-workspace-editor",
 	dashboard: "umb-csp-section-dashboard",
 	importModal: "umb-csp-import-modal",
-	addDomainPolicyModal: "umb-csp-add-domain-policy-modal",
+	addNodePolicyModal: "umb-csp-add-node-policy-modal",
 	dialogLayout: "uui-dialog-layout",
 	tab: "uui-tab",
 } as const;
@@ -16,6 +16,8 @@ export const WorkspaceTabs = {
 	sources: "Sources",
 	settings: "Settings",
 	evaluate: "Evaluate",
+	/** Node policies only: what a request for the content gets today. */
+	effective: "Effective",
 } as const;
 
 /** Dashboard button labels */
@@ -27,7 +29,7 @@ export const DashboardButtons = {
 /** Entity action labels */
 export const EntityActions = {
 	import: "Import...",
-	addDomainPolicy: "Add Domain Policy",
+	addNodePolicy: "Add Node Policy",
 } as const;
 
 /**
@@ -41,10 +43,25 @@ export const TestDomains = {
 	testPages: "/test-pages",
 } as const;
 
-/** The content nodes those hostnames are assigned to: domain policies belong to these. */
+/** The content nodes those hostnames are assigned to (the sites). */
 export const TestNodes = {
 	homepage: "Homepage",
 	testPages: "Test Pages",
+} as const;
+
+/**
+ * Pages below Test Pages without a hostname of their own (uSync/v18/Content). `path` is below a
+ * hostname of the homepage, e.g. `/en-gb/test-pages/with-nonce`.
+ */
+export const TestPages = {
+	withNonce: { name: "With Nonce", contentKey: "bc5af91c-f263-4703-8a26-5c94b44518da", path: "/test-pages/with-nonce" },
+	withoutNonce: { name: "Without Nonce", path: "/test-pages/without-nonce" },
+} as const;
+
+/** The languages of the test site (uSync/v18/Languages). */
+export const TestCultures = {
+	enGb: "en-GB",
+	enUs: "en-US",
 } as const;
 
 /**

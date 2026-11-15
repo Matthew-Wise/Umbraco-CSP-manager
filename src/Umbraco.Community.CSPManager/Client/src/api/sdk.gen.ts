@@ -10,6 +10,9 @@ import type {
 	GetDefinitionsByIdErrors,
 	GetDefinitionsByIdResponses,
 	GetDefinitionsData,
+	GetDefinitionsDraftData,
+	GetDefinitionsDraftErrors,
+	GetDefinitionsDraftResponses,
 	GetDefinitionsEffectiveData,
 	GetDefinitionsEffectiveErrors,
 	GetDefinitionsEffectiveResponses,
@@ -93,6 +96,16 @@ export class Definitions {
 		>({
 			security: [{ scheme: 'bearer', type: 'http' }],
 			url: '/umbraco/csp/api/v1/Definitions/create-from-frontend',
+			...options,
+		});
+	}
+
+	public static getDefinitionsDraft<ThrowOnError extends boolean = true>(
+		options?: Options<GetDefinitionsDraftData, ThrowOnError>,
+	): RequestResult<GetDefinitionsDraftResponses, GetDefinitionsDraftErrors, ThrowOnError> {
+		return (options?.client ?? client).get<GetDefinitionsDraftResponses, GetDefinitionsDraftErrors, ThrowOnError>({
+			security: [{ scheme: 'bearer', type: 'http' }],
+			url: '/umbraco/csp/api/v1/Definitions/draft',
 			...options,
 		});
 	}

@@ -51,6 +51,7 @@ internal class GetDefinitionTests : CspManagementApiTest<DefinitionsControllerTy
 			  "appliesTo": "Descendants",
 			  "contentName": null,
 			  "domains": [],
+			  "isOrphaned": false,
 			  "disabledNodePolicyBehavior": null,
 			  "reportingDirective": null,
 			  "reportUri": null,

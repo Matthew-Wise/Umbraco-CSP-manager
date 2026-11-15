@@ -14,8 +14,8 @@
 - Dual context: separate policies for frontend (`fac780be-...`) and backoffice (`9cbfa28c-...`)
 - Node policies: rows with `ContentKey`. Any content node can have one, per culture: the scope of a
   policy is (`ContentKey`, `Culture`), `Culture` null meaning all cultures. The public API says "node"
-  (`GetCspDefinitionForNodeAsync`, `DisabledNodePolicyBehavior`, `node-policies`); the current UI still
-  says "domain policy" and only offers nodes with a hostname. Backoffice always uses the backoffice policy.
+  (`GetCspDefinitionForNodeAsync`, `DisabledNodePolicyBehavior`, `node-policies`) and so does the UI
+  ("node policy"). Backoffice always uses the backoffice policy.
 - Inheritance: `Inheritance` is `Replace` (a complete policy, the default and what every policy was
   before this existed) or `Extend` ("inherit and add": only extra sources, merged onto the policy it
   inherits). `AppliesTo` is `Descendants` (the node and the pages below it, the default) or `NodeOnly`.
@@ -87,6 +87,12 @@ Routes live in `Controllers/` under `/umbraco/csp/api/v1` and are described by t
   for that page and culture gets today (resolved and merged, or the Frontend policy). No culture
   means the default language, as for a routed request. A merged result is not a stored policy: it
   has an empty id, so it can't be saved over the `Extend` policy it is named after.
+- `isOrphaned` on a definition and in the `node-policies` list is display only (node deleted or
+  trashed, or culture no longer a language). `Nodes` lists the nodes with a hostname (the sites).
+- Drafts: `GET Definitions/draft` returns what `create-from-frontend` would create without saving
+  it (`ICspService.BuildCspDefinitionForNodeAsync`: the same starting point and the checks of the
+  save path, so 400 when it couldn't be saved). It has the empty id; the UI edits it and posts it
+  to `Definitions/save`.
 - Creating: a node policy posted to `Definitions/save` with `Guid.Empty` is created with a
   server-assigned id; any other unknown node-policy id is 404. `create-from-frontend` creates a
   `Replace` policy as a copy of what the node gets today, an `Extend` policy without sources.

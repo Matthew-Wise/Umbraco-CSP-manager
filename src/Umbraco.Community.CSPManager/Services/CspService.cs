@@ -406,13 +406,49 @@ internal sealed class CspService : ICspService
 		CspPolicyScope appliesTo,
 		CancellationToken cancellationToken)
 	{
-		var id = Guid.NewGuid();
+		var definition = await NewNodePolicyAsync(Guid.NewGuid(), contentKey, NormalizeCulture(culture), inheritance, appliesTo, cancellationToken);
 
+		// The node-exists, culture-exists and one-policy-per-node-and-culture checks live in the save path.
+		return await SaveCspDefinitionAsync(definition, cancellationToken);
+	}
+
+	public async Task<CspDefinition> BuildCspDefinitionForNodeAsync(
+		Guid contentKey,
+		string? culture,
+		CspPolicyInheritance inheritance,
+		CspPolicyScope appliesTo,
+		CancellationToken cancellationToken)
+	{
+		// The checks the save makes for a new node policy, so that what is returned can be saved.
+		// Without the save's lock: the save checks again.
+		var draft = new CspDefinition { ContentKey = contentKey, Culture = NormalizeCulture(culture) };
+		var nodeExists = _domainNodes.Exists(contentKey);
+		var language = draft.Culture is null ? null : await FindLanguageIsoCodeAsync(draft.Culture);
+
+		using (var scope = _scopeProvider.CreateScope())
+		{
+			await EnsureValidNewNodePolicyAsync(scope, draft, nodeExists, language, cancellationToken);
+			scope.Complete();
+		}
+
+		// The empty id: the save assigns one.
+		return await NewNodePolicyAsync(Guid.Empty, contentKey, draft.Culture, inheritance, appliesTo, cancellationToken);
+	}
+
+	// What a new node policy starts as. Not validated and not saved.
+	private async Task<CspDefinition> NewNodePolicyAsync(
+		Guid id,
+		Guid contentKey,
+		string? culture,
+		CspPolicyInheritance inheritance,
+		CspPolicyScope appliesTo,
+		CancellationToken cancellationToken)
+	{
 		var definition = new CspDefinition
 		{
 			Id = id,
 			ContentKey = contentKey,
-			Culture = NormalizeCulture(culture),
+			Culture = culture,
 			Inheritance = inheritance,
 			AppliesTo = appliesTo,
 			IsBackOffice = false,
@@ -447,8 +483,7 @@ internal sealed class CspService : ICspService
 			];
 		}
 
-		// The node-exists, culture-exists and one-policy-per-node-and-culture checks live in the save path.
-		return await SaveCspDefinitionAsync(definition, cancellationToken);
+		return definition;
 	}
 
 	public async Task DeleteCspDefinitionAsync(Guid id, CancellationToken cancellationToken)
@@ -719,8 +754,15 @@ internal sealed class CspService : ICspService
 			return;
 		}
 
-		// Creating: for a language that exists, stored in the language's own spelling so the
-		// unique index sees one culture however the caller wrote it.
+		await EnsureValidNewNodePolicyAsync(scope, definition, nodeExists, language, cancellationToken);
+	}
+
+	// The rules for a node policy that doesn't exist yet. Also sets its culture to the language's
+	// own spelling, so the unique index sees one culture however the caller wrote it.
+	private static async Task EnsureValidNewNodePolicyAsync(IScope scope, CspDefinition definition, bool nodeExists, string? language, CancellationToken cancellationToken)
+	{
+		var contentKey = definition.ContentKey!.Value;
+
 		if (definition.Culture is not null)
 		{
 			definition.Culture = language

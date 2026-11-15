@@ -6,13 +6,13 @@ nav_order: 3
 
 # Policy Settings
 
-Each policy (frontend, backoffice, or domain-specific) has settings that control how the CSP header is sent.
+Each policy (frontend, backoffice, or a node policy) has settings that control how the CSP header is sent.
 
 ![Policy Settings section](../assets/images/screenshots/settings-screen.png "Policy Settings section"){: width="3840" height="2160" }
 
 ## Enabled
 
-Toggles whether the CSP header is sent for this policy. When disabled on a global policy, no header is added. When disabled on a domain policy, requests fall back to the Frontend policy or send no header (see [DisabledNodePolicyBehavior](../features/configuration#disablednodepolicybehavior)).
+Toggles whether the CSP header is sent for this policy. When disabled on a global policy, no header is added. When disabled on a [node policy](../features/node-policies), its content gets the policy it inherits, or no header (see [DisabledNodePolicyBehavior](../features/configuration#disablednodepolicybehavior)).
 
 ## Report Only
 

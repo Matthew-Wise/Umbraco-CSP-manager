@@ -36,6 +36,15 @@ export class CspApiHelpers {
 		return await response.json();
 	}
 
+	/** A saved policy by its id. */
+	async getDefinitionById(id: string): Promise<CspApiDefinition> {
+		const response = await this.request.get(this.url(`Definitions/${id}`), this.options);
+		if (!response.ok()) {
+			throw new Error(`Failed to get definition ${id}: ${response.status()}`);
+		}
+		return await response.json();
+	}
+
 	/** Get a global CSP definition via the management API. */
 	async getDefinition(policy: PolicyKey): Promise<CspApiDefinition> {
 		const response = await this.request.get(this.url(`Definitions?isBackOffice=${policy === "backoffice"}`), this.options);
@@ -56,7 +65,7 @@ export class CspApiHelpers {
 		await this.saveDefinition(CspDefinitionBuilder.for(policy).build());
 	}
 
-	/** Every content node with a hostname, with its hostnames and whether it has a domain policy. */
+	/** Every content node with a hostname, with its hostnames and whether it has a node policy. */
 	async getNodes(): Promise<CspApiNodeInfo[]> {
 		const response = await this.request.get(this.url("Nodes"), this.options);
 		if (!response.ok()) {
@@ -65,26 +74,26 @@ export class CspApiHelpers {
 		return await response.json();
 	}
 
-	/** Every domain policy, including orphaned ones. */
-	async getDomainPolicies(): Promise<CspApiNodePolicy[]> {
+	/** Every node policy, including orphaned ones. */
+	async getNodePolicies(): Promise<CspApiNodePolicy[]> {
 		const response = await this.request.get(this.url("Definitions/node-policies"), this.options);
 		if (!response.ok()) {
-			throw new Error(`Failed to list domain policies: ${response.status()}`);
+			throw new Error(`Failed to list node policies: ${response.status()}`);
 		}
 		return await response.json();
 	}
 
-	/** Creates a domain policy: saved with the empty id, so the server assigns one. */
-	async createDomainPolicy(definition: CspApiDefinition): Promise<CspApiDefinition> {
+	/** Creates a node policy: saved with the empty id, so the server assigns one. */
+	async createNodePolicy(definition: CspApiDefinition): Promise<CspApiDefinition> {
 		return await this.saveDefinition(definition);
 	}
 
-	/** Deletes every domain policy, so each test starts from the global policies only. */
-	async deleteAllDomainPolicies(): Promise<void> {
-		for (const policy of await this.getDomainPolicies()) {
+	/** Deletes every node policy, so each test starts from the global policies only. */
+	async deleteAllNodePolicies(): Promise<void> {
+		for (const policy of await this.getNodePolicies()) {
 			const response = await this.request.delete(this.url(`Definitions/${policy.id}`), this.options);
 			if (!response.ok()) {
-				throw new Error(`Failed to delete domain policy ${policy.id}: ${response.status()}`);
+				throw new Error(`Failed to delete node policy ${policy.id}: ${response.status()}`);
 			}
 		}
 	}
