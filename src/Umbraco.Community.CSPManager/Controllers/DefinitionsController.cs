@@ -194,7 +194,7 @@ public class DefinitionsController : CspManagerControllerBase
 					Inheritance = p.Inheritance,
 					AppliesTo = p.AppliesTo,
 					Enabled = p.Enabled,
-					IsOrphaned = node is not { IsUsable: true } || (p.Culture is not null && !languages.Contains(p.Culture)),
+					IsOrphaned = IsOrphaned(node, p.Culture, languages),
 				};
 			})
 			.OrderBy(p => p.IsOrphaned)
@@ -336,14 +336,21 @@ public class DefinitionsController : CspManagerControllerBase
 			return CspApiDefinition.FromCspDefinition(definition);
 		}
 
+		var node = _domainNodes.GetContentNodes([contentKey]).GetValueOrDefault(contentKey);
 		// The hostnames only say where the policy applies: most nodes with a policy have none.
 		var domainNode = await _domainNodes.GetDomainNodeAsync(contentKey);
 		return CspApiDefinition.FromCspDefinition(
 			definition,
-			domainNode?.Name ?? _domainNodes.GetContentNodes([contentKey]).GetValueOrDefault(contentKey)?.Name,
+			node?.Name,
 			domainNode?.Domains.Select(d => new CspApiDomainName { Name = d.Name, Culture = d.Culture }),
-			_options.CurrentValue.DisabledNodePolicyBehavior);
+			_options.CurrentValue.DisabledNodePolicyBehavior,
+			IsOrphaned(node, definition.Culture, definition.Culture is null ? null : await GetLanguageIsoCodesAsync()));
 	}
+
+	// A policy applies to nothing when its node is never served (deleted, or in the recycle bin)
+	// or its culture is no longer a language. The languages are only needed for a culture policy.
+	private static bool IsOrphaned(CspDomainNodeLookup.ContentNode? node, string? culture, HashSet<string>? languages)
+		=> node is not { IsUsable: true } || (culture is not null && languages?.Contains(culture) != true);
 
 	private async Task<HashSet<string>> GetLanguageIsoCodesAsync()
 		=> (await _languageService.GetAllAsync()).Select(l => l.IsoCode).ToHashSet(StringComparer.OrdinalIgnoreCase);

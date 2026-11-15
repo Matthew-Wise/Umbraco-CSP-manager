@@ -7,8 +7,9 @@ using Umbraco.Community.CSPManager.Services;
 namespace Umbraco.Community.CSPManager.Controllers;
 
 /// <summary>
-/// API controller listing the content nodes with at least one hostname in Culture &amp; Hostnames:
-/// the sites. Any content node can have a node policy; these are the usual ones to give one.
+/// API controller for the content nodes a node policy can belong to: the list of nodes with at least
+/// one hostname in Culture &amp; Hostnames (the sites, the usual ones to give a policy), and any one
+/// content node by its key.
 /// </summary>
 [ApiVersion("1.0")]
 [ApiExplorerSettings(GroupName = "Nodes")]
@@ -56,5 +57,38 @@ public class CspNodesController : CspManagerControllerBase
 		}).ToList();
 
 		return Ok(result);
+	}
+
+	/// <summary>
+	/// Retrieves one content node, with or without a hostname, with its hostnames and whether it has
+	/// a node policy for all cultures.
+	/// </summary>
+	/// <param name="contentKey">The key of the content node.</param>
+	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+	/// <returns>The node.</returns>
+	/// <response code="404">The content node doesn't exist or is in the recycle bin, so it can't have a new policy.</response>
+	[HttpGet("Nodes/{contentKey:guid}")]
+	[MapToApiVersion("1.0")]
+	[ProducesResponseType(typeof(CspApiNodeInfo), 200)]
+	[ProducesResponseType(404)]
+	public async Task<ActionResult<CspApiNodeInfo>> GetNode(Guid contentKey, CancellationToken cancellationToken = default)
+	{
+		var node = _domainNodes.GetContentNodes([contentKey]).GetValueOrDefault(contentKey);
+		if (node is not { IsUsable: true })
+		{
+			return NotFound();
+		}
+
+		var domainNode = await _domainNodes.GetDomainNodeAsync(contentKey);
+		var policy = await _cspService.GetCspDefinitionForNodeAsync(contentKey, culture: null, cancellationToken);
+
+		return new CspApiNodeInfo
+		{
+			ContentKey = contentKey,
+			ContentName = node.Name ?? string.Empty,
+			Domains = [.. (domainNode?.Domains ?? []).Select(d => new CspApiDomainName { Name = d.Name, Culture = d.Culture })],
+			HasCspPolicy = policy is not null,
+			CspDefinitionId = policy?.Id,
+		};
 	}
 }

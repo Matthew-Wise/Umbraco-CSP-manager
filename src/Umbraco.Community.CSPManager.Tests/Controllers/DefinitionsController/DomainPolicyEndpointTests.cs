@@ -109,6 +109,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 			("POST Definitions/save (create)", () => PostSaveAsync(NewPolicyBody(_siteB.Key))),
 			("DELETE Definitions/{id}", () => Client.DeleteAsync(DefinitionsUrl(x => x.DeleteDefinition(policy.Id, CancellationToken.None)))),
 			("GET Nodes", () => Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNodes(CancellationToken.None)))),
+			("GET Nodes/{contentKey}", () => Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(_siteA.Key, CancellationToken.None)))),
 		};
 
 		foreach (var (name, send) in requests)
@@ -302,11 +303,15 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		await AuthenticateAsAdminAsync();
 
 		var policies = await GetNodePoliciesAsync();
+		var frenchDefinition = await ReadDefinitionAsync(await Client.GetAsync(DefinitionsUrl(x => x.GetDefinitionById(french.Id, CancellationToken.None))));
+		var allDefinition = await ReadDefinitionAsync(await Client.GetAsync(DefinitionsUrl(x => x.GetDefinitionById(all.Id, CancellationToken.None))));
 
 		Assert.Multiple(() =>
 		{
 			Assert.That(policies.Single(p => p.Id == french.Id).IsOrphaned, Is.True);
 			Assert.That(policies.Single(p => p.Id == all.Id).IsOrphaned, Is.False);
+			Assert.That(frenchDefinition.IsOrphaned, Is.True, "the policy itself says so too, not only the list");
+			Assert.That(allDefinition.IsOrphaned, Is.False);
 		});
 	}
 
@@ -566,12 +571,48 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		var nodes = await (await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNodes(CancellationToken.None))))
 			.Content.ReadFromJsonAsync<List<CspApiNodeInfo>>(JsonSerializerOptions);
 
+		var definitionB = await ReadDefinitionAsync(await Client.GetAsync(DefinitionsUrl(x => x.GetDefinitionById(policyB.Id, CancellationToken.None))));
+		var nodeB = await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(_siteB.Key, CancellationToken.None)));
+
 		var b = policies.Single(p => p.Id == policyB.Id);
 		Assert.Multiple(() =>
 		{
 			Assert.That(b.IsOrphaned, Is.True);
 			Assert.That(b.ContentName, Is.EqualTo("Site B"));
 			Assert.That(nodes.Select(n => n.ContentKey), Is.EqualTo(new[] { _siteA.Key }));
+			Assert.That(definitionB.IsOrphaned, Is.True);
+			Assert.That(definitionB.ContentName, Is.EqualTo("Site B"));
+			Assert.That(nodeB.StatusCode, Is.EqualTo(HttpStatusCode.NotFound), "a node in the recycle bin can't get a new policy");
+		});
+	}
+
+	// Any content node can have a policy, so the UI has to be able to look up one that has no hostname.
+	[Test]
+	public async Task GetNode_ReturnsAnyContentNodeWithItsHostnamesAndPolicy()
+	{
+		var policyA = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
+		await CreateFrenchPolicyAsync(_pageA.Key);
+		await AuthenticateAsAdminAsync();
+
+		async Task<CspApiNodeInfo> GetNodeAsync(Guid key)
+			=> await (await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(key, CancellationToken.None))))
+				.Content.ReadFromJsonAsync<CspApiNodeInfo>(JsonSerializerOptions);
+
+		var site = await GetNodeAsync(_siteA.Key);
+		var page = await GetNodeAsync(_pageA.Key);
+		var missing = await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNode(Guid.NewGuid(), CancellationToken.None)));
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(site.ContentName, Is.EqualTo("Site A"));
+			Assert.That(site.Domains.Select(d => d.Name), Is.EqualTo(new[] { "a.example.com" }));
+			Assert.That(site.CspDefinitionId, Is.EqualTo(policyA.Id));
+
+			Assert.That(page.ContentName, Is.EqualTo("Page A"));
+			Assert.That(page.Domains, Is.Empty);
+			Assert.That(page.HasCspPolicy, Is.False, "it only has a policy for one culture");
+
+			Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
 		});
 	}
 

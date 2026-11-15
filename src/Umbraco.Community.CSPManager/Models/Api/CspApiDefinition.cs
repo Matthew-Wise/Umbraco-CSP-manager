@@ -80,6 +80,13 @@ public sealed class CspApiDefinition : IValidatableObject
 	public List<CspApiDomainName> Domains { get; set; } = [];
 
 	/// <summary>
+	/// Gets or sets a value indicating whether this node policy applies to nothing, for display only
+	/// (ignored on save): its content node was deleted or is in the recycle bin, or its culture is no
+	/// longer one of the site's languages. Always <c>false</c> for the global policies.
+	/// </summary>
+	public bool IsOrphaned { get; set; }
+
+	/// <summary>
 	/// Gets or sets what happens when this node policy is disabled (the configured
 	/// <see cref="CspManagerOptions.DisabledNodePolicyBehavior"/>), for display only (ignored on
 	/// save). <c>null</c> for the global policies.
@@ -173,9 +180,11 @@ public sealed class CspApiDefinition : IValidatableObject
 		CspDefinition definition,
 		string? contentName = null,
 		IEnumerable<CspApiDomainName>? domains = null,
-		DisabledNodePolicyBehavior? disabledNodePolicyBehavior = null)
+		DisabledNodePolicyBehavior? disabledNodePolicyBehavior = null,
+		bool isOrphaned = false)
 		=> new()
 		{
+			IsOrphaned = definition.ContentKey is not null && isOrphaned,
 			Id = definition.Id,
 			ContentKey = definition.ContentKey,
 			Culture = definition.Culture,
