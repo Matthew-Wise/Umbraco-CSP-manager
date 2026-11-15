@@ -73,23 +73,18 @@
 - Middleware never breaks requests on failure
 - Composer pattern: `CspManagerComposer` auto-registers via `IComposer`
 
-## API Endpoints
+## API
 
-- `GET /csp/api/v1.0/Definitions?isBackOffice=false` - retrieve a global CSP definition
-- `GET /csp/api/v1.0/Definitions?contentKey={key}&culture={iso}` - retrieve the policy stored for a
-  node and culture (no culture: its all-cultures policy; no fallback; 404 if none)
-- `GET /csp/api/v1.0/Definitions/effective?contentKey={key}&culture={iso}` - the policy a request for
-  that page and culture gets today (resolved and merged, or the Frontend policy)
-- `GET /csp/api/v1.0/Definitions/{id}` - retrieve any definition by id (404 if none)
-- `GET /csp/api/v1.0/Definitions/node-policies` - list node policies (name, culture, inheritance,
-  applies-to, orphaned flag)
-- `POST /csp/api/v1.0/Definitions/save` - save a definition; a node policy posted with
-  `Guid.Empty` is created (server-assigned id), any other unknown node-policy id is 404
-- `POST /csp/api/v1.0/Definitions/create-from-frontend?contentKey={key}&culture={iso}&inheritance=&appliesTo=` -
-  create a node policy: `Replace` (default) as a copy of what the node gets today, `Extend` without sources
-- `DELETE /csp/api/v1.0/Definitions/{id}` - delete a node policy (400 for the global ones)
-- `GET /csp/api/v1.0/Nodes` - content nodes with a hostname, their hostnames/cultures and whether they
-  have an all-cultures policy (`CspNodesController`)
+Routes live in `Controllers/` under `/csp/api/v1.0` and are described by the OpenAPI document
+(`/umbraco/openapi/csp.json`, the source of the generated client). What the routes don't show:
+
+- Stored versus effective: `GET Definitions?contentKey=&culture=` returns the policy stored for exactly
+  that node and culture (no fallback, 404 if none); `GET Definitions/effective` returns what a request
+  for that page and culture gets today (resolved and merged, or the Frontend policy).
+- Creating: a node policy posted to `Definitions/save` with `Guid.Empty` is created with a
+  server-assigned id; any other unknown node-policy id is 404. `create-from-frontend` creates a
+  `Replace` policy as a copy of what the node gets today, an `Extend` policy without sources.
+- The two global policies can't be deleted (400), and can't have a content key, a culture or `Extend`.
 
 ## Configuration
 

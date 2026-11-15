@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Core.Actions;
 using Umbraco.Cms.Core.Configuration.Models;
@@ -56,8 +57,25 @@ public abstract class CspManagementApiTest<T> : ManagementApiTest<T>
 	[SetUp]
 	public async Task SetUp()
 	{
+		await WaitForBackgroundStartupAsync();
 		await CspTestMigrationHelper.RunMigrationsAsync(GetRequiredService<IMigrationPlanExecutor>(), GetRequiredService<IScopeProvider>(), GetRequiredService<IKeyValueService>());
 		ShortStringHelper = GetRequiredService<IShortStringHelper>();
+	}
+
+	// Now and then (a few tests in a hundred) Umbraco sees the fresh test database as upgrading and
+	// finishes booting in a background service (UnattendedUpgradeBackgroundService), so the test gets
+	// its services before startup is done. The startup handlers write to the database (e.g. the
+	// published cache rebuild), and a test that starts writing straight away can deadlock with them on
+	// SQLite's table locks: both sides then retry until their timeouts and the run looks hung.
+	private async Task WaitForBackgroundStartupAsync()
+	{
+		foreach (var service in Services.GetServices<IHostedService>().OfType<BackgroundService>())
+		{
+			if (service.GetType().Name == "UnattendedUpgradeBackgroundService" && service.ExecuteTask is { } startup)
+			{
+				await startup.WaitAsync(TimeSpan.FromMinutes(2));
+			}
+		}
 	}
 
 	protected async Task<IUserGroup> CreateCspUserGroupAsync()
