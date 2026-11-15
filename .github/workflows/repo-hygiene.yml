@@ -13,6 +13,7 @@ on:
       - '.github/**'
       - '.claude/**'
       - '.mcp.json'
+      - '.env.*'
       - '*.md'
       - '.editorconfig'
       - '.gitattributes'

@@ -9,10 +9,12 @@
     <File Path="../.github/README.md" />
     <File Path="../.editorconfig" />
     <File Path="Directory.Packages.props" />
+    <File Path="Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Solution Items/marketplace/">
     <File Path="../umbraco-marketplace-umbraco.community.cspmanager.usync.complete.json" />
     <File Path="../umbraco-marketplace-umbraco.community.cspmanager.usync.json" />
     <File Path="../umbraco-marketplace.json" />
-    <File Path="Directory.Build.props" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Umbraco.Community.CSPManager.Benchmarks/Umbraco.Community.CSPManager.Benchmarks.csproj" />
@@ -24,6 +26,7 @@
     <Project Path="uSync/uSync.TestSite/uSync.TestSite.csproj" />
     <Project Path="uSync/uSync.TestSiteB/uSync.TestSiteB.csproj" />
   </Folder>
+  <Project Path="Umbraco.Community.CSPManager.DevSetup/Umbraco.Community.CSPManager.DevSetup.csproj" />
   <Project Path="Umbraco.Community.CSPManager.TestSite/Umbraco.Community.CSPManager.TestSite.csproj" />
   <Project Path="Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj" />
 </Solution>

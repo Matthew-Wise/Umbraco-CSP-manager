@@ -9,6 +9,7 @@ src/
 ├── Umbraco.Community.CSPManager/          # Main package (NuGet)
 │   └── Client/                            # TypeScript/Lit frontend
 ├── Umbraco.Community.CSPManager.TestSite/ # Dev/testing site (port 44370)
+├── Umbraco.Community.CSPManager.DevSetup/ # Dev-only helpers shared by the test sites (never packed)
 ├── Umbraco.Community.CSPManager.Tests/    # Unit/integration tests
 ├── Umbraco.Community.CSPManager.Benchmarks/
 ├── Directory.Build.props                  # Shared NuGet metadata
@@ -70,9 +71,9 @@ dotnet add package Umbraco.Community.CSPManager -v 0.0.0-ci.<run_number> --prere
 
 **Required `build` check:** `main` requires a status check named `build`. Every PR
 workflow is path-filtered, so each one names its job `build` and the filters are
-kept collectively exhaustive: `csp-manager.yml` (main package), `usync.yml` (uSync +
+kept collectively exhaustive: `csp-manager.yml` (main package, TestSite, DevSetup), `usync.yml` (uSync +
 main package sources), `docs-build.yml` (`docs/**` + the docs workflows) and
-`repo-hygiene.yml` (`.github/**`, `.claude/**`, root `*.md` and dotfiles, runs actionlint). A PR
+`repo-hygiene.yml` (`.github/**`, `.claude/**`, root `*.md`, `.env.*` and dotfiles, runs actionlint). A PR
 that matches none of them never reports `build` and sits pending forever, so when
 adding a new top-level path, add it to one of those filters. `claude-code-review.yml`
 skips bot, draft and fork PRs on purpose.
@@ -102,6 +103,15 @@ environment's allowed domains; without it only that project fails to build.
 The Node version lives in one place, `NODE_MAJOR` in the hook. The environment's Setup
 script runs the same hook; there `CLAUDE_ENV_FILE` is unset, so the hook writes the Node PATH
 to `~/.bashrc` instead (session shells source it), replacing its own earlier lines.
+
+## Umbraco CLI
+
+The `umbraco-cli` skill (`.claude/skills/umbraco-cli/`) drives `@umbraco-cms/mcp-dev` against
+the three test sites via `--env .env.<site>` (`csp-manager`, `usync-a`, `usync-b`). Those
+three files are committed on purpose so cloud sessions have them: they hold only dev
+credentials for localhost test sites. Any other `.env*` stays gitignored. In Development,
+each test site creates that API user on startup (`DevApiUserSeeder` in the DevSetup project,
+configured by `TestSite:ApiUser` in `appsettings.Development.json`), so fresh clones work.
 
 ## Dependency Updates
 

@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Umbraco.Community.CSPManager\Umbraco.Community.CSPManager.csproj" />
+    <ProjectReference Include="..\Umbraco.Community.CSPManager.DevSetup\Umbraco.Community.CSPManager.DevSetup.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <!-- Razor files are needed for the backoffice to work correctly -->
