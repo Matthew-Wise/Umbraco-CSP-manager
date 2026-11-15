@@ -81,6 +81,26 @@ public abstract class CspSerializerBase : SyncSerializerRoot<CspDefinition>, ISy
 		details.AddIfUpdated(nameof(definition.UpgradeInsecureRequests), definition.UpgradeInsecureRequests, upgradeInsecureRequests);
 		definition.UpgradeInsecureRequests = upgradeInsecureRequests;
 
+		// Only node policies have these; a file without them (from before they existed) is a
+		// complete policy for its node and the pages below it. The culture is part of which policy
+		// the file belongs to, so ResolveDefinitionAsync has already set it.
+		if (definition.ContentKey is not null)
+		{
+			if (!TryReadEnum(infoNode, nameof(CspDefinition.Inheritance), CspPolicyInheritance.Replace, out var inheritance)
+				|| !TryReadEnum(infoNode, nameof(CspDefinition.AppliesTo), CspPolicyScope.Descendants, out var appliesTo))
+			{
+				const string reason = "Unknown Inheritance or AppliesTo value";
+				Log.DeserializeInvalid(logger, alias, reason);
+				return SyncAttempt<CspDefinition>.Fail(alias, ChangeType.Fail, $"Invalid CSP definition: {reason}");
+			}
+
+			details.AddIfUpdated(nameof(definition.Inheritance), definition.Inheritance, inheritance);
+			definition.Inheritance = inheritance;
+
+			details.AddIfUpdated(nameof(definition.AppliesTo), definition.AppliesTo, appliesTo);
+			definition.AppliesTo = appliesTo;
+		}
+
 		definition.Sources = DeserializeSources(node, definition, details);
 
 		// The same header rules CspService enforces on save, checked here so an invalid file (e.g. a
@@ -103,6 +123,31 @@ public abstract class CspSerializerBase : SyncSerializerRoot<CspDefinition>, ISy
 		Log.DeserializeComplete(logger, alias, details.Count);
 
 		return SyncAttempt<CspDefinition>.Succeed(ItemAlias(definition), definition, ChangeType.Import, details);
+	}
+
+	// Names only: a number would also parse, and would then mean whatever that number means in a
+	// later version.
+	private static bool TryReadEnum<TEnum>(XElement infoNode, string name, TEnum defaultValue, out TEnum value)
+		where TEnum : struct, Enum
+	{
+		var text = infoNode.Element(name).ValueOrDefault(string.Empty);
+		if (string.IsNullOrWhiteSpace(text))
+		{
+			value = defaultValue;
+			return true;
+		}
+
+		value = defaultValue;
+		foreach (var candidate in Enum.GetValues<TEnum>())
+		{
+			if (string.Equals(candidate.ToString(), text.Trim(), StringComparison.OrdinalIgnoreCase))
+			{
+				value = candidate;
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private static List<CspDefinitionSource> DeserializeSources(XElement node, CspDefinition definition, List<uSyncChange> details)
@@ -158,10 +203,27 @@ public abstract class CspSerializerBase : SyncSerializerRoot<CspDefinition>, ISy
 			new XElement("UpgradeInsecureRequests", item.UpgradeInsecureRequests)
 		);
 
-		// Only node policies carry the element, so the global definitions' files are unchanged.
+		// Only node policies carry these elements, so the global definitions' files are unchanged.
+		// The culture, inheritance and applies-to are only written when they aren't the default, so
+		// the file of a complete policy for all cultures is the same as before they existed.
 		if (item.ContentKey is { } contentKey)
 		{
 			info.Add(new XElement(nameof(CspDefinition.ContentKey), contentKey));
+
+			if (!string.IsNullOrWhiteSpace(item.Culture))
+			{
+				info.Add(new XElement(nameof(CspDefinition.Culture), item.Culture));
+			}
+
+			if (item.Inheritance != CspPolicyInheritance.Replace)
+			{
+				info.Add(new XElement(nameof(CspDefinition.Inheritance), item.Inheritance));
+			}
+
+			if (item.AppliesTo != CspPolicyScope.Descendants)
+			{
+				info.Add(new XElement(nameof(CspDefinition.AppliesTo), item.AppliesTo));
+			}
 		}
 
 		node.Add(info);

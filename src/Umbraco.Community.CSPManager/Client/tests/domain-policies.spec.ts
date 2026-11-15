@@ -167,8 +167,11 @@ test.describe("Domain policies: create, edit, delete", () => {
 			expect(header, hostname).toContain("site.example.com");
 			expect(header, hostname).not.toContain("global.example.com");
 		}
-		// Test Pages has its own hostname, so it's routed as its own site: no policy there, so Frontend.
-		expect(await headerOn(page, TestDomains.testPages)).toContain("global.example.com");
+		// Test Pages is below the homepage and has no policy of its own, so it gets the homepage's
+		// policy, even though it has its own hostname.
+		const testPagesHeader = await headerOn(page, TestDomains.testPages);
+		expect(testPagesHeader).toContain("site.example.com");
+		expect(testPagesHeader).not.toContain("global.example.com");
 	});
 
 	test("Deleting a domain policy asks for confirmation and falls back to Frontend", async ({ umbracoUi, page }) => {

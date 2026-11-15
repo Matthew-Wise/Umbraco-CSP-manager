@@ -17,6 +17,9 @@ internal class CspDefinitionTracker : SyncXmlTrackAndMerger<CspDefinition>, ISyn
 		TrackingItem.Single(nameof(CspDefinition.ReportingDirective),  $"Info/{nameof(CspDefinition.ReportingDirective)}"),
 		TrackingItem.Single(nameof(CspDefinition.UpgradeInsecureRequests),  $"Info/{nameof(CspDefinition.UpgradeInsecureRequests)}"),
 		TrackingItem.Single(nameof(CspDefinition.ContentKey),  $"Info/{nameof(CspDefinition.ContentKey)}"),
+		TrackingItem.Single(nameof(CspDefinition.Culture),  $"Info/{nameof(CspDefinition.Culture)}"),
+		TrackingItem.Single(nameof(CspDefinition.Inheritance),  $"Info/{nameof(CspDefinition.Inheritance)}"),
+		TrackingItem.Single(nameof(CspDefinition.AppliesTo),  $"Info/{nameof(CspDefinition.AppliesTo)}"),
 		TrackingItem.Many("Source", "Sources/Source", "@value"),
 	];
 }

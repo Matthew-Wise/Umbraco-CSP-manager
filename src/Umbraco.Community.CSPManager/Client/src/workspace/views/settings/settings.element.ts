@@ -1,6 +1,6 @@
 import { css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
-import type { CspApiDefinition } from '@/api';
+import { DisabledNodePolicyBehavior, type CspApiDefinition } from '@/api';
 import {
 	UmbCspManagerWorkspaceContext,
 	UMB_CSP_MANAGER_WORKSPACE_CONTEXT,
@@ -63,10 +63,7 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 	}
 
 	private get _disabledMeansNoHeader(): boolean {
-		return (
-			this._workspaceState.definition?.disabledNodePolicyBehavior ===
-			CspConstants.domainPolicy.disabledBehavior.noHeader
-		);
+		return this._workspaceState.definition?.disabledNodePolicyBehavior === DisabledNodePolicyBehavior.NO_HEADER;
 	}
 
 	// A domain policy is a switch between its own policy and the Frontend one (or, when the server is

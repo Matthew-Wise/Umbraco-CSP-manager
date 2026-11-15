@@ -1,8 +1,9 @@
 namespace Umbraco.Community.CSPManager.Models.Api;
 
 /// <summary>
-/// A content node with at least one hostname in Culture &amp; Hostnames, and whether it has a domain
-/// policy. A node policy belongs to the node, so it covers every one of these hostnames.
+/// A content node with at least one hostname in Culture &amp; Hostnames, and whether it has a node
+/// policy for all cultures. A node policy belongs to the node, so it covers every one of these
+/// hostnames unless the node also has a policy for the hostname's culture.
 /// </summary>
 public sealed class CspApiNodeInfo
 {
@@ -23,12 +24,12 @@ public sealed class CspApiNodeInfo
 	public List<CspApiDomainName> Domains { get; set; } = [];
 
 	/// <summary>
-	/// Gets or sets a value indicating whether the node already has a node policy.
+	/// Gets or sets a value indicating whether the node already has a node policy for all cultures.
 	/// </summary>
 	public bool HasCspPolicy { get; set; }
 
 	/// <summary>
-	/// Gets or sets the id of the node's policy, if it has one.
+	/// Gets or sets the id of the node's policy for all cultures, if it has one.
 	/// </summary>
 	public Guid? CspDefinitionId { get; set; }
 }

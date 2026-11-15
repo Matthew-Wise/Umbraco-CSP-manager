@@ -28,6 +28,17 @@ nvm install "$NODE_MAJOR" >/dev/null
 NODE_BIN="$(dirname "$(nvm which "$NODE_MAJOR")")"
 export PATH="$NODE_BIN:$PATH"
 
+# The PATH lines below don't reach every session shell (the tool shells are not interactive and
+# don't always start from the files written here), so also link the Node binaries into
+# ~/.local/bin, which the image puts on PATH ahead of its own Node 22.
+LOCAL_BIN="$HOME/.local/bin"
+mkdir -p "$LOCAL_BIN"
+for tool in node npm npx corepack; do
+  if [ -e "$NODE_BIN/$tool" ]; then
+    ln -sfn "$NODE_BIN/$tool" "$LOCAL_BIN/$tool"
+  fi
+done
+
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   # Running as the SessionStart hook: persist into the session's environment.
   {
@@ -38,14 +49,20 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
 else
   # Running from the environment's Setup script: its exports end with the script,
   # but session shells source ~/.bashrc. Replace any earlier line so re-runs and
-  # version bumps don't stack up PATH entries.
+  # version bumps don't stack up PATH entries. The lines go at the top: the image's
+  # ~/.bashrc returns early for non-interactive shells, so anything appended to it
+  # never runs for the shells that need it.
   marker='# csp-manager session-start'
   touch ~/.bashrc
   sed -i "/$marker\$/d" ~/.bashrc
+  bashrc_tmp="$(mktemp)"
   {
     echo "export PATH=\"$NODE_BIN:\$PATH\" $marker"
     echo "export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 $marker"
-  } >> ~/.bashrc
+    cat ~/.bashrc
+  } > "$bashrc_tmp"
+  cat "$bashrc_tmp" > ~/.bashrc
+  rm -f "$bashrc_tmp"
 fi
 
 dotnet restore src/Umbraco.Community.CSPManager.slnx

@@ -6,6 +6,8 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Migrations;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.Navigation;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Community.CSPManager.Models;
@@ -187,7 +189,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			.Callback<INotification, CancellationToken>((notification, _) => notificationPublished = true)
 			.Returns(Task.CompletedTask);
 
-		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
+		var serviceWithMockEventAggregator = new CspService(mockEventAggregator, ScopeProvider, AppCaches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>(), GetRequiredService<ILanguageService>(), GetRequiredService<IDocumentNavigationQueryService>(), GetRequiredService<IOptionsMonitor<CspManagerOptions>>());
 
 		var definition = new CspDefinition
 		{
@@ -222,7 +224,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_CachesResult()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>(), GetRequiredService<ILanguageService>(), GetRequiredService<IDocumentNavigationQueryService>(), GetRequiredService<IOptionsMonitor<CspManagerOptions>>());
 
 		await _cspService.SaveCspDefinitionAsync(new CspDefinition
 		{
@@ -256,7 +258,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_ReturnsIndependentCopyPerCall()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>(), GetRequiredService<ILanguageService>(), GetRequiredService<IDocumentNavigationQueryService>(), GetRequiredService<IOptionsMonitor<CspManagerOptions>>());
 
 		var definition1 = await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 		definition1.Enabled = true;
@@ -284,7 +286,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_CachesTheLoadBeforeAwaitingIt()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>(), GetRequiredService<ILanguageService>(), GetRequiredService<IDocumentNavigationQueryService>(), GetRequiredService<IOptionsMonitor<CspManagerOptions>>());
 
 		// Not awaited yet: everything up to the first await has run, including the cache insert.
 		var pending = service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
@@ -299,7 +301,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 	public async Task GetCachedCspDefinitionAsync_WhenClearedMidLoad_DoesNotReCacheTheStaleLoad()
 	{
 		var caches = AppCaches.Create(NoAppCache.Instance);
-		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
+		var service = new CspService(GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>(), GetRequiredService<ILanguageService>(), GetRequiredService<IDocumentNavigationQueryService>(), GetRequiredService<IOptionsMonitor<CspManagerOptions>>());
 
 		var pending = service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 
@@ -329,7 +331,7 @@ public class CspServiceTests : UmbracoIntegrationTest
 			.Callback<CspSavedNotification, CancellationToken>((notification, _) => handler.Handle(notification))
 			.Returns(Task.CompletedTask);
 
-		var service = new CspService(eventAggregator, ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>());
+		var service = new CspService(eventAggregator, ScopeProvider, caches, NullLogger<CspService>.Instance, GetRequiredService<IDomainService>(), GetRequiredService<IEntityService>(), GetRequiredService<ILanguageService>(), GetRequiredService<IDocumentNavigationQueryService>(), GetRequiredService<IOptionsMonitor<CspManagerOptions>>());
 
 		await service.GetCachedCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
 		Assert.That(caches.RuntimeCache.Get(Constants.FrontEndCacheKey), Is.Not.Null);

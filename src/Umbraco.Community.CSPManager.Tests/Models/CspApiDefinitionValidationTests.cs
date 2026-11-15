@@ -51,6 +51,59 @@ public class CspApiDefinitionValidationTests
 	}
 
 	[Test]
+	public void Validate_GlobalIdWithCulture_ReturnsError()
+	{
+		var definition = new CspApiDefinition { Id = Constants.DefaultFrontEndId, Culture = "fr-FR" };
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.That(results.FirstOrDefault()?.MemberNames, Contains.Item(nameof(CspApiDefinition.Culture)));
+	}
+
+	[Test]
+	public void Validate_GlobalIdThatExtends_ReturnsError()
+	{
+		var definition = new CspApiDefinition { Id = Constants.DefaultBackofficeId, Inheritance = CspPolicyInheritance.Extend };
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.That(results.FirstOrDefault()?.MemberNames, Contains.Item(nameof(CspApiDefinition.Inheritance)));
+	}
+
+	[Test]
+	public void Validate_NodePolicyForACultureThatExtendsForOnePage_ReturnsNoErrors()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Guid.Empty,
+			ContentKey = Guid.NewGuid(),
+			Culture = "fr-FR",
+			Inheritance = CspPolicyInheritance.Extend,
+			AppliesTo = CspPolicyScope.NodeOnly,
+		};
+
+		Assert.That(ValidateModel(definition), Is.Empty);
+	}
+
+	[Test]
+	public void Validate_NodePolicyWithUnknownInheritanceOrAppliesTo_ReturnsErrors()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Guid.Empty,
+			ContentKey = Guid.NewGuid(),
+			Inheritance = (CspPolicyInheritance)9,
+			AppliesTo = (CspPolicyScope)9,
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results.SelectMany(r => r.MemberNames), Is.EquivalentTo(new[] { nameof(CspApiDefinition.Inheritance), nameof(CspApiDefinition.AppliesTo) }));
+	}
+
+	[Test]
 	public void Validate_DomainPolicyFlaggedAsBackOffice_ReturnsError()
 	{
 		var definition = new CspApiDefinition { Id = Guid.Empty, ContentKey = Guid.NewGuid(), IsBackOffice = true };

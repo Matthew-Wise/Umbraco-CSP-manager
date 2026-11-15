@@ -5,7 +5,9 @@
 - `npm run build:ts` - TypeScript checking only (fast, use during development)
 - `npm run build` - Full build (TypeScript + Vite bundling)
 - `npm run dev` - Dev server with hot reload
-- `npm run generate-client` - Regenerate OpenAPI client from the backend OpenAPI document
+- `npm run generate-client` - Regenerate OpenAPI client from the backend OpenAPI document (test site
+  running on 44370). `@hey-api/openapi-ts` 0.99 can't run on TypeScript 7: until it can, run
+  `npm i --no-save typescript@5.9.3` first, then `npx prettier --write src/api` and `npm ci` after.
 
 ## Testing
 
@@ -23,7 +25,8 @@
 - Repository pattern: repositories handle API calls, contexts manage state
 - Domain policies: child nodes under Frontend sharing `csp-policy` entity type and workspace (`isGlobalPolicyId()` distinguishes them). "Add Domain Policy" picks a content node with a hostname and copies the frontend policy to draft `create/{contentKey}`; policies are labelled with the node name (`domainPolicyLabel`).
 - Backoffice links and redirects come from `src/paths.ts` (`cspEditPolicyPath`, `cspCreateDomainPolicyPath`), built on Umbraco's `UmbPathPattern`; the workspace routes use the same patterns. Never hand-write `section/csp-manager/...` URLs. `tests/dashboard.spec.ts` clicks the dashboard links to catch a broken route.
-- `src/api/` is auto-generated from OpenAPI spec - do not edit manually
+- `src/api/` is auto-generated from OpenAPI spec - do not edit manually. The API enums are string enums
+  (`DisabledNodePolicyBehavior.NO_HEADER` is `'NoHeader'`): compare with the generated enum, not a number.
 
 ## Umbraco v18 Patterns
 

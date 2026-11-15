@@ -64,8 +64,8 @@ public class CspMiddleware
 	/// <param name="eventAggregator">The event aggregator for publishing notifications.</param>
 	/// <param name="cspOptions">The CSP Manager configuration options.</param>
 	/// <param name="logger">The logger for diagnostic output.</param>
-	/// <param name="umbracoContextAccessor">Gives access to the routed request's domain.</param>
-	/// <param name="idKeyMap">Maps the routed domain's content node id to the key its policy is stored against.</param>
+	/// <param name="umbracoContextAccessor">Gives access to the routed request's page, culture and domain.</param>
+	/// <param name="idKeyMap">Maps the routed domain's content node id to the key policies are stored against.</param>
 	public CspMiddleware(
 		RequestDelegate next,
 		IRuntimeState runtimeState,
@@ -130,7 +130,7 @@ public class CspMiddleware
 				}
 
 				// Routing has finished by the time the response starts, so the matched domain is known.
-				definition = isBackOfficeRequest ? null : await GetDomainDefinitionAsync(context);
+				definition = isBackOfficeRequest ? null : await GetNodeDefinitionAsync(context);
 
 				// Deliberately not context.RequestAborted: this call populates a process-wide
 				// cache that other in-flight requests await, so one client disconnecting must
@@ -248,48 +248,56 @@ public class CspMiddleware
 	}
 
 	// Returns the node policy to apply, or null to use the global frontend policy. A disabled
-	// node policy is returned (so no header is sent) only when configured with NoHeader.
-	private async Task<CspDefinition?> GetDomainDefinitionAsync(HttpContext context)
+	// node policy is returned (so no header is sent) only when configured with NoHeader; the
+	// service decides that, along with which policies up the content tree apply.
+	private async Task<CspDefinition?> GetNodeDefinitionAsync(HttpContext context)
 	{
 		try
 		{
-			// Wildcard (culture-only) domains only set the culture; a request is never routed by one.
 			if (!_umbracoContextAccessor.TryGetUmbracoContext(out var umbracoContext)
-				|| umbracoContext.PublishedRequest?.Domain is not { IsWildcard: false } domain
-				|| string.IsNullOrWhiteSpace(domain.Name))
+				|| umbracoContext.PublishedRequest is not { } request)
 			{
 				return null;
 			}
 
-			// IIdKeyMap caches the mapping, so after the first request this costs no database call.
-			var nodeKey = _idKeyMap.GetKeyForId(domain.ContentId, UmbracoObjectTypes.Document);
-			if (!nodeKey.Success)
+			var pageKey = request.PublishedContent?.Key;
+
+			// The hostname's node is usually an ancestor of the page, but not for content served
+			// from elsewhere (e.g. a shared "not found" page), where the site's policy should still
+			// apply. Wildcard (culture-only) domains only set the culture; a request is never routed by one.
+			Guid? domainKey = null;
+			if (request.Domain is { IsWildcard: false } domain && !string.IsNullOrWhiteSpace(domain.Name))
+			{
+				// IIdKeyMap caches the mapping, so after the first request this costs no database call.
+				var nodeKey = _idKeyMap.GetKeyForId(domain.ContentId, UmbracoObjectTypes.Document);
+				if (nodeKey.Success)
+				{
+					domainKey = nodeKey.Result;
+				}
+			}
+
+			if (pageKey is null && domainKey is null)
 			{
 				return null;
 			}
 
-			var contentKey = nodeKey.Result;
+			// The culture the page is rendered in: the hostname's, unless a culture-only domain on
+			// a node in between overrides it.
+			var culture = string.IsNullOrWhiteSpace(request.Culture) ? request.Domain?.Culture : request.Culture;
 
 			// Shared cache again, so not context.RequestAborted (see the global lookup).
-			var definition = await _cspService.GetCachedCspDefinitionForNodeAsync(contentKey, CancellationToken.None);
-			if (definition is null)
+			var definition = await _cspService.ResolveCspDefinitionAsync(pageKey, domainKey, culture, CancellationToken.None);
+			if (definition is not null)
 			{
-				return null;
+				Log.CspNodePolicyApplied(_logger, definition.Id, definition.ContentKey ?? Guid.Empty, context.Request.Path);
 			}
 
-			if (definition.Enabled || _cspOptions.DisabledNodePolicyBehavior == DisabledNodePolicyBehavior.NoHeader)
-			{
-				Log.CspDomainPolicyApplied(_logger, definition.Id, contentKey, context.Request.Path);
-				return definition;
-			}
-
-			Log.CspDomainPolicyDisabledFallback(_logger, definition.Id, context.Request.Path);
-			return null;
+			return definition;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			// Better the global frontend policy than no policy at all.
-			Log.CspDomainPolicyLookupFailed(_logger, context.Request.Path, ex);
+			Log.CspNodePolicyLookupFailed(_logger, context.Request.Path, ex);
 			return null;
 		}
 	}

@@ -45,7 +45,9 @@ test.describe("CSP Manager Dashboard Navigation", () => {
 
 		await umbracoUi.page.locator("uui-button").filter({ hasText: "Configure Front-end CSP" }).click();
 
-		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/frontend/);
+		await expect(umbracoUi.page).toHaveURL(
+			new RegExp(`/workspace/csp-policy/edit/${CspConstants.policyTypes.frontend.value}`),
+		);
 		await expect(csp.workspace()).toBeVisible();
 	});
 
@@ -58,7 +60,9 @@ test.describe("CSP Manager Dashboard Navigation", () => {
 			.filter({ hasText: "Configure Back-office CSP" })
 			.click();
 
-		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/backoffice/);
+		await expect(umbracoUi.page).toHaveURL(
+			new RegExp(`/workspace/csp-policy/edit/${CspConstants.policyTypes.backoffice.value}`),
+		);
 		await expect(csp.workspace()).toBeVisible();
 	});
 });

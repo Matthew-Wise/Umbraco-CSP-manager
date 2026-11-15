@@ -34,9 +34,9 @@ public class CspDependencyChecker : ISyncDependencyChecker<CspDefinition>
 		{
 			// A node policy can only be created for a node that exists on the target. The node takes
 			// the push's own flags (e.g. ancestors, dependencies) but never its children.
-			// Its hostnames are not declared: Umbraco doesn't persist a key for domains (IDomain.Key
-			// is new on every load), so a domain dependency could never be found. The target must
-			// already have the node's hostnames; the import fails with a clear reason otherwise.
+			// A policy for one culture also needs that language on the target. It isn't declared:
+			// languages are settings, which are deployed before content; the import fails with a
+			// clear reason otherwise.
 			dependencies.Add(new uSyncDependency
 			{
 				Name = $"Content node {contentKey:D}",

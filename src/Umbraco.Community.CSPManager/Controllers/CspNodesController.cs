@@ -7,8 +7,8 @@ using Umbraco.Community.CSPManager.Services;
 namespace Umbraco.Community.CSPManager.Controllers;
 
 /// <summary>
-/// API controller listing the content nodes a node policy can be created for: nodes with at
-/// least one hostname in Culture &amp; Hostnames.
+/// API controller listing the content nodes with at least one hostname in Culture &amp; Hostnames:
+/// the sites. Any content node can have a node policy; these are the usual ones to give one.
 /// </summary>
 [ApiVersion("1.0")]
 [ApiExplorerSettings(GroupName = "Nodes")]
@@ -30,7 +30,8 @@ public class CspNodesController : CspManagerControllerBase
 	}
 
 	/// <summary>
-	/// Lists every content node with a hostname, with its hostnames and whether it has a node policy.
+	/// Lists every content node with a hostname, with its hostnames and whether it has a node policy
+	/// for all cultures.
 	/// </summary>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
 	/// <returns>The nodes, ordered by the sort order of their first hostname.</returns>
@@ -40,7 +41,9 @@ public class CspNodesController : CspManagerControllerBase
 	public async Task<ActionResult<IEnumerable<CspApiNodeInfo>>> GetNodes(CancellationToken cancellationToken = default)
 	{
 		var nodes = await _domainNodes.GetDomainNodesAsync();
+		// A node can have a policy per culture as well; this lists its policy for all cultures.
 		var policies = (await _cspService.GetAllNodePoliciesAsync(cancellationToken))
+			.Where(p => p.Culture is null)
 			.ToDictionary(p => p.ContentKey!.Value, p => p.Id);
 
 		var result = nodes.Select(n => new CspApiNodeInfo

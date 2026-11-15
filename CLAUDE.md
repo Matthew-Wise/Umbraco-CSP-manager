@@ -102,7 +102,10 @@ environment's allowed domains; without it only that project fails to build.
 
 The Node version lives in one place, `NODE_MAJOR` in the hook. The environment's Setup
 script runs the same hook; there `CLAUDE_ENV_FILE` is unset, so the hook writes the Node PATH
-to `~/.bashrc` instead (session shells source it), replacing its own earlier lines.
+to the top of `~/.bashrc` instead, replacing its own earlier lines (the top, because the image's
+`~/.bashrc` returns early for non-interactive shells). Neither route reaches every tool shell,
+so the hook also links `node`, `npm`, `npx` and `corepack` into `~/.local/bin`, which is ahead
+of the image's Node 22 on `PATH`. Check with `node -v` (expect 24).
 
 ## Umbraco CLI
 

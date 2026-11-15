@@ -79,20 +79,20 @@ public class CspDistributedCacheRefresherTests
 	}
 
 	[Test]
-	public void Refresh_WithDomainPayload_ClearsOnlyThatDomainsCacheKey()
+	public void Refresh_WithNodePolicyPayload_ClearsOnlyTheNodePoliciesCacheKey()
 	{
 		var contentKey = Guid.NewGuid();
 		var payload = new[] { new CspSavedNotification(new CspDefinition { Id = Guid.NewGuid(), ContentKey = contentKey }) };
 
 		_refresher.Refresh(payload);
 
-		_runtimeCache.Verify(c => c.ClearByKey(Constants.NodeCacheKey(contentKey)), Times.Once);
+		_runtimeCache.Verify(c => c.ClearByKey(Constants.NodePoliciesCacheKey), Times.Once);
 		_runtimeCache.Verify(c => c.ClearByKey(Constants.FrontEndCacheKey), Times.Never);
 		_runtimeCache.Verify(c => c.ClearByKey(Constants.BackOfficeCacheKey), Times.Never);
 	}
 
-	// Against a real cache rather than a mock: ClearByKey must actually reach every domain entry
-	// (it matches on "starts with"), including cached "no policy" results.
+	// Against a real cache rather than a mock: ClearByKey must actually reach both node entries
+	// (it matches on "starts with"): the node policies and the language fallback chains.
 	[Test]
 	public void RefreshAll_WithARealCache_ClearsAllPolicyEntries()
 	{
@@ -103,8 +103,8 @@ public class CspDistributedCacheRefresherTests
 			NullLogger<CspDistributedCacheRefresher>.Instance,
 			Mock.Of<IEventAggregator>(),
 			Mock.Of<ICacheRefresherNotificationFactory>());
-		var domainA = Constants.NodeCacheKey(Guid.NewGuid());
-		var domainB = Constants.NodeCacheKey(Guid.NewGuid());
+		var domainA = Constants.NodePoliciesCacheKey;
+		var domainB = Constants.LanguageFallbackCacheKey;
 		foreach (var key in new[] { Constants.FrontEndCacheKey, Constants.BackOfficeCacheKey, domainA, domainB })
 		{
 			caches.RuntimeCache.Insert(key, () => Task.FromResult<CspDefinition>(null));

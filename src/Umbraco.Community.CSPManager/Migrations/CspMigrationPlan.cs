@@ -17,5 +17,6 @@ public sealed class CspMigrationPlan : PackageMigrationPlan
 		To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey);
 		To<DomainPolicyMigration>(DomainPolicyMigration.MigrationKey);
 		To<DefinitionsLockMigration>(DefinitionsLockMigration.MigrationKey);
+		To<NodePolicyScopeMigration>(NodePolicyScopeMigration.MigrationKey);
 	}
 }
