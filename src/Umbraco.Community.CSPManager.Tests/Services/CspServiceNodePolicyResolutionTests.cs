@@ -75,25 +75,14 @@ public class CspServiceNodePolicyResolutionTests : UmbracoIntegrationTestWithCon
 	// date; the integration test host doesn't, so the tests build it from the database.
 	private Task RebuildNavigationAsync() => GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
 
-	private async Task CreateLanguageAsync(string isoCode, string fallback = null)
-	{
-		var result = await _languageService.CreateAsync(
-			new Language(isoCode, isoCode) { FallbackIsoCode = fallback },
-			UmbConstants.Security.SuperUserKey);
-		Assert.That(result.Success, Is.True, $"Creating language {isoCode} failed: {result.Status}");
-	}
+	private Task CreateLanguageAsync(string isoCode, string fallback = null)
+		=> CspTestLanguageHelper.CreateLanguageAsync(_languageService, isoCode, fallback);
 
 	private CspService CreateService(AppCaches caches, DisabledNodePolicyBehavior disabledBehavior = DisabledNodePolicyBehavior.FallbackToGlobal)
-		=> new(
-			GetRequiredService<IEventAggregator>(),
-			ScopeProvider,
+		=> CspTestServiceFactory.Create(
+			Services,
 			caches,
-			NullLogger<CspService>.Instance,
-			GetRequiredService<IDomainService>(),
-			GetRequiredService<IEntityService>(),
-			_languageService,
-			GetRequiredService<IDocumentNavigationQueryService>(),
-			Mock.Of<IOptionsMonitor<CspManagerOptions>>(o => o.CurrentValue == new CspManagerOptions { DisabledNodePolicyBehavior = disabledBehavior }));
+			options: Mock.Of<IOptionsMonitor<CspManagerOptions>>(o => o.CurrentValue == new CspManagerOptions { DisabledNodePolicyBehavior = disabledBehavior }));
 
 	private static CspDefinition NewPolicy(
 		Guid contentKey,

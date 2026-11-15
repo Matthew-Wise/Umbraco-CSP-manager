@@ -63,7 +63,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	}
 
 	private CspService CreateService(AppCaches caches, IEventAggregator eventAggregator = null)
-		=> new(eventAggregator ?? GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, _domainService, GetRequiredService<IEntityService>(), GetRequiredService<ILanguageService>(), GetRequiredService<IDocumentNavigationQueryService>(), GetRequiredService<IOptionsMonitor<CspManagerOptions>>());
+		=> CspTestServiceFactory.Create(Services, caches, eventAggregator);
 
 	private static CspDefinition NewDomainPolicy(Guid contentKey, Guid? id = null, params string[] sources)
 	{

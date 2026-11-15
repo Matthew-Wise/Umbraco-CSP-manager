@@ -55,8 +55,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		// A running site keeps Umbraco's in-memory navigation structure up to date; the test host doesn't.
 		await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
 
-		var language = await GetRequiredService<ILanguageService>().CreateAsync(new Language("fr-FR", "French (France)"), UmbConstants.Security.SuperUserKey);
-		Assert.That(language.Success, Is.True, language.Status.ToString());
+		await CspTestLanguageHelper.CreateLanguageAsync(GetRequiredService<ILanguageService>(), "fr-FR");
 
 		var domainService = GetRequiredService<IDomainService>();
 		await CspTestDomainHelper.AssignDomainsAsync(domainService, _siteA.Key, ["a.example.com"]);
@@ -73,6 +72,16 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 
 	private async Task<CspApiDefinition> ReadDefinitionAsync(HttpResponseMessage response)
 		=> await response.Content.ReadFromJsonAsync<CspApiDefinition>(JsonSerializerOptions);
+
+	private Task<HttpResponseMessage> PostSaveAsync(CspApiDefinition body)
+		=> Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(body));
+
+	private async Task<List<CspApiNodePolicy>> GetNodePoliciesAsync()
+		=> await (await Client.GetAsync(Url)).Content.ReadFromJsonAsync<List<CspApiNodePolicy>>(JsonSerializerOptions);
+
+	// A complete policy for French, for the node and the pages below it.
+	private Task<CspDefinition> CreateFrenchPolicyAsync(Guid contentKey)
+		=> _cspService.CreateCspDefinitionForNodeAsync(contentKey, "fr-FR", CspPolicyInheritance.Replace, CspPolicyScope.Descendants, CancellationToken.None);
 
 	private static CspApiDefinition NewPolicyBody(Guid contentKey, Guid? id = null) => new()
 	{
@@ -97,7 +106,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 			("GET Definitions/effective", () => Client.GetAsync(DefinitionsUrl(x => x.GetEffectiveDefinition(_siteA.Key, null, CancellationToken.None)))),
 			("GET Definitions/node-policies", () => Client.GetAsync(DefinitionsUrl(x => x.GetNodePolicies(CancellationToken.None)))),
 			("POST Definitions/create-from-frontend", () => Client.PostAsync(DefinitionsUrl(x => x.CreateFromFrontend(_siteB.Key, null, CspPolicyInheritance.Replace, CspPolicyScope.Descendants, CancellationToken.None)), null)),
-			("POST Definitions/save (create)", () => Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(NewPolicyBody(_siteB.Key)))),
+			("POST Definitions/save (create)", () => PostSaveAsync(NewPolicyBody(_siteB.Key))),
 			("DELETE Definitions/{id}", () => Client.DeleteAsync(DefinitionsUrl(x => x.DeleteDefinition(policy.Id, CancellationToken.None)))),
 			("GET Nodes", () => Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNodes(CancellationToken.None)))),
 		};
@@ -119,7 +128,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 	{
 		await AuthenticateAsAdminAsync();
 
-		var response = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(NewPolicyBody(_siteA.Key)));
+		var response = await PostSaveAsync(NewPolicyBody(_siteA.Key));
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 		var created = await ReadDefinitionAsync(response);
@@ -140,7 +149,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 	{
 		await AuthenticateAsAdminAsync();
 
-		var response = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(NewPolicyBody(_siteA.Key, Guid.NewGuid())));
+		var response = await PostSaveAsync(NewPolicyBody(_siteA.Key, Guid.NewGuid()));
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
 		Assert.That(await _cspService.GetCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None), Is.Null);
@@ -152,7 +161,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
 		await AuthenticateAsAdminAsync();
 
-		var response = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(NewPolicyBody(_siteA.Key)));
+		var response = await PostSaveAsync(NewPolicyBody(_siteA.Key));
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
 		Assert.That(await response.Content.ReadAsStringAsync(), Does.Contain("A policy already exists for this content node and culture."));
@@ -192,7 +201,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 
 		var body = NewPolicyBody(_siteA.Key, policy.Id);
 		body.Enabled = false;
-		var response = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(body));
+		var response = await PostSaveAsync(body);
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 		var stored = await _cspService.GetCspDefinitionAsync(policy.Id, CancellationToken.None);
@@ -270,7 +279,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		var all = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
 		await AuthenticateAsAdminAsync();
 
-		var policies = await (await Client.GetAsync(Url)).Content.ReadFromJsonAsync<List<CspApiNodePolicy>>(JsonSerializerOptions);
+		var policies = await GetNodePoliciesAsync();
 
 		Assert.Multiple(() =>
 		{
@@ -286,13 +295,13 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 	[Test]
 	public async Task GetDomainPolicies_FlagsAPolicyWhoseLanguageWasDeletedAsOrphaned()
 	{
-		var french = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, "fr-FR", CspPolicyInheritance.Replace, CspPolicyScope.Descendants, CancellationToken.None);
+		var french = await CreateFrenchPolicyAsync(_siteA.Key);
 		var all = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
 		var deleted = await GetRequiredService<ILanguageService>().DeleteAsync("fr-FR", UmbConstants.Security.SuperUserKey);
 		Assert.That(deleted.Success, Is.True, deleted.Status.ToString());
 		await AuthenticateAsAdminAsync();
 
-		var policies = await (await Client.GetAsync(Url)).Content.ReadFromJsonAsync<List<CspApiNodePolicy>>(JsonSerializerOptions);
+		var policies = await GetNodePoliciesAsync();
 
 		Assert.Multiple(() =>
 		{
@@ -311,7 +320,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		body.Inheritance = CspPolicyInheritance.Extend;
 		body.AppliesTo = CspPolicyScope.NodeOnly;
 
-		var response = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(body));
+		var response = await PostSaveAsync(body);
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 		var created = await ReadDefinitionAsync(response);
@@ -335,8 +344,8 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		var dutch = NewPolicyBody(_siteA.Key);
 		dutch.Culture = "nl-NL";
 
-		var created = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(french));
-		var rejected = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(dutch));
+		var created = await PostSaveAsync(french);
+		var rejected = await PostSaveAsync(dutch);
 
 		Assert.Multiple(async () =>
 		{
@@ -357,7 +366,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 
 		foreach (var body in new[] { withCulture, extending })
 		{
-			var response = await Client.PostAsync(DefinitionsUrl(x => x.SaveDefinition(null!, CancellationToken.None)), JsonContent.Create(body));
+			var response = await PostSaveAsync(body);
 			Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
 		}
 	}
@@ -401,7 +410,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 	public async Task GetDefinition_ForANodeAndCulture_ReturnsThePolicyStoredForThatCulture()
 	{
 		var all = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
-		var french = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, "fr-FR", CspPolicyInheritance.Replace, CspPolicyScope.Descendants, CancellationToken.None);
+		var french = await CreateFrenchPolicyAsync(_siteA.Key);
 		await AuthenticateAsAdminAsync();
 
 		var forAll = await Client.GetAsync(DefinitionsUrl(x => x.GetDefinition(false, _siteA.Key, null, CancellationToken.None)));
@@ -469,9 +478,9 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 	[Test]
 	public async Task GetDomains_WithPoliciesPerCulture_ReportsThePolicyForAllCultures()
 	{
-		await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, "fr-FR", CspPolicyInheritance.Replace, CspPolicyScope.Descendants, CancellationToken.None);
+		await CreateFrenchPolicyAsync(_siteA.Key);
 		var all = await _cspService.CreateCspDefinitionForNodeAsync(_siteA.Key, CancellationToken.None);
-		await _cspService.CreateCspDefinitionForNodeAsync(_siteB.Key, "fr-FR", CspPolicyInheritance.Replace, CspPolicyScope.Descendants, CancellationToken.None);
+		await CreateFrenchPolicyAsync(_siteB.Key);
 		await AuthenticateAsAdminAsync();
 
 		var response = await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNodes(CancellationToken.None)));
@@ -493,7 +502,7 @@ internal class DomainPolicyEndpointTests : CspManagementApiTest<DefinitionsContr
 		GetRequiredService<IContentService>().MoveToRecycleBin(_siteB);
 		await AuthenticateAsAdminAsync();
 
-		var policies = await (await Client.GetAsync(Url)).Content.ReadFromJsonAsync<List<CspApiNodePolicy>>(JsonSerializerOptions);
+		var policies = await GetNodePoliciesAsync();
 		var nodes = await (await Client.GetAsync(GetManagementApiUrl<NodesControllerType>(x => x.GetNodes(CancellationToken.None))))
 			.Content.ReadFromJsonAsync<List<CspApiNodeInfo>>(JsonSerializerOptions);
 

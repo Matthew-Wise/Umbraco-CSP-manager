@@ -130,17 +130,17 @@ public abstract class CspSerializerBase : SyncSerializerRoot<CspDefinition>, ISy
 	private static bool TryReadEnum<TEnum>(XElement infoNode, string name, TEnum defaultValue, out TEnum value)
 		where TEnum : struct, Enum
 	{
-		var text = infoNode.Element(name).ValueOrDefault(string.Empty);
-		if (string.IsNullOrWhiteSpace(text))
+		value = defaultValue;
+
+		var text = infoNode.Element(name).ValueOrDefault(string.Empty).Trim();
+		if (text.Length == 0)
 		{
-			value = defaultValue;
 			return true;
 		}
 
-		value = defaultValue;
 		foreach (var candidate in Enum.GetValues<TEnum>())
 		{
-			if (string.Equals(candidate.ToString(), text.Trim(), StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(candidate.ToString(), text, StringComparison.OrdinalIgnoreCase))
 			{
 				value = candidate;
 				return true;

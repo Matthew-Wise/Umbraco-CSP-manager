@@ -26,7 +26,7 @@ internal static class CspItemKeys
 	/// The policy for all cultures is named by the content key alone, which is the key every node
 	/// policy had before policies could be for one culture, so existing files keep their key.
 	/// </remarks>
-	public static Guid NodePolicy(Guid contentKey, string? culture = null)
+	public static Guid NodePolicy(Guid contentKey, string? culture)
 		=> NameBased(
 			NodePolicyNamespace,
 			string.IsNullOrWhiteSpace(culture)

@@ -63,6 +63,19 @@ internal sealed class CspService : ICspService
 
 	public async Task<CspDefinition?> GetCachedCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken)
 	{
+		// The cached instance is shared by every caller until the next save invalidates it -
+		// CspWritingNotification hands it to consumer code, and the documented pattern for that
+		// notification mutates CspDefinition.Sources directly. Handing out the cached reference
+		// itself would let one handler's mutation leak into every other request sharing the
+		// cache. Returning a defensive copy keeps that mutation scoped to its own request.
+		return await GetSharedCspDefinitionAsync(isBackOfficeRequest, cancellationToken) is { } shared
+			? CloneDefinition(shared)
+			: null;
+	}
+
+	// The cached instance itself: only for callers that read it and never hand it out.
+	private async Task<CspDefinition?> GetSharedCspDefinitionAsync(bool isBackOfficeRequest, CancellationToken cancellationToken)
+	{
 		var cacheKey = isBackOfficeRequest ? Constants.BackOfficeCacheKey : Constants.FrontEndCacheKey;
 		var context = isBackOfficeRequest ? "BackOffice" : "Frontend";
 
@@ -72,22 +85,12 @@ internal sealed class CspService : ICspService
 			async () => await GetCspDefinitionAsync(isBackOfficeRequest, CancellationToken.None),
 			cancellationToken);
 
-		if (definition is null)
-		{
-			return null;
-		}
-
-		if (fromCache)
+		if (definition is not null && fromCache)
 		{
 			Log.CspDefinitionRetrievedFromCache(_logger, definition.Id, context);
 		}
 
-		// The cached instance is shared by every caller until the next save invalidates it -
-		// CspWritingNotification hands it to consumer code, and the documented pattern for that
-		// notification mutates CspDefinition.Sources directly. Handing out the cached reference
-		// itself would let one handler's mutation leak into every other request sharing the
-		// cache. Returning a defensive copy keeps that mutation scoped to its own request.
-		return CloneDefinition(definition);
+		return definition;
 	}
 
 	public async Task<CspDefinition?> GetCachedCspDefinitionForNodeAsync(Guid contentKey, CancellationToken cancellationToken)
@@ -123,7 +126,7 @@ internal sealed class CspService : ICspService
 			snapshot,
 			GetPath(contentKey, domainContentKey),
 			contentKey,
-			await GetCultureChainAsync(culture, cancellationToken),
+			snapshot.HasCulturePolicies ? await GetCultureChainAsync(culture, cancellationToken) : [],
 			_options.CurrentValue.DisabledNodePolicyBehavior);
 
 		if (resolution.IsEmpty)
@@ -131,14 +134,15 @@ internal sealed class CspService : ICspService
 			return null;
 		}
 
-		if (resolution.NoHeader || resolution.Additions.Count == 0)
+		if (resolution.Additions.Count == 0)
 		{
 			// Copies, for the same reason as the global lookup: the snapshot is shared.
 			return CloneDefinition(resolution.Base!);
 		}
 
 		// Extending policies with no complete policy above them extend the global frontend policy.
-		var baseDefinition = resolution.Base ?? await GetCachedCspDefinitionAsync(isBackOfficeRequest: false, cancellationToken);
+		// Merge only reads its inputs and builds a new definition, so the shared instance will do.
+		var baseDefinition = resolution.Base ?? await GetSharedCspDefinitionAsync(isBackOfficeRequest: false, cancellationToken);
 
 		return baseDefinition is null ? null : CspNodePolicyResolver.Merge(baseDefinition, resolution.Additions);
 	}
@@ -152,15 +156,15 @@ internal sealed class CspService : ICspService
 
 		if (contentKey is { } pageKey)
 		{
+			// The page's key followed by its ancestors' keys. A page the navigation structure
+			// doesn't know (yet) is still its own path.
 			if (_navigation.TryGetAncestorsOrSelfKeys(pageKey, out var keys))
 			{
 				path.AddRange(keys);
 			}
-
-			if (path.Count == 0 || path[0] != pageKey)
+			else
 			{
-				path.Remove(pageKey);
-				path.Insert(0, pageKey);
+				path.Add(pageKey);
 			}
 		}
 
@@ -231,6 +235,13 @@ internal sealed class CspService : ICspService
 		Func<Task<T>> loader,
 		CancellationToken cancellationToken)
 	{
+		// The steady state: a finished load is cached. A plain read takes the cache's shared lock;
+		// the factory overload below takes its upgradeable lock, which one request holds at a time.
+		if (_runtimeCache.Get(cacheKey) is Task<T> { IsCompletedSuccessfully: true } cached)
+		{
+			return (cached.Result, true);
+		}
+
 		var factoryCalled = false;
 
 		// IAppPolicyCache.Get holds a lock while it claims the cache slot, so the Task we return
@@ -651,9 +662,7 @@ internal sealed class CspService : ICspService
 
 	// The language's own spelling of an ISO code, or null when there is no such language.
 	private async Task<string?> FindLanguageIsoCodeAsync(string culture)
-		=> (await _languageService.GetAllAsync())
-			.Select(l => l.IsoCode)
-			.FirstOrDefault(isoCode => string.Equals(isoCode, culture, StringComparison.OrdinalIgnoreCase));
+		=> (await _languageService.GetAsync(culture))?.IsoCode;
 
 	// Inside the locked save scope, so the checks and the write see the same data.
 	private static async Task EnsureValidNodePolicyAsync(IScope scope, CspDefinition definition, bool nodeExists, string? language, CancellationToken cancellationToken)

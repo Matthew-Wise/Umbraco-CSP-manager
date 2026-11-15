@@ -88,7 +88,7 @@ internal sealed class CspDomainNodeLookup
 		return keys.Length == 0
 			? new Dictionary<Guid, ContentNode>()
 			: _entityService.GetAll(UmbracoObjectTypes.Document, keys)
-				.ToDictionary(e => e.Key, e => new ContentNode(e.Name, e.Trashed));
+				.ToDictionary(e => e.Key, e => new ContentNode(e.Name, IsUsable(e)));
 	}
 
 	// Umbraco keeps a node's domains while it is in the recycle bin, but never routes a request to it.
@@ -106,6 +106,6 @@ internal sealed class CspDomainNodeLookup
 
 	internal sealed record DomainName(string Name, string? Culture);
 
-	/// <summary>A content node a policy belongs to. A trashed node is never served, so its policy applies to nothing.</summary>
-	internal sealed record ContentNode(string? Name, bool Trashed);
+	/// <summary>A content node a policy belongs to. A node that isn't usable is never served, so its policy applies to nothing.</summary>
+	internal sealed record ContentNode(string? Name, bool IsUsable);
 }

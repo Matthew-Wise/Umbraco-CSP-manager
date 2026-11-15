@@ -26,9 +26,14 @@
 ## Pitfalls
 
 - API tests (`CspManagementApiTest`) wait for Umbraco's `UnattendedUpgradeBackgroundService` before
-  touching the database. In a few tests in a hundred Umbraco finishes booting in that background
-  service, and a test that writes while it runs deadlocks with it on SQLite's table locks, which
-  looks like a hung run. Keep that wait first in the base `SetUp`.
+  touching the database. The test server host has no running Umbraco runtime: with a fresh
+  database that background service is what finishes startup (package migrations, cache seeding,
+  marking the API ready). A test that writes while it runs deadlocks with it now and then on
+  SQLite's table locks, which looks like a hung run. Keep that wait first in the base `SetUp`.
+- Don't turn `PackageMigrationsUnattended` off for API tests: without that background run nothing
+  marks the host ready and the API answers 503. (`InMemoryConfiguration` can't do it anyway: the base adds
+  `appsettings.Tests.json` after it. The `UmbracoIntegrationTest` fixtures do turn it off, in
+  `SetUpTestConfiguration`, and run the migrations themselves.)
 - Umbraco's in-memory navigation structure isn't kept up to date in the test host: call
   `IDocumentNavigationManagementService.RebuildAsync()` after creating or moving content when a
   test depends on ancestors.

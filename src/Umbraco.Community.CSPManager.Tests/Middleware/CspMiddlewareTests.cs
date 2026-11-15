@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -915,6 +916,10 @@ public class CspMiddlewareTests
 	// A page below the routed domain's node.
 	private static readonly Guid PageKey = new("c2a9d1f4-6f0e-4a41-8f0b-3b5a7e9d1c22");
 
+	// Any call that asks the service which node policy applies.
+	private static readonly Expression<Func<ICspService, Task<CspDefinition>>> AnyNodePolicyLookup =
+		x => x.ResolveCspDefinitionAsync(It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>());
+
 	private static CspDefinition GlobalFrontend() => new()
 	{
 		Id = Constants.DefaultFrontEndId,
@@ -960,13 +965,13 @@ public class CspMiddlewareTests
 			.Setup(x => x.GetCachedCspDefinitionAsync(true, It.IsAny<CancellationToken>()))
 			.ReturnsAsync(backoffice);
 		Mock.Get(_cspService)
-			.Setup(x => x.ResolveCspDefinitionAsync(It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+			.Setup(AnyNodePolicyLookup)
 			.ReturnsAsync(nodePolicy);
 	}
 
 	private void VerifyNoNodePolicyLookup()
 		=> Mock.Get(_cspService).Verify(
-			x => x.ResolveCspDefinitionAsync(It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+			AnyNodePolicyLookup,
 			Times.Never);
 
 	[Test]
@@ -1121,7 +1126,7 @@ public class CspMiddlewareTests
 		SetRoutedRequest();
 		SetPolicies(GlobalFrontend(), nodePolicy: null);
 		Mock.Get(_cspService)
-			.Setup(x => x.ResolveCspDefinitionAsync(It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+			.Setup(AnyNodePolicyLookup)
 			.ThrowsAsync(new InvalidOperationException("database down"));
 
 		var response = await _host.GetTestClient().GetAsync("/");
@@ -1136,7 +1141,7 @@ public class CspMiddlewareTests
 		SetPolicies(GlobalFrontend(), NodePolicy(enabled: true));
 		CancellationToken observedToken = new(canceled: true);
 		Mock.Get(_cspService)
-			.Setup(x => x.ResolveCspDefinitionAsync(It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+			.Setup(AnyNodePolicyLookup)
 			.Callback<Guid?, Guid?, string, CancellationToken>((_, _, _, token) => observedToken = token)
 			.ReturnsAsync(NodePolicy(enabled: true));
 

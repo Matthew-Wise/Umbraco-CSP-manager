@@ -16,12 +16,20 @@ internal sealed class CspNodePolicySnapshot
 			.Where(p => p.ContentKey is not null)
 			.GroupBy(p => p.ContentKey!.Value)
 			.ToDictionary(g => g.Key, g => g.ToArray());
+
+		HasCulturePolicies = _byNode.Values.Any(nodePolicies => nodePolicies.Any(p => !string.IsNullOrEmpty(p.Culture)));
 	}
 
 	/// <summary>
 	/// Whether there are no node policies at all, so a request can skip resolution entirely.
 	/// </summary>
 	public bool IsEmpty => _byNode.Count == 0;
+
+	/// <summary>
+	/// Whether any policy is for one culture. When none is, a request's culture and its fallback
+	/// languages can't change the outcome, so there is no need to look them up.
+	/// </summary>
+	public bool HasCulturePolicies { get; }
 
 	/// <summary>
 	/// Gets the policies of a content node (one per culture, plus one for all cultures), or none.
@@ -67,13 +75,16 @@ internal static class CspNodePolicyResolver
 	/// <param name="Additions">
 	/// The <see cref="CspPolicyInheritance.Extend"/> policies that apply, most specific first.
 	/// </param>
-	/// <param name="NoHeader">
-	/// <c>true</c> when <paramref name="Base"/> is a disabled policy that suppresses the header.
-	/// </param>
-	internal readonly record struct Resolution(CspDefinition? Base, IReadOnlyList<CspDefinition> Additions, bool NoHeader)
+	internal readonly record struct Resolution(CspDefinition? Base, IReadOnlyList<CspDefinition> Additions)
 	{
 		/// <summary>Whether no node policy applies at all, so the global frontend policy is used as is.</summary>
 		public bool IsEmpty => Base is null && Additions.Count == 0;
+
+		/// <summary>
+		/// Whether <see cref="Base"/> is a disabled policy that suppresses the header. The walk only
+		/// ends at a disabled policy for that reason, and then without additions.
+		/// </summary>
+		public bool NoHeader => Base is { Enabled: false };
 	}
 
 	/// <summary>
@@ -96,8 +107,10 @@ internal static class CspNodePolicyResolver
 	{
 		List<CspDefinition>? additions = null;
 
-		foreach (var nodeKey in path)
+		// Indexed, like Find: foreach over the interface would box an enumerator on every request.
+		for (var n = 0; n < path.Count; n++)
 		{
+			var nodeKey = path[n];
 			var policies = snapshot.ForNode(nodeKey);
 			if (policies.Count == 0)
 			{
@@ -119,7 +132,7 @@ internal static class CspNodePolicyResolver
 				{
 					if (policy.Inheritance == CspPolicyInheritance.Replace && disabledBehavior == DisabledNodePolicyBehavior.NoHeader)
 					{
-						return new Resolution(policy, [], NoHeader: true);
+						return new Resolution(policy, []);
 					}
 
 					continue;
@@ -131,11 +144,11 @@ internal static class CspNodePolicyResolver
 					continue;
 				}
 
-				return new Resolution(policy, additions ?? [], NoHeader: false);
+				return new Resolution(policy, additions ?? []);
 			}
 		}
 
-		return new Resolution(null, additions ?? [], NoHeader: false);
+		return new Resolution(null, additions ?? []);
 	}
 
 	/// <summary>

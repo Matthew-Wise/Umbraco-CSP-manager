@@ -168,7 +168,7 @@ public class DefinitionsController : CspManagerControllerBase
 					Inheritance = p.Inheritance,
 					AppliesTo = p.AppliesTo,
 					Enabled = p.Enabled,
-					IsOrphaned = node is null || node.Trashed || (p.Culture is not null && !languages.Contains(p.Culture)),
+					IsOrphaned = node is not { IsUsable: true } || (p.Culture is not null && !languages.Contains(p.Culture)),
 				};
 			})
 			.OrderBy(p => p.IsOrphaned)

@@ -23,13 +23,6 @@ namespace Umbraco.Community.CSPManager.Tests.Controllers;
 public abstract class CspManagementApiTest<T> : ManagementApiTest<T>
 	where T : ManagementApiControllerBase
 {
-	protected CspManagementApiTest()
-	{
-		// Umbraco 17.3 runs package migrations via a background service when PackageMigrationsUnattended=true,
-		// which conflicts with the manual migration execution in SetUp. Disable it so tests manage their own migrations.
-		InMemoryConfiguration["Umbraco:CMS:Unattended:PackageMigrationsUnattended"] = "false";
-	}
-
 	protected override Expression<Func<T, object>> MethodSelector { get; set; }
 
 	protected IShortStringHelper ShortStringHelper;
@@ -62,19 +55,29 @@ public abstract class CspManagementApiTest<T> : ManagementApiTest<T>
 		ShortStringHelper = GetRequiredService<IShortStringHelper>();
 	}
 
-	// Now and then (a few tests in a hundred) Umbraco sees the fresh test database as upgrading and
-	// finishes booting in a background service (UnattendedUpgradeBackgroundService), so the test gets
-	// its services before startup is done. The startup handlers write to the database (e.g. the
-	// published cache rebuild), and a test that starts writing straight away can deadlock with them on
-	// SQLite's table locks: both sides then retry until their timeouts and the run looks hung.
+	// The test server host doesn't start Umbraco's runtime. With a fresh database it boots as
+	// "upgrading" (appsettings.Tests.json has PackageMigrationsUnattended on) and Umbraco finishes
+	// startup in a background service: it runs the package migrations, seeds the caches and only then
+	// lets the management API answer (until then every request gets a 503). A test gets its services
+	// before that is done. The startup handlers write to the database (e.g. the published cache
+	// rebuild), and a test that starts writing straight away deadlocks with them now and then on
+	// SQLite's table locks: both sides retry until their timeouts and the run looks hung.
+	//
+	// Don't switch PackageMigrationsUnattended off here instead: without that background run nothing
+	// marks the host ready and the API answers 503. (An InMemoryConfiguration value wouldn't apply
+	// anyway: the base adds appsettings.Tests.json after it.)
 	private async Task WaitForBackgroundStartupAsync()
 	{
-		foreach (var service in Services.GetServices<IHostedService>().OfType<BackgroundService>())
+		// The class is internal to Umbraco, hence the name. Fail loudly if it is ever renamed,
+		// rather than going back to a hang in a few runs in a hundred.
+		var startup = Services.GetServices<IHostedService>()
+			.OfType<BackgroundService>()
+			.SingleOrDefault(service => service.GetType().Name == "UnattendedUpgradeBackgroundService");
+		Assert.That(startup, Is.Not.Null, "Umbraco's UnattendedUpgradeBackgroundService was not found. Has it been renamed?");
+
+		if (startup.ExecuteTask is { } running)
 		{
-			if (service.GetType().Name == "UnattendedUpgradeBackgroundService" && service.ExecuteTask is { } startup)
-			{
-				await startup.WaitAsync(TimeSpan.FromMinutes(2));
-			}
+			await running.WaitAsync(TimeSpan.FromMinutes(2));
 		}
 	}
 

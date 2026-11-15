@@ -51,23 +51,27 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 		Assert.That(CountDefinitionsLockRows(), Is.EqualTo(1));
 	}
 
-	// 18.1.0 is the last release before node policies: its plan ends at UpgradeInsecureRequestsMigration.
+	// The plan as it was in 18.1.0, the last release before node policies (it ends at
+	// UpgradeInsecureRequestsMigration), under the same name so the real plan resumes from it.
+	private static MigrationPlan PlanOf1810()
+	{
+		var plan = new MigrationPlan(Constants.PackageAlias);
+		plan.From(string.Empty)
+			.To<InitialCspManagerMigration>(InitialCspManagerMigration.MigrationKey)
+			.To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey)
+			.To<ReportingMigration>(ReportingMigration.MigrationKey)
+			.To<MaxSourceLengthMigration>(MaxSourceLengthMigration.MigrationKey)
+			.To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey);
+		return plan;
+	}
+
 	[Test]
 	public async Task Upgrade_FromTheVersionBeforeDomainPolicies_KeepsExistingPoliciesAsGlobal()
 	{
 		var executor = GetRequiredService<IMigrationPlanExecutor>();
 		var keyValueService = GetRequiredService<IKeyValueService>();
 
-		// The plan as it was in 18.1.0, under the same name so the real plan resumes from it.
-		var previousPlan = new MigrationPlan(Constants.PackageAlias);
-		previousPlan.From(string.Empty)
-			.To<InitialCspManagerMigration>(InitialCspManagerMigration.MigrationKey)
-			.To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey)
-			.To<ReportingMigration>(ReportingMigration.MigrationKey)
-			.To<MaxSourceLengthMigration>(MaxSourceLengthMigration.MigrationKey)
-			.To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey);
-		var previous = await new Upgrader(previousPlan).ExecuteAsync(executor, ScopeProvider, keyValueService);
-		Assert.That(previous.Successful, Is.True, previous.Exception?.Message);
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService, PlanOf1810());
 
 		using (var scope = ScopeProvider.CreateScope())
 		{
@@ -106,17 +110,11 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 		var executor = GetRequiredService<IMigrationPlanExecutor>();
 		var keyValueService = GetRequiredService<IKeyValueService>();
 
-		var previousPlan = new MigrationPlan(Constants.PackageAlias);
-		previousPlan.From(string.Empty)
-			.To<InitialCspManagerMigration>(InitialCspManagerMigration.MigrationKey)
-			.To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey)
-			.To<ReportingMigration>(ReportingMigration.MigrationKey)
-			.To<MaxSourceLengthMigration>(MaxSourceLengthMigration.MigrationKey)
-			.To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey)
+		var previousPlan = PlanOf1810();
+		previousPlan.From(UpgradeInsecureRequestsMigration.MigrationKey)
 			.To<DomainPolicyMigration>(DomainPolicyMigration.MigrationKey)
 			.To<DefinitionsLockMigration>(DefinitionsLockMigration.MigrationKey);
-		var previous = await new Upgrader(previousPlan).ExecuteAsync(executor, ScopeProvider, keyValueService);
-		Assert.That(previous.Successful, Is.True, previous.Exception?.Message);
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService, previousPlan);
 
 		var policyId = Guid.NewGuid();
 		var contentKey = Guid.NewGuid();
@@ -158,9 +156,8 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 
 		var again = new MigrationPlan("csp-manager-rerun");
 		again.From(string.Empty).To<NodePolicyScopeMigration>("rerun");
-		var result = await new Upgrader(again).ExecuteAsync(executor, ScopeProvider, keyValueService);
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService, again);
 
-		Assert.That(result.Successful, Is.True, result.Exception?.Message);
 		AssertNodePolicyColumnsAndIndexesExist();
 	}
 
