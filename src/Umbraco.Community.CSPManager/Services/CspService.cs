@@ -148,32 +148,56 @@ internal sealed class CspService : ICspService
 	}
 
 	// The page and its ancestors, nearest first, from Umbraco's in-memory navigation structure (no
-	// database call). The node of the matched hostname goes last when it isn't among them, e.g. for
-	// a "not found" page stored outside the site, so the site's policy still applies to it.
+	// database call).
 	private List<Guid> GetPath(Guid? contentKey, Guid? domainContentKey)
 	{
 		var path = new List<Guid>();
 
 		if (contentKey is { } pageKey)
 		{
-			// The page's key followed by its ancestors' keys. A page the navigation structure
-			// doesn't know (yet) is still its own path.
-			if (_navigation.TryGetAncestorsOrSelfKeys(pageKey, out var keys))
-			{
-				path.AddRange(keys);
-			}
-			else
-			{
-				path.Add(pageKey);
-			}
+			AddNodeAndAncestors(path, pageKey);
 		}
 
 		if (domainContentKey is { } domainKey && !path.Contains(domainKey))
 		{
-			path.Add(domainKey);
+			// The page is served on the hostname of a site it isn't part of, e.g. a shared "not
+			// found" page that is stored under another site. The visitor is on the hostname's
+			// site, so that site's policies apply and not those of the nodes above the page: the
+			// page counts as if it sat directly below the hostname's node.
+			if (path.Count > 1)
+			{
+				path.RemoveRange(1, path.Count - 1);
+			}
+
+			AddNodeAndAncestors(path, domainKey);
 		}
 
 		return path;
+	}
+
+	private void AddNodeAndAncestors(List<Guid> path, Guid nodeKey)
+	{
+		// A node the navigation structure doesn't know (yet) is still its own path.
+		if (!_navigation.TryGetAncestorsOrSelfKeys(nodeKey, out var keys))
+		{
+			path.Add(nodeKey);
+			return;
+		}
+
+		// The usual case, on every request: the page and what is above it.
+		if (path.Count == 0)
+		{
+			path.AddRange(keys);
+			return;
+		}
+
+		foreach (var key in keys)
+		{
+			if (!path.Contains(key))
+			{
+				path.Add(key);
+			}
+		}
 	}
 
 	private Task<CspNodePolicySnapshot> GetCachedNodePoliciesAsync(CancellationToken cancellationToken)

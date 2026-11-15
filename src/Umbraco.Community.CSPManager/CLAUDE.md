@@ -21,8 +21,10 @@
   inherits). `AppliesTo` is `Descendants` (the node and the pages below it, the default) or `NodeOnly`.
 - Resolution (`CspNodePolicyResolver`, pure logic, called by `ICspService.ResolveCspDefinitionAsync`):
   candidates from most to least specific are the requested page, then each ancestor nearest first
-  (`IDocumentNavigationQueryService`, in memory), then the node of the matched hostname if it isn't
-  among them (content served from outside the site, e.g. a shared 404 page). On each node: the request
+  (`IDocumentNavigationQueryService`, in memory). When the node of the matched hostname isn't among
+  them (content served from outside the site, e.g. a shared 404 page stored under another site),
+  the hostname's node and its ancestors take the place of the page's ancestors: the visitor is on
+  that site, so its policies apply. On each node: the request
   culture (`PublishedRequest.Culture`), then its language fallback chain (`ILanguage.FallbackIsoCode`),
   then the all-cultures policy. Ancestor policies only count with `AppliesTo == Descendants`. Enabled
   `Extend` policies are collected; the walk ends at the first enabled `Replace` policy (the base), or

@@ -75,7 +75,8 @@ public interface ICspService
 	/// <param name="contentKey">The key of the requested page, or <c>null</c> when the request matched no content.</param>
 	/// <param name="domainContentKey">
 	/// The key of the content node of the hostname the request was routed through, or <c>null</c>.
-	/// Its policy applies when the page isn't below that node (e.g. a "not found" page stored elsewhere).
+	/// When the page isn't below that node (e.g. a "not found" page stored elsewhere), the policies of
+	/// that node and the nodes above it apply instead of those of the nodes above the page.
 	/// </param>
 	/// <param name="culture">The ISO code of the request's culture, or <c>null</c>.</param>
 	/// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>

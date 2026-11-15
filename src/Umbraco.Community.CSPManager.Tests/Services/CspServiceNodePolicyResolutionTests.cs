@@ -216,6 +216,36 @@ public class CspServiceNodePolicyResolutionTests : UmbracoIntegrationTestWithCon
 		});
 	}
 
+	// The same "not found" page stored under one site and served on the hostname of another: the
+	// visitor is on the other site, so that site decides, as it does for its own pages.
+	[Test]
+	public async Task Resolve_PageOfAnotherSiteServedOnAHostname_GetsThePolicyOfTheHostnamesSite()
+	{
+		var contentService = GetRequiredService<IContentService>();
+		var siteB = ContentBuilder.CreateSimpleContent(ContentType, "Site B");
+		contentService.Save(siteB);
+		var pageB = ContentBuilder.CreateSimpleContent(ContentType, "Page B", siteB.Id);
+		contentService.Save(pageB);
+		await RebuildNavigationAsync();
+		await SaveAsync(NewPolicy(_home, "home.example.com"));
+
+		// Site B has no policy: its hostname gets the frontend policy, also for a page of Home.
+		Assert.That(await ResolveAsync(_page, domainNode: siteB.Key), Is.Null);
+
+		await SaveAsync(NewPolicy(siteB.Key, "site-b.example.com"));
+		Assert.Multiple(async () =>
+		{
+			Assert.That(SourcesOf(await ResolveAsync(_page, domainNode: siteB.Key)), Is.EqualTo(new[] { "site-b.example.com" }));
+			Assert.That(SourcesOf(await ResolveAsync(_page, domainNode: pageB.Key)), Is.EqualTo(new[] { "site-b.example.com" }),
+				"the nodes above the hostname's node count, as they do for its own pages");
+			Assert.That(SourcesOf(await ResolveAsync(_page, domainNode: _home)), Is.EqualTo(new[] { "home.example.com" }));
+		});
+
+		// A policy on the page itself is still the most specific one, on any hostname.
+		await SaveAsync(NewPolicy(_page, "page.example.com", inheritance: CspPolicyInheritance.Extend, appliesTo: CspPolicyScope.NodeOnly));
+		Assert.That(SourcesOf(await ResolveAsync(_page, domainNode: siteB.Key)), Is.EqualTo(new[] { "site-b.example.com", "page.example.com" }));
+	}
+
 	[Test]
 	public async Task Resolve_ReturnsACopyThatIsSafeToChange()
 	{
