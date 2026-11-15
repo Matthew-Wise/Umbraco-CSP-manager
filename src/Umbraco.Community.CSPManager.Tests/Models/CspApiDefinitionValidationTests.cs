@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using Umbraco.Community.CSPManager.Models;
 using Umbraco.Community.CSPManager.Models.Api;
+using Umbraco.Community.CSPManager.Services;
 
 namespace Umbraco.Community.CSPManager.Tests.Models;
 
@@ -35,6 +37,28 @@ public class CspApiDefinitionValidationTests
 
 		Assert.That(results, Has.Count.EqualTo(1));
 		Assert.That(results.FirstOrDefault()?.ErrorMessage, Is.EqualTo("Invalid Id"));
+	}
+
+	[Test]
+	public void Validate_GlobalIdWithContentKey_ReturnsError()
+	{
+		var definition = new CspApiDefinition { Id = Constants.DefaultFrontEndId, ContentKey = Guid.NewGuid() };
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.That(results.FirstOrDefault()?.MemberNames, Contains.Item(nameof(CspApiDefinition.ContentKey)));
+	}
+
+	[Test]
+	public void Validate_DomainPolicyFlaggedAsBackOffice_ReturnsError()
+	{
+		var definition = new CspApiDefinition { Id = Guid.Empty, ContentKey = Guid.NewGuid(), IsBackOffice = true };
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.That(results.FirstOrDefault()?.MemberNames, Contains.Item(nameof(CspApiDefinition.IsBackOffice)));
 	}
 
 	[Test]
@@ -199,7 +223,7 @@ public class CspApiDefinitionValidationTests
 	[TestCase("'self';script-src *", TestName = "Source with a semicolon is rejected")]
 	[TestCase("a.example.com,b.example.com", TestName = "Source with a comma is rejected")]
 	[TestCase("https://example.com\r\nX-Injected: 1", TestName = "Source with a line break is rejected")]
-	[TestCase("https://example.com\t", TestName = "Source with a tab is rejected")]
+	[TestCase("https://example.com\t'self'", TestName = "Source with a tab is rejected")]
 	public void Validate_SourceThatIsNotASingleToken_ReturnsError(string source)
 	{
 		var definition = new CspApiDefinition
@@ -235,6 +259,45 @@ public class CspApiDefinitionValidationTests
 		var results = ValidateModel(definition);
 
 		Assert.That(results, Is.Empty);
+	}
+
+	// Surrounding whitespace (e.g. from a paste) is trimmed on assignment, so it is not a second token.
+	[TestCase(" https://example.com")]
+	[TestCase("https://example.com ")]
+	[TestCase("\thttps://example.com\r\n")]
+	public void Validate_SourceWithSurroundingWhitespace_IsTrimmedAndReturnsNoErrors(string source)
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources = [new() { Source = source, Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(results, Is.Empty);
+			Assert.That(definition.Sources[0].Source, Is.EqualTo("https://example.com"));
+		});
+	}
+
+	[Test]
+	public void Validate_SourcesDifferingOnlyBySurroundingWhitespace_ReturnsDuplicateError()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources =
+			[
+				new() { Source = "https://example.com", Directives = [Constants.Directives.DefaultSource] },
+				new() { Source = "https://example.com ", Directives = [Constants.Directives.ScriptSource] },
+			]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results.Select(r => r.ErrorMessage), Has.Some.Contains("Duplicate"));
 	}
 
 	// The service strips whitespace-only sources on save, so the empty row the UI adds must not fail validation.
@@ -313,6 +376,43 @@ public class CspApiDefinitionValidationTests
 
 		Assert.That(results, Has.Count.EqualTo(1));
 		Assert.That(results.FirstOrDefault()?.ErrorMessage, Does.Contain("exceeds maximum length"));
+	}
+
+	[TestCase("report-uri", "https://example.com/report; script-src *", TestName = "report-uri with a semicolon is rejected")]
+	[TestCase("report-uri", "https://example.com/report\r\nX-Injected: 1", TestName = "report-uri with a line break is rejected")]
+	[TestCase("report-uri", "/report a", TestName = "report-uri with a space is rejected")]
+	[TestCase("report-to", "csp-endpoint, other", TestName = "report-to with a comma is rejected")]
+	public void Validate_ReportUriThatIsNotASingleValue_ReturnsError(string directive, string reportUri)
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			ReportingDirective = directive,
+			ReportUri = reportUri
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results, Has.Count.EqualTo(1));
+		Assert.Multiple(() =>
+		{
+			Assert.That(results[0].ErrorMessage, Does.Contain("must be a single value"));
+			Assert.That(results[0].MemberNames, Contains.Item("ReportUri"));
+		});
+	}
+
+	[Test]
+	public void Validate_ErrorMessages_MaskControlCharacters()
+	{
+		var definition = new CspApiDefinition
+		{
+			Id = Constants.DefaultFrontEndId,
+			Sources = [new() { Source = "a\r\nb", Directives = [Constants.Directives.DefaultSource] }]
+		};
+
+		var results = ValidateModel(definition);
+
+		Assert.That(results.Single().ErrorMessage, Does.Contain("'a??b'").And.Not.Contain("\n"));
 	}
 
 	private static List<ValidationResult> ValidateModel(CspApiDefinition definition)

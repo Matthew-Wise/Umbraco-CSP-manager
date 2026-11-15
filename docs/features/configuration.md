@@ -12,7 +12,8 @@ CSP Manager can be configured via `appsettings.json` under the `CspManager` key.
 {
   "CspManager": {
     "DisableBackOfficeHeader": false,
-    "FailureBehavior": "FailOpen"
+    "FailureBehavior": "FailOpen",
+    "DisabledNodePolicyBehavior": "FallbackToGlobal"
   }
 }
 ```
@@ -64,3 +65,28 @@ The `FailClosed` fallback is same-origin-only, so it can block cross-origin reso
 Both behaviors publish a `CspHeaderConstructionFailedNotification` before the fallback is written, so a handler can set the fallback policy itself for that request — see [Notification Events](../advanced/notification-events#cspheaderconstructionfailednotification).
 
 See [Troubleshooting](../troubleshooting) for more on diagnosing header construction failures.
+
+### DisabledNodePolicyBehavior
+
+**Type**: `FallbackToGlobal` \| `NoHeader`
+**Default**: `FallbackToGlobal`
+
+Controls which policy applies when a request matches a domain whose [domain policy](domain-policies) is disabled.
+
+| Value | Behaviour |
+|---|---|
+| `FallbackToGlobal` | Applies the Frontend policy, as if the node had no domain policy. Disabling a domain policy retains baseline site protection. |
+| `NoHeader` | Sends no CSP header on the node's hostnames, matching the behaviour of a disabled Frontend policy. |
+
+{: .warning }
+`NoHeader` is an explicit fail-open setting: disabling a domain policy removes all CSP protection from every hostname of its node. Keep the default unless you specifically require an unconstrained site.
+
+```json
+{
+  "CspManager": {
+    "DisabledNodePolicyBehavior": "NoHeader"
+  }
+}
+```
+
+Domains without a domain policy always use the Frontend policy; this option only applies when a configured domain policy is disabled.

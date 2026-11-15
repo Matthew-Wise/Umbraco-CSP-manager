@@ -1,18 +1,25 @@
 version: 2
+
+# Policy: maximise compatibility, update only when there is a benefit.
+#
+# The shipped packages' dependency floors come straight from the versions pinned in
+# src/Directory.Packages.props (and the backoffice typings the clients build against),
+# so every routine bump raises the minimum Umbraco/uSync version consumers must run
+# with no gain for them. NuGet and npm therefore get NO version-update PRs
+# (open-pull-requests-limit: 0). Dependabot *security* updates are unaffected by that
+# limit and still open PRs for vulnerable dependencies, so security fixes keep coming.
+# When a newer version brings something we need (a fix, an API), bump it by hand.
+#
+# GitHub Actions only affect CI, not consumers, so they stay on, batched monthly.
+
 updates:
   # NuGet: every project resolves versions through src/Directory.Packages.props
   # (central package management), so one entry at /src covers the whole solution.
   - package-ecosystem: nuget
     directory: /src
     schedule:
-      interval: weekly
-    groups:
-      umbraco:
-        patterns:
-          - "Umbraco.Cms*"
-      usync:
-        patterns:
-          - "uSync*"
+      interval: monthly
+    open-pull-requests-limit: 0
     ignore:
       # Major versions are aligned to Umbraco and bumped deliberately.
       - dependency-name: "Umbraco.Cms*"
@@ -23,10 +30,8 @@ updates:
   - package-ecosystem: npm
     directory: /src/Umbraco.Community.CSPManager/Client
     schedule:
-      interval: weekly
-    groups:
-      dev-dependencies:
-        dependency-type: development
+      interval: monthly
+    open-pull-requests-limit: 0
     ignore:
       - dependency-name: "@umbraco-cms/backoffice"
         update-types: ["version-update:semver-major"]
@@ -34,23 +39,22 @@ updates:
   - package-ecosystem: npm
     directory: /src/uSync/Umbraco.Community.CSPManager.uSync.Complete/Client
     schedule:
-      interval: weekly
-    groups:
-      dev-dependencies:
-        dependency-type: development
+      interval: monthly
+    open-pull-requests-limit: 0
     ignore:
       - dependency-name: "@umbraco-cms/backoffice"
         update-types: ["version-update:semver-major"]
 
+  # Composite action: Dependabot only scans .github/workflows for "/", so
+  # .github/actions/publish-package is listed too. One grouped entry keeps its
+  # download-artifact pin in the same PR as the upload-artifact major the workflows use.
   - package-ecosystem: github-actions
-    directory: /
+    directories:
+      - /
+      - /.github/actions/publish-package
     schedule:
-      interval: weekly
-
-  # Composite action: Dependabot only scans .github/workflows for the root entry,
-  # so the download-artifact pin in here needs its own entry to stay paired with
-  # the upload-artifact major used by the workflows.
-  - package-ecosystem: github-actions
-    directory: /.github/actions/publish-package
-    schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

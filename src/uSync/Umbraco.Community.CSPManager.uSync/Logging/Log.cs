@@ -41,6 +41,18 @@ internal static partial class Log
 		Message = "Returning CSP definitions: backoffice={BackofficeId} frontend={FrontendId}")]
 	public static partial void GetChildItemsResult(ILogger logger, Guid backofficeId, Guid frontendId);
 
+	[LoggerMessage(
+		EventId = 6,
+		Level = LogLevel.Debug,
+		Message = "Exported delete marker for CSP definition {ItemId}")]
+	public static partial void CspDeleteExported(ILogger logger, Guid itemId);
+
+	[LoggerMessage(
+		EventId = 7,
+		Level = LogLevel.Debug,
+		Message = "Returning {NodePolicyCount} CSP node policies")]
+	public static partial void GetNodePoliciesResult(ILogger logger, int nodePolicyCount);
+
 	// ===========================================
 	// Serializer Events (20-39)
 	// ===========================================
@@ -70,10 +82,22 @@ internal static partial class Log
 	public static partial void DeserializeComplete(ILogger logger, string alias, int changeCount);
 
 	[LoggerMessage(
+		EventId = 27,
+		Level = LogLevel.Warning,
+		Message = "Not importing CSP definition '{Alias}': {Reason}")]
+	public static partial void DeserializeInvalid(ILogger logger, string alias, string reason);
+
+	[LoggerMessage(
 		EventId = 25,
 		Level = LogLevel.Debug,
 		Message = "Serializing CSP definition alias='{Alias}' key={Key}")]
 	public static partial void SerializeStart(ILogger logger, string alias, Guid key);
+
+	[LoggerMessage(
+		EventId = 26,
+		Level = LogLevel.Debug,
+		Message = "Deleting CSP node policy {Key} ('{Alias}') on import")]
+	public static partial void DeleteNodePolicy(ILogger logger, Guid key, string alias);
 
 	// ===========================================
 	// SyncItemManager Events (40-59)

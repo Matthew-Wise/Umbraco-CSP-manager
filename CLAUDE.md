@@ -72,22 +72,45 @@ dotnet add package Umbraco.Community.CSPManager -v 0.0.0-ci.<run_number> --prere
 workflow is path-filtered, so each one names its job `build` and the filters are
 kept collectively exhaustive: `csp-manager.yml` (main package), `usync.yml` (uSync +
 main package sources), `docs-build.yml` (`docs/**` + the docs workflows) and
-`repo-hygiene.yml` (`.github/**`, root `*.md` and dotfiles, runs actionlint). A PR
+`repo-hygiene.yml` (`.github/**`, `.claude/**`, root `*.md` and dotfiles, runs actionlint). A PR
 that matches none of them never reports `build` and sits pending forever, so when
 adding a new top-level path, add it to one of those filters. `claude-code-review.yml`
 skips bot, draft and fork PRs on purpose.
 
-**Dependency range:** the supporting packages declare `[18.0.0, 19.0.0)` for their
+**Dependency range:** the supporting packages declare `[18.2.0, 19.0.0)` for their
 internal CSP Manager dependencies, assembled in `src/Directory.Build.props` from
-`CspManagerDependencyFloor` (`18.0.0`) and `CspManagerDependencyCeiling` (`19.0.0`).
-Bump the floor only on a breaking change that requires a newer minimum. The release
-workflow overrides the floor to the exact version for prerelease builds (e.g.
-`[18.0.0-beta-1, 19.0.0)`) — no manual csproj edits for betas. Floor/ceiling are
-separate (no commas) because .NET's `-p:` parser splits property values on commas.
+`CspManagerDependencyFloor` (`18.2.0`) and `CspManagerDependencyCeiling` (`19.0.0`).
+Bump the floor when a supporting package starts using CSP Manager API that older
+releases don't have (18.2.0 added node policies, which uSync uses). Stable releases
+read the floor from that file; the release workflow overrides it to the exact version
+for prerelease builds (e.g. `[18.2.0-beta-1, 19.0.0)`) — no manual csproj edits for
+betas — and refuses a uSync prerelease of a version below the floor (e.g. `18.1.1-beta-1`). Floor/ceiling are separate (no commas) because .NET's `-p:` parser splits
+property values on commas.
 
 **NuGet trusted publishing:** each package's policy must reference workflow
 `release.yml` (environments `nuget-csp` / `nuget-usync` / `nuget-usync-complete`
 are unchanged).
+
+## Cloud Sessions
+
+`.claude/hooks/session-start.sh` (SessionStart hook, Claude Code cloud only) installs the
+.NET 10 SDK from Ubuntu's apt feed (the dotnet.microsoft.com download hosts are blocked by
+the default network policy), Node 24 via nvm, and restores NuGet + both clients. The
+uSync.Complete client needs `pkgs.dev.azure.com` (the `@jumoo` npm registry) in the
+environment's allowed domains; without it only that project fails to build.
+
+The Node version lives in one place, `NODE_MAJOR` in the hook. The environment's Setup
+script runs the same hook; there `CLAUDE_ENV_FILE` is unset, so the hook writes the Node PATH
+to `~/.bashrc` instead (session shells source it), replacing its own earlier lines.
+
+## Dependency Updates
+
+Maximise compatibility: only bump a dependency when it brings a benefit (security fix,
+bug fix or API we need). Versions in `src/Directory.Packages.props` and the clients'
+`@umbraco-cms/backoffice` become the floor consumers must run, so a routine bump
+(e.g. Umbraco `18.1.1` → `18.2.0`) needlessly raises the minimum. `.github/dependabot.yml`
+therefore disables NuGet/npm version-update PRs (`open-pull-requests-limit: 0`);
+Dependabot security updates still open PRs. GitHub Actions stay on, grouped monthly.
 
 ## Development Principles
 

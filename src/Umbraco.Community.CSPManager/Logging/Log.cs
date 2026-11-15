@@ -73,18 +73,42 @@ internal static partial class Log
 
 	[LoggerMessage(
 		EventId = 10,
+		Level = LogLevel.Debug,
+		Message = "Node policy {DefinitionId} applies to {Path} (content node {ContentKey})")]
+	public static partial void CspDomainPolicyApplied(ILogger logger, Guid definitionId, Guid contentKey, PathString path);
+
+	[LoggerMessage(
+		EventId = 11,
+		Level = LogLevel.Debug,
+		Message = "Node policy {DefinitionId} is disabled; {Path} uses the global frontend policy instead")]
+	public static partial void CspDomainPolicyDisabledFallback(ILogger logger, Guid definitionId, PathString path);
+
+	[LoggerMessage(
+		EventId = 12,
+		Level = LogLevel.Error,
+		Message = "Failed to resolve the node policy for {Path}; using the global frontend policy instead")]
+	public static partial void CspDomainPolicyLookupFailed(ILogger logger, PathString path, Exception ex);
+
+	[LoggerMessage(
+		EventId = 13,
+		Level = LogLevel.Warning,
+		Message = "A {Part} in CSP definition {DefinitionId} contains control characters and was left out of the CSP header; re-save the definition to fix it")]
+	public static partial void CspUnsafeHeaderValueSkipped(ILogger logger, Guid definitionId, string part);
+
+	[LoggerMessage(
+		EventId = 14,
 		Level = LogLevel.Warning,
 		Message = "CSP header construction failed for {Path}; applied fallback policy '{FallbackPolicy}' as {HeaderName}")]
 	public static partial void CspFallbackPolicyApplied(ILogger logger, PathString path, string fallbackPolicy, string headerName);
 
 	[LoggerMessage(
-		EventId = 11,
+		EventId = 15,
 		Level = LogLevel.Error,
 		Message = "A CspHeaderConstructionFailedNotification handler threw for {Path}; the fallback configured by FailureBehavior was used instead")]
 	public static partial void CspFallbackNotificationFailed(ILogger logger, PathString path, Exception ex);
 
 	[LoggerMessage(
-		EventId = 12,
+		EventId = 16,
 		Level = LogLevel.Error,
 		Message = "Failed to apply the CSP fallback policy for {Path}; no CSP header was sent")]
 	public static partial void CspFallbackPolicyFailed(ILogger logger, PathString path, Exception ex);
@@ -122,6 +146,18 @@ internal static partial class Log
 		Level = LogLevel.Debug,
 		Message = "Loading CSP definition from database for {Context}")]
 	public static partial void LoadingCspDefinitionFromDatabase(ILogger logger, string context);
+
+	[LoggerMessage(
+		EventId = 105,
+		Level = LogLevel.Information,
+		Message = "Deleted CSP definition {DefinitionId} for {Context}")]
+	public static partial void CspDefinitionDeleted(ILogger logger, Guid definitionId, string context);
+
+	[LoggerMessage(
+		EventId = 106,
+		Level = LogLevel.Warning,
+		Message = "Rejected save of CSP definition {DefinitionId}: {Reason}")]
+	public static partial void CspDefinitionSaveRejected(ILogger logger, Guid definitionId, string reason);
 
 	// ===========================================
 	// Cache Events (200-299)
