@@ -75,7 +75,9 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 	async #loadEffective() {
 		// The answer only changes when a policy is saved, not with every edit. The workspace keeps
 		// it until then, so getting the same request back means there is nothing new to show.
-		const request = this.#workspaceContext?.getEffective(this._culture);
+		const request = this._workspaceState?.definition?.isOrphaned
+			? undefined
+			: this.#workspaceContext?.getEffective(this._culture);
 		if (!request || request === this.#request) return;
 
 		this.#request = request;
@@ -99,9 +101,26 @@ export class UmbCspEffectiveViewElement extends UmbLitElement {
 	}
 
 	override render() {
-		const definition = this._workspaceState?.definition;
-		if (!definition?.contentKey) {
+		const workspaceState = this._workspaceState;
+		if (!workspaceState || workspaceState.loading) {
 			return html`<uui-loader></uui-loader>`;
+		}
+
+		// Nothing was loaded (e.g. a create URL that is no longer valid): say why, like the other views.
+		const definition = workspaceState.definition;
+		if (!definition?.contentKey) {
+			return html`<div>${workspaceState.error?.message ?? this.localize.term('cspManager_noDefinition')}</div>`;
+		}
+
+		// A policy whose content or language is gone applies to no request, so there is nothing to show.
+		if (definition.isOrphaned) {
+			return html`
+				<uui-box headline=${this.localize.term('cspManagerEffective_headline')}>
+					<p class="intro" data-mark="csp-effective-orphaned">
+						${this.localize.term('cspManagerNodePolicy_orphanedPolicyInfo')}
+					</p>
+				</uui-box>
+			`;
 		}
 
 		return html`

@@ -39,8 +39,6 @@ internal sealed class CspService : ICspService
 	private readonly IOptionsMonitor<CspManagerOptions> _options;
 
 	private const string NodeAlreadyHasPolicyMessage = "A policy already exists for this content node and culture.";
-	private const string CultureIsNotALanguageMessage = "The culture is not one of the site's languages.";
-	private const string NodeDoesNotExistMessage = "The content node does not exist or is in the recycle bin.";
 
 	public CspService(
 		IEventAggregator eventAggregator,
@@ -421,27 +419,20 @@ internal sealed class CspService : ICspService
 		CspPolicyScope appliesTo,
 		CancellationToken cancellationToken)
 	{
-		// The checks of the save path (EnsureValidNodePolicyAsync), so that what is returned can be
-		// saved. Nothing is locked: the save checks again.
-		culture = NormalizeCulture(culture);
-		if (culture is not null)
-		{
-			culture = await FindLanguageIsoCodeAsync(culture)
-				?? throw new CspDefinitionValidationException(nameof(CspDefinition.Culture), CultureIsNotALanguageMessage);
-		}
+		// The checks the save makes for a new node policy, so that what is returned can be saved.
+		// Without the save's lock: the save checks again.
+		var draft = new CspDefinition { ContentKey = contentKey, Culture = NormalizeCulture(culture) };
+		var nodeExists = _domainNodes.Exists(contentKey);
+		var language = draft.Culture is null ? null : await FindLanguageIsoCodeAsync(draft.Culture);
 
-		if (await GetCspDefinitionForNodeAsync(contentKey, culture, cancellationToken) is not null)
+		using (var scope = _scopeProvider.CreateScope())
 		{
-			throw new CspDefinitionValidationException(nameof(CspDefinition.ContentKey), NodeAlreadyHasPolicyMessage);
-		}
-
-		if (!_domainNodes.Exists(contentKey))
-		{
-			throw new CspDefinitionValidationException(nameof(CspDefinition.ContentKey), NodeDoesNotExistMessage);
+			await EnsureValidNewNodePolicyAsync(scope, draft, nodeExists, language, cancellationToken);
+			scope.Complete();
 		}
 
 		// The empty id: the save assigns one.
-		return await NewNodePolicyAsync(Guid.Empty, contentKey, culture, inheritance, appliesTo, cancellationToken);
+		return await NewNodePolicyAsync(Guid.Empty, contentKey, draft.Culture, inheritance, appliesTo, cancellationToken);
 	}
 
 	// What a new node policy starts as. Not validated and not saved.
@@ -763,12 +754,19 @@ internal sealed class CspService : ICspService
 			return;
 		}
 
-		// Creating: for a language that exists, stored in the language's own spelling so the
-		// unique index sees one culture however the caller wrote it.
+		await EnsureValidNewNodePolicyAsync(scope, definition, nodeExists, language, cancellationToken);
+	}
+
+	// The rules for a node policy that doesn't exist yet. Also sets its culture to the language's
+	// own spelling, so the unique index sees one culture however the caller wrote it.
+	private static async Task EnsureValidNewNodePolicyAsync(IScope scope, CspDefinition definition, bool nodeExists, string? language, CancellationToken cancellationToken)
+	{
+		var contentKey = definition.ContentKey!.Value;
+
 		if (definition.Culture is not null)
 		{
 			definition.Culture = language
-				?? throw new CspDefinitionValidationException(nameof(CspDefinition.Culture), CultureIsNotALanguageMessage);
+				?? throw new CspDefinitionValidationException(nameof(CspDefinition.Culture), "The culture is not one of the site's languages.");
 		}
 
 		// One policy per node and culture (also backed by unique indexes), for a node that exists.
@@ -779,7 +777,7 @@ internal sealed class CspService : ICspService
 
 		if (!nodeExists)
 		{
-			throw new CspDefinitionValidationException(nameof(CspDefinition.ContentKey), NodeDoesNotExistMessage);
+			throw new CspDefinitionValidationException(nameof(CspDefinition.ContentKey), "The content node does not exist or is in the recycle bin.");
 		}
 	}
 

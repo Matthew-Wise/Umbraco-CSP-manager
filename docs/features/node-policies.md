@@ -35,7 +35,7 @@ A new policy is always switched on. A node can have one policy for all cultures 
 | | Complete policy | Inherit and add |
 |---|---|---|
 | Contains | Every source and setting, like the Frontend policy | Only the extra sources |
-| Starts as | A copy of what the content gets today, so saving it unchanged changes no header | Empty |
+| Starts as | A copy of the policy the content inherits today | Empty |
 | Changes further up the tree | Don't reach this content | Reach this content |
 | Report-only, reporting and upgrade insecure requests | Set on the policy | Come from the policy it adds to |
 
@@ -47,7 +47,10 @@ An inherit-and-add policy can only allow more, never less:
 - When it uses a fetch directive the inherited policy doesn't have, that directive starts from the sources of the directive the browser falls back to. For example, adding `cdn.example.com` to `script-src` on top of `default-src 'self'` gives `script-src 'self' cdn.example.com`. Without this, the new directive would switch off the fallback and block what was allowed before.
 - `'none'` is dropped from a directive once another source is added to it.
 
-You can change the policy type and what the policy applies to later under **Settings**. The content and the culture of a policy are fixed: delete the policy and create a new one to change them.
+You can change what the policy applies to later under **Settings**. The content, the culture and the policy type are fixed: delete the policy and create a new one to change them.
+
+{: .note }
+A complete policy for one culture starts as a copy of what the content gets in that culture, so saving it unchanged changes no header. A complete policy for all cultures starts from the all-cultures policy the content inherits. If a node further up has a policy for one culture, requests in that culture get the new policy from then on, so check **Effective** for each culture after saving.
 
 ## Which policy a request gets
 
@@ -81,7 +84,7 @@ Open a node policy and go to **Effective**. It shows the header a request for th
 
 - On a multilingual site, choose the culture of the request. No culture means the default language, as for a request.
 - Changes you haven't saved are not included. For a new policy that isn't saved yet, the view shows what the content gets without it.
-- Nonces are different for each response, so they are not shown.
+- Nonces are different for each response, so they are not shown. Neither are changes your own code makes to a response in a [`CspWritingNotification`](../advanced/notification-events#cspwritingnotification) handler.
 
 For an inherit-and-add policy, **Evaluate** checks this effective policy too, because the extra sources are not a policy on their own.
 

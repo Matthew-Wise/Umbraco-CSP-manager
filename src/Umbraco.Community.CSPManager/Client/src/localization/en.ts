@@ -22,6 +22,7 @@ export default {
 		addModalLoadFailed: 'The sites and their policies could not be loaded.',
 		createUnavailable:
 			'A node policy cannot be created here. The content was deleted or moved to the recycle bin, the culture is not one of the languages of the site, or the content already has a CSP policy for this culture.',
+		draftLoadFailed: 'The new policy could not be loaded. Try again in a moment.',
 		deletedContent: 'Deleted content (%0%…)',
 		labelWithCulture: '%0% (%1%)',
 		allCultures: 'All cultures',
@@ -36,7 +37,7 @@ export default {
 		inheritanceReplace: 'Complete policy',
 		inheritanceReplaceDescription:
 			'Replaces the policy the content inherits: only the sources and settings of this policy apply.',
-		addModalReplaceStart: 'It starts as a copy of what the content gets today.',
+		addModalReplaceStart: 'It starts as a copy of the policy the content inherits today.',
 		inheritanceExtend: 'Inherit and add',
 		inheritanceExtendDescription:
 			'Keeps the policy the content inherits and adds the sources of this policy to it. Sources can only be added, never removed.',
@@ -85,7 +86,8 @@ export default {
 		noHeader: 'No CSP header is sent: the policy that applies is switched off.',
 		noHeaderEmpty: 'No CSP header is sent: the policy that applies has no sources yet.',
 		headerLabel: 'Header',
-		headerNote: 'Nonces are added to each response, so they are not shown here.',
+		headerNote:
+			'Built from the saved policies. Nonces, and anything code on the site changes for a request, are added to each response and are not shown.',
 		directivesLabel: 'Directives',
 		fromLabel: 'Comes from',
 		fromFrontend: 'The Frontend policy',

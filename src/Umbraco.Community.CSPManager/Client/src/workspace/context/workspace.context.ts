@@ -16,7 +16,7 @@ import {
 	cspEditPolicyPath,
 	cultureFromCreatePathSegment,
 } from '@/paths';
-import { UmbError, type UmbApiError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
+import { UmbApiError, UmbError, type UmbCancelError } from '@umbraco-cms/backoffice/resources';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { CspConstants, isGlobalPolicyId, type PolicyType } from '@/constants';
 
@@ -188,7 +188,7 @@ export class UmbCspManagerWorkspaceContext
 		this.#allowNavigateAway = false;
 		this.#state.update({ loading: true, error: undefined, isNew: true, definition: null, persistedDefinition: null });
 
-		const [{ data: draft }] = await Promise.all([
+		const [{ data: draft, error }] = await Promise.all([
 			this.#cspDefinitionContext.getDraft(contentKey, culture, inheritance),
 			this.loadDirectives(),
 		]);
@@ -197,13 +197,13 @@ export class UmbCspManagerWorkspaceContext
 			return;
 		}
 
-		// A stale or hand-typed URL: the content was deleted or trashed, the culture isn't a
-		// language, or the content already has a policy for it. Shown now rather than as a 400 on save.
+		// The server refuses (400) a draft that couldn't be saved: a stale or hand-typed URL whose
+		// content was deleted or trashed, whose culture isn't a language, or which already has a
+		// policy. Shown now rather than as a failed save. Anything else is a failed request.
 		if (!draft) {
-			this.#state.update({
-				loading: false,
-				error: new UmbError(this.#localize.term('cspManagerNodePolicy_createUnavailable')),
-			});
+			const refused = UmbApiError.isUmbApiError(error) && error.status === 400;
+			const term = refused ? 'cspManagerNodePolicy_createUnavailable' : 'cspManagerNodePolicy_draftLoadFailed';
+			this.#state.update({ loading: false, error: new UmbError(this.#localize.term(term)) });
 			return;
 		}
 

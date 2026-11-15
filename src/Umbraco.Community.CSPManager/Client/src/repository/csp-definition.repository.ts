@@ -1,7 +1,7 @@
 import { UmbRepositoryBase } from "@umbraco-cms/backoffice/repository";
 import type { UmbControllerHost } from "@umbraco-cms/backoffice/controller-api";
 import { tryExecute } from "@umbraco-cms/backoffice/resources";
-import { Definitions, Nodes, type CspApiDefinition, type CspPolicyInheritance } from '../api';
+import { CspPolicyInheritance, Definitions, Nodes, type CspApiDefinition } from '../api';
 import { hasReportingDirective } from '../utils/csp-string';
 
 export class UmbCspDefinitionRepository extends UmbRepositoryBase {
@@ -134,7 +134,7 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 		const { data, error } = await tryExecute(
 			this,
 			Definitions.postDefinitionsSave({
-				body: withoutUnusedReporting(definition),
+				body: withoutUnusedSettings(definition),
 			}),
 			{ disableNotifications: false }
 		);
@@ -148,11 +148,18 @@ export class UmbCspDefinitionRepository extends UmbRepositoryBase {
 }
 
 /**
- * "No reporting" is no directive at all: the server only accepts report-uri or report-to. A URI
- * left over from a directive the user switched away from isn't sent either, so a stale value
- * can't fail validation for a setting that is off.
+ * The settings a definition doesn't use aren't sent, so a value the editor can't see can never
+ * fail validation or be stored:
+ * - "No reporting" is no directive at all (the server only accepts report-uri or report-to), and a
+ *   URI left over from a directive the user switched away from goes with it.
+ * - An "inherit and add" policy takes report-only, reporting and upgrade-insecure-requests from
+ *   the policy it adds to, so it has none of its own.
  */
-export function withoutUnusedReporting(definition: CspApiDefinition): CspApiDefinition {
+export function withoutUnusedSettings(definition: CspApiDefinition): CspApiDefinition {
+	if (definition.inheritance === CspPolicyInheritance.EXTEND) {
+		return { ...definition, reportOnly: false, upgradeInsecureRequests: false, reportingDirective: null, reportUri: null };
+	}
+
 	if (hasReportingDirective(definition)) {
 		return definition;
 	}

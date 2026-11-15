@@ -1,6 +1,6 @@
 import { css, html, customElement, state } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
-import { CspPolicyInheritance, CspPolicyScope, DisabledNodePolicyBehavior, type CspApiDefinition } from '@/api';
+import { CspPolicyScope, DisabledNodePolicyBehavior, type CspApiDefinition } from '@/api';
 import { hasReportingDirective } from '@/utils/csp-string';
 import {
 	UmbCspManagerWorkspaceContext,
@@ -120,34 +120,11 @@ export class UmbCspSettingsViewElement extends UmbLitElement {
 			: this.localize.term('cspManagerNodePolicy_statusInactiveFallback');
 	}
 
-	// What kind of policy this is and how far it reaches. Its content and culture can't change.
+	// How far the policy reaches. Its content, culture and type are chosen when it is created:
+	// a complete policy and one that only adds sources hold different things, so one can't simply
+	// be turned into the other.
 	private _renderNodePolicyOptions(definition: CspApiDefinition) {
 		return html`
-			<uui-form-layout-item>
-				<uui-label slot="label">${this.localize.term('cspManagerNodePolicy_inheritanceLabel')}</uui-label>
-				<span slot="description">
-					${this.localize.term(
-						this._isExtending
-							? 'cspManagerNodePolicy_inheritanceExtendDescription'
-							: 'cspManagerNodePolicy_inheritanceReplaceDescription',
-					)}
-				</span>
-				<div class="setting-control">
-					<uui-radio-group
-						data-mark="csp-inheritance"
-						.value=${definition.inheritance}
-						@change=${(e: Event) =>
-							this._updateDefinitionSetting('inheritance', (e.target as HTMLInputElement).value as CspPolicyInheritance)}>
-						<uui-radio
-							value=${CspPolicyInheritance.REPLACE}
-							label=${this.localize.term('cspManagerNodePolicy_inheritanceReplace')}></uui-radio>
-						<uui-radio
-							value=${CspPolicyInheritance.EXTEND}
-							label=${this.localize.term('cspManagerNodePolicy_inheritanceExtend')}></uui-radio>
-					</uui-radio-group>
-				</div>
-			</uui-form-layout-item>
-
 			<uui-form-layout-item>
 				<uui-label slot="label">${this.localize.term('cspManagerNodePolicy_appliesToLabel')}</uui-label>
 				<span slot="description">${this.localize.term('cspManagerNodePolicy_appliesToDescription')}</span>

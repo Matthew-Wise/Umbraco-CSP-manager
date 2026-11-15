@@ -55,6 +55,9 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 	private _effective?: CspApiDefinition;
 
 	@state()
+	private _effectiveLoading = false;
+
+	@state()
 	private _isExtending = false;
 
 	#workspaceContext?: UmbCspManagerWorkspaceContext;
@@ -84,9 +87,11 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 
 		this.#request = request;
 		this._effective = undefined;
+		this._effectiveLoading = !!request;
 		const effective = await request;
 		if (request === this.#request) {
 			this._effective = effective;
+			this._effectiveLoading = false;
 		}
 	}
 
@@ -145,19 +150,32 @@ export class UmbCspEvaluateViewElement extends UmbLitElement {
 		}
 
 		const evaluated = this.#evaluated;
-		if (this._isExtending && !evaluated) {
+		if (this._isExtending && this._effectiveLoading) {
 			return html`<uui-loader></uui-loader>`;
 		}
 
-		// An inherit-and-add policy is evaluated as what the request gets, so say so.
+		// An inherit-and-add policy is evaluated as what the request gets from the saved policies,
+		// so say so, and say when the sources being edited aren't part of that yet.
+		const unsaved = this._workspaceState.isNew ? 'cspManagerEffective_notSavedYet' : 'cspManagerEffective_unsaved';
 		const note = this._isExtending
 			? html`<p data-mark="csp-evaluates-effective">
-					${this.localize.term(
-						'cspManagerEffective_evaluatesEffective',
-						nodePolicyContentName(this.localize, this._workspaceState.definition ?? {}),
-					)}
-				</p>`
+						${this.localize.term(
+							'cspManagerEffective_evaluatesEffective',
+							nodePolicyContentName(this.localize, this._workspaceState.definition ?? {}),
+						)}
+					</p>
+					${this.#workspaceContext?.hasUnsavedChanges()
+						? html`<p data-mark="csp-evaluate-unsaved"><strong>${this.localize.term(unsaved)}</strong></p>`
+						: nothing}`
 			: nothing;
+
+		// The request for what the content gets failed, or its content is gone.
+		if (this._isExtending && !evaluated) {
+			return html`<uui-box headline="Evaluate">
+				${note}
+				<p>${this.localize.term('cspManagerEffective_loadFailed')}</p>
+			</uui-box>`;
+		}
 
 		if (!evaluated || evaluated.sources.length == 0) {
 			return html`<uui-box headline="Evaluate">

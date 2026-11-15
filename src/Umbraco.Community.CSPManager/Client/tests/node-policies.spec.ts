@@ -209,9 +209,17 @@ test.describe("Node policies: create, edit, delete", () => {
 		await csp.workspace().getByLabel("CSP Source").last().fill("extra.example.com");
 		await csp.workspace().locator('uui-checkbox[label="default-src"]').last().click();
 
+		// Evaluate checks what the page gets from the saved policies, and says the new source isn't in it yet.
+		await csp.workspaceTab(WorkspaceTabs.evaluate).click();
+		await expect(umbracoUi.page.locator('[data-mark="csp-evaluates-effective"]')).toBeVisible();
+		await expect(umbracoUi.page.locator('[data-mark="csp-evaluate-unsaved"]')).toContainText("not saved yet");
+
+		// The policy type is chosen when the policy is created; what it applies to can still change.
 		await csp.workspaceTab(WorkspaceTabs.settings).click();
 		await expect(umbracoUi.page.locator('[data-mark="csp-extend-settings-info"]')).toBeVisible();
 		await expect(csp.workspace().locator('uui-toggle[label="Report Only Mode"]')).toHaveCount(0);
+		await expect(csp.workspace().locator('[data-mark="csp-applies-to"]')).toBeVisible();
+		await expect(csp.workspace().locator('[data-mark="csp-inheritance"]')).toHaveCount(0);
 
 		await csp.save();
 		await expect(umbracoUi.page).toHaveURL(/\/workspace\/csp-policy\/edit\/[0-9a-f-]{36}/);
@@ -444,11 +452,34 @@ test.describe("Node policies: create, edit, delete", () => {
 		await expect(csp.workspace().getByText(unavailable)).toBeVisible();
 		await expect(umbracoUi.page.locator('[data-mark="csp-node-info"]')).toHaveCount(0);
 		// Every view reports the same error, not a generic "no definition" message.
-		await csp.workspaceTab(WorkspaceTabs.settings).click();
-		await expect(umbracoUi.page.locator("umb-csp-settings-view")).toBeVisible();
-		await expect(csp.workspace().getByText(unavailable)).toBeVisible();
+		for (const [tab, view] of [
+			[WorkspaceTabs.settings, "umb-csp-settings-view"],
+			[WorkspaceTabs.effective, "umb-csp-effective-view"],
+		]) {
+			await csp.workspaceTab(tab).click();
+			await expect(umbracoUi.page.locator(view)).toBeVisible();
+			await expect(csp.workspace().getByText(unavailable)).toBeVisible();
+		}
 		await expect(csp.workspace().getByRole("button", { name: "Save", exact: true })).toBeDisabled();
 		expect(await api.getNodePolicies()).toHaveLength(0);
+	});
+
+	// "Cannot be created here" is for a draft the server refuses. A request that fails for another
+	// reason must not send the editor looking for a problem with the content.
+	test("A draft that fails to load reports the failure, not a problem with the content", async ({ umbracoUi, page }) => {
+		const api = new CspApiHelpers(page.request);
+		const contentKey = await contentKeyOf(api, TestNodes.homepage);
+		await umbracoUi.page.route("**/umbraco/csp/api/v1/Definitions/draft?*", (route) =>
+			route.fulfill({ status: 500, json: { title: "The server is having a bad day", status: 500 } }),
+		);
+		const csp = new CspTestHelpers(umbracoUi);
+
+		await umbracoUi.page.goto(createUrl(contentKey));
+
+		await expect(csp.workspace().getByLabel("CSP Source")).toHaveCount(0);
+		await expect(csp.workspace().getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+		await expect(csp.workspace().getByText("A node policy cannot be created here.")).toHaveCount(0);
+		await expect(csp.workspace().getByText("The new policy could not be loaded.")).toBeVisible();
 	});
 
 	// The same for a create URL of content that already has a policy for that culture: there can
@@ -492,6 +523,25 @@ test.describe("Node policies: create, edit, delete", () => {
 		await expect(nodeInfo.locator('[data-mark="csp-node-culture"]')).toHaveCount(0);
 		await csp.expandTreeItem(CspConstants.policyTypes.frontend.label);
 		await expect(csp.treeItemByLabel(`${TestNodes.homepage} (not in use)`)).toBeVisible();
+
+		// No request gets it, so there is no effective policy to show.
+		await csp.workspaceTab(WorkspaceTabs.effective).click();
+		await expect(umbracoUi.page.locator('[data-mark="csp-effective-orphaned"]')).toContainText("This policy applies to no requests");
+		await expect(umbracoUi.page.locator('[data-mark="csp-effective-from"]')).toHaveCount(0);
+	});
+
+	// The link is a route of Umbraco's content section, so follow it to see that it still opens the content.
+	test("Open content item opens the content of the policy", async ({ umbracoUi, page }) => {
+		const api = new CspApiHelpers(page.request);
+		const contentKey = await contentKeyOf(api, TestNodes.homepage);
+		const policy = await api.createNodePolicy(CspDefinitionBuilder.nodePolicy(contentKey).build());
+
+		await umbracoUi.page.goto(editUrl(policy.id));
+		await umbracoUi.page.locator('[data-mark="csp-node-info"]').getByRole("link", { name: "Open content item" }).click();
+
+		await expect(umbracoUi.page).toHaveURL(new RegExp(`/section/content/workspace/document/edit/${contentKey}`));
+		await expect(umbracoUi.page.locator("umb-document-workspace-editor")).toBeVisible();
+		await expect(umbracoUi.page.locator("umb-document-workspace-editor #name-input input")).toHaveValue(TestNodes.homepage);
 	});
 });
 
