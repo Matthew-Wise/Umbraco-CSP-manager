@@ -5,14 +5,15 @@ using Umbraco.Cms.Core.Services;
 namespace Umbraco.Community.CSPManager.Services;
 
 /// <summary>
-/// Reads the content nodes a node policy can belong to: nodes with at least one hostname
-/// (non-wildcard domain) in Culture and Hostnames, keyed by content key, with their hostnames.
+/// Reads the content nodes node policies belong to: whether a node exists, its name, and for nodes
+/// with at least one hostname (non-wildcard domain) in Culture and Hostnames, those hostnames.
 /// </summary>
 /// <remarks>
 /// Policies are keyed on the node rather than on a hostname: Umbraco doesn't persist a key for
 /// domains (<c>IDomain.Key</c> is a new <see cref="Guid"/> on every load), hostnames usually differ
 /// per environment, and a multilingual site has one hostname per culture on the same node. A node
 /// key is stable across restarts, environments (uSync) and hostname renames.
+/// Any content node can have a policy; the hostnames are only shown to say where it applies.
 /// Not cached: it serves backoffice requests and saves only, which are rare.
 /// </remarks>
 internal sealed class CspDomainNodeLookup
@@ -72,15 +73,22 @@ internal sealed class CspDomainNodeLookup
 		=> await GetDomainNodeAsync(contentKey) is not null;
 
 	/// <summary>
-	/// Gets the names of content nodes whether or not they have a hostname, keyed by content key. A
-	/// node that doesn't exist (e.g. for an orphaned policy whose node was deleted) is left out.
+	/// Whether a policy can be created for the node: it exists and isn't in the recycle bin.
 	/// </summary>
-	public IReadOnlyDictionary<Guid, string?> GetContentNames(IEnumerable<Guid> contentKeys)
+	public bool Exists(Guid contentKey)
+		=> _entityService.Get(contentKey, UmbracoObjectTypes.Document) is { } node && IsUsable(node);
+
+	/// <summary>
+	/// Gets the name and state of content nodes, keyed by content key. A node that doesn't exist
+	/// (e.g. for an orphaned policy whose node was deleted) is left out.
+	/// </summary>
+	public IReadOnlyDictionary<Guid, ContentNode> GetContentNodes(IEnumerable<Guid> contentKeys)
 	{
 		var keys = contentKeys.Distinct().ToArray();
 		return keys.Length == 0
-			? new Dictionary<Guid, string?>()
-			: _entityService.GetAll(UmbracoObjectTypes.Document, keys).ToDictionary(e => e.Key, e => e.Name);
+			? new Dictionary<Guid, ContentNode>()
+			: _entityService.GetAll(UmbracoObjectTypes.Document, keys)
+				.ToDictionary(e => e.Key, e => new ContentNode(e.Name, IsUsable(e)));
 	}
 
 	// Umbraco keeps a node's domains while it is in the recycle bin, but never routes a request to it.
@@ -97,4 +105,7 @@ internal sealed class CspDomainNodeLookup
 	internal sealed record DomainNode(Guid Key, string Name, IReadOnlyList<DomainName> Domains);
 
 	internal sealed record DomainName(string Name, string? Culture);
+
+	/// <summary>A content node a policy belongs to. A node that isn't usable is never served, so its policy applies to nothing.</summary>
+	internal sealed record ContentNode(string? Name, bool IsUsable);
 }

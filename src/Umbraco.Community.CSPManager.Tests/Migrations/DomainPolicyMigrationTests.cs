@@ -47,8 +47,22 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 			Assert.That(backoffice.ContentKey, Is.Null);
 			Assert.That(backoffice.Sources, Is.Not.Empty);
 		});
-		AssertContentKeyColumnAndIndexExist();
+		AssertNodePolicyColumnsAndIndexesExist();
 		Assert.That(CountDefinitionsLockRows(), Is.EqualTo(1));
+	}
+
+	// The plan as it was in 18.1.0, the last release before node policies (it ends at
+	// UpgradeInsecureRequestsMigration), under the same name so the real plan resumes from it.
+	private static MigrationPlan PlanOf1810()
+	{
+		var plan = new MigrationPlan(Constants.PackageAlias);
+		plan.From(string.Empty)
+			.To<InitialCspManagerMigration>(InitialCspManagerMigration.MigrationKey)
+			.To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey)
+			.To<ReportingMigration>(ReportingMigration.MigrationKey)
+			.To<MaxSourceLengthMigration>(MaxSourceLengthMigration.MigrationKey)
+			.To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey);
+		return plan;
 	}
 
 	[Test]
@@ -57,16 +71,7 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 		var executor = GetRequiredService<IMigrationPlanExecutor>();
 		var keyValueService = GetRequiredService<IKeyValueService>();
 
-		// The plan as it was before this feature, under the same name so the real plan resumes from it.
-		var previousPlan = new MigrationPlan(Constants.PackageAlias);
-		previousPlan.From(string.Empty)
-			.To<InitialCspManagerMigration>(InitialCspManagerMigration.MigrationKey)
-			.To<AddCspManagerSectionToAdminUserGroupMigration>(AddCspManagerSectionToAdminUserGroupMigration.MigrationKey)
-			.To<ReportingMigration>(ReportingMigration.MigrationKey)
-			.To<MaxSourceLengthMigration>(MaxSourceLengthMigration.MigrationKey)
-			.To<UpgradeInsecureRequestsMigration>(UpgradeInsecureRequestsMigration.MigrationKey);
-		var previous = await new Upgrader(previousPlan).ExecuteAsync(executor, ScopeProvider, keyValueService);
-		Assert.That(previous.Successful, Is.True, previous.Exception?.Message);
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService, PlanOf1810());
 
 		using (var scope = ScopeProvider.CreateScope())
 		{
@@ -76,7 +81,7 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 
 		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService);
 
-		AssertContentKeyColumnAndIndexExist();
+		AssertNodePolicyColumnsAndIndexesExist();
 		Assert.That(CountDefinitionsLockRows(), Is.EqualTo(1), "an upgrade gets the lock row too");
 		var cspService = GetRequiredService<ICspService>();
 		var frontend = await cspService.GetCspDefinitionAsync(isBackOfficeRequest: false, CancellationToken.None);
@@ -85,8 +90,119 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 			Assert.That(frontend.Id, Is.EqualTo(Constants.DefaultFrontEndId));
 			Assert.That(frontend.Enabled, Is.True);
 			Assert.That(frontend.ContentKey, Is.Null);
+			Assert.That(frontend.Culture, Is.Null);
+			Assert.That(frontend.Inheritance, Is.EqualTo(CspPolicyInheritance.Replace));
+			Assert.That(frontend.AppliesTo, Is.EqualTo(CspPolicyScope.Descendants));
 			Assert.That(await cspService.GetAllNodePoliciesAsync(CancellationToken.None), Is.Empty);
 		});
+
+		// The upgraded row is still saved like any other.
+		frontend.ReportOnly = true;
+		Assert.DoesNotThrowAsync(() => cspService.SaveCspDefinitionAsync(frontend, CancellationToken.None));
+	}
+
+	// A site built from the main branch between 18.1.0 and this feature: it has node policies with
+	// one policy per node. They must come through as what they were: a complete policy for all
+	// cultures of the node and the pages below it.
+	[Test]
+	public async Task Upgrade_FromOnePolicyPerNode_KeepsExistingNodePoliciesAsCompletePoliciesForAllCultures()
+	{
+		var executor = GetRequiredService<IMigrationPlanExecutor>();
+		var keyValueService = GetRequiredService<IKeyValueService>();
+
+		var previousPlan = PlanOf1810();
+		previousPlan.From(UpgradeInsecureRequestsMigration.MigrationKey)
+			.To<DomainPolicyMigration>(DomainPolicyMigration.MigrationKey)
+			.To<DefinitionsLockMigration>(DefinitionsLockMigration.MigrationKey);
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService, previousPlan);
+
+		var policyId = Guid.NewGuid();
+		var contentKey = Guid.NewGuid();
+		using (var scope = ScopeProvider.CreateScope())
+		{
+			scope.Database.Execute(
+				"INSERT INTO CspDefinition (Id, Enabled, ReportOnly, IsBackOffice, UpgradeInsecureRequests, ContentKey) VALUES (@0, @1, @2, @3, @4, @5)",
+				policyId, true, true, false, false, contentKey);
+			scope.Database.Execute(
+				"INSERT INTO CspDefinitionSource (DefinitionId, Source, Directives) VALUES (@0, @1, @2)",
+				policyId, "site.example.com", $"[\"{Constants.Directives.DefaultSource}\"]");
+			scope.Complete();
+		}
+
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService);
+
+		AssertNodePolicyColumnsAndIndexesExist();
+		var policy = (await GetRequiredService<ICspService>().GetAllNodePoliciesAsync(CancellationToken.None)).Single();
+		Assert.Multiple(() =>
+		{
+			Assert.That(policy.Id, Is.EqualTo(policyId));
+			Assert.That(policy.ContentKey, Is.EqualTo(contentKey));
+			Assert.That(policy.Culture, Is.Null);
+			Assert.That(policy.Inheritance, Is.EqualTo(CspPolicyInheritance.Replace));
+			Assert.That(policy.AppliesTo, Is.EqualTo(CspPolicyScope.Descendants));
+			Assert.That(policy.Enabled, Is.True);
+			Assert.That(policy.ReportOnly, Is.True);
+			Assert.That(policy.Sources.Select(s => s.Source), Is.EqualTo(new[] { "site.example.com" }));
+		});
+	}
+
+	// The plan can be re-run after a partial failure: every step checks what is already there.
+	[Test]
+	public async Task NodePolicyScopeMigration_WhenItsColumnsAndIndexesAlreadyExist_DoesNotFail()
+	{
+		var executor = GetRequiredService<IMigrationPlanExecutor>();
+		var keyValueService = GetRequiredService<IKeyValueService>();
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService);
+
+		var again = new MigrationPlan("csp-manager-rerun");
+		again.From(string.Empty).To<NodePolicyScopeMigration>("rerun");
+		await CspTestMigrationHelper.RunMigrationsAsync(executor, ScopeProvider, keyValueService, again);
+
+		AssertNodePolicyColumnsAndIndexesExist();
+	}
+
+	// The unique indexes are the last line of defence against two policies for one node and
+	// culture when a writer bypasses the service. On every database: one policy for all cultures
+	// per node, one per node and culture, and any number of global-style rows without a node.
+	[Test]
+	public async Task UniqueIndexes_AllowOnePolicyPerNodeAndCulture()
+	{
+		await CspTestMigrationHelper.RunMigrationsAsync(GetRequiredService<IMigrationPlanExecutor>(), ScopeProvider, GetRequiredService<IKeyValueService>());
+		var node = Guid.NewGuid();
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(TryInsertPolicy(node, null), Is.Null, "the node's policy for all cultures");
+			Assert.That(TryInsertPolicy(node, "fr-FR"), Is.Null, "a policy for one culture next to it");
+			Assert.That(TryInsertPolicy(node, "da-DK"), Is.Null, "and for another culture");
+			Assert.That(TryInsertPolicy(Guid.NewGuid(), null), Is.Null, "another node's policy for all cultures");
+		});
+
+		var secondForAllCultures = TryInsertPolicy(node, null);
+		var secondForCulture = TryInsertPolicy(node, "fr-FR");
+		Assert.Multiple(() =>
+		{
+			Assert.That(secondForAllCultures, Is.Not.Null, "a second policy for all cultures must be refused");
+			Assert.That(secondForCulture, Is.Not.Null, "a second policy for the same culture must be refused");
+			Assert.That(CspService.IsContentKeyUniqueViolation(secondForAllCultures), Is.True, secondForAllCultures?.Message);
+			Assert.That(CspService.IsContentKeyUniqueViolation(secondForCulture), Is.True, secondForCulture?.Message);
+		});
+	}
+
+	// Returns the exception the insert failed with, or null when the row was stored.
+	private Exception TryInsertPolicy(Guid contentKey, string culture)
+	{
+		try
+		{
+			using var scope = ScopeProvider.CreateScope();
+			scope.Database.Insert(new CspDefinition { Id = Guid.NewGuid(), ContentKey = contentKey, Culture = culture, Enabled = true });
+			scope.Complete();
+			return null;
+		}
+		catch (Exception ex)
+		{
+			return ex;
+		}
 	}
 
 	// The lock row may already exist (added by hand, or a plan re-run after a partial failure).
@@ -124,7 +240,7 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 		return scope.Database.ExecuteScalar<int>("SELECT COUNT(*) FROM umbracoLock WHERE id = @0", Constants.Locks.Definitions);
 	}
 
-	private void AssertContentKeyColumnAndIndexExist()
+	private void AssertNodePolicyColumnsAndIndexesExist()
 	{
 		using var scope = ScopeProvider.CreateScope(autoComplete: true);
 		var columns = scope.SqlContext.SqlSyntax.GetColumnsInSchema(scope.Database)
@@ -138,7 +254,13 @@ public class DomainPolicyMigrationTests : UmbracoIntegrationTest
 		Assert.Multiple(() =>
 		{
 			Assert.That(columns, Does.Contain(nameof(CspDefinition.ContentKey)));
-			Assert.That(indexes, Does.Contain(DomainPolicyMigration.ContentKeyIndexName));
+			Assert.That(columns, Does.Contain(nameof(CspDefinition.Culture)));
+			Assert.That(columns, Does.Contain(nameof(CspDefinition.Inheritance)));
+			Assert.That(columns, Does.Contain(nameof(CspDefinition.AppliesTo)));
+			Assert.That(indexes, Does.Contain(NodePolicyScopeMigration.ContentKeyIndexName));
+			Assert.That(indexes, Does.Contain(NodePolicyScopeMigration.ContentKeyCultureIndexName));
+			Assert.That(indexes, Does.Not.Contain(DomainPolicyMigration.ContentKeyIndexName),
+				"the one-policy-per-node index would refuse a second culture");
 		});
 	}
 

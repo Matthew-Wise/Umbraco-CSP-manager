@@ -21,15 +21,21 @@ public static partial class Constants
 	public const string BackOfficeCacheKey = "csp-backoffice";
 
 	/// <summary>
-	/// Prefix shared by every per-node policy cache entry, so they can all be cleared at once
-	/// (<c>IAppCache.ClearByKey</c> matches keys that start with the value it's given).
+	/// Prefix shared by every cache entry used to resolve node policies, so they can all be cleared
+	/// at once (<c>IAppCache.ClearByKey</c> matches keys that start with the value it's given).
 	/// </summary>
 	public const string NodeCacheKeyPrefix = "csp-node-";
 
 	/// <summary>
-	/// Gets the cache key of the node policy of the content node with the given key.
+	/// The cache key of the snapshot of every node policy. One entry rather than one per node: a
+	/// request has to check its page and each ancestor, and most sites have a handful of policies.
 	/// </summary>
-	public static string NodeCacheKey(Guid contentKey) => $"{NodeCacheKeyPrefix}{contentKey:D}";
+	public const string NodePoliciesCacheKey = NodeCacheKeyPrefix + "policies";
+
+	/// <summary>
+	/// The cache key of the language fallback chains used to pick a node policy for a culture.
+	/// </summary>
+	public const string LanguageFallbackCacheKey = NodeCacheKeyPrefix + "language-fallbacks";
 
 	public const string HeaderName = "Content-Security-Policy";
 

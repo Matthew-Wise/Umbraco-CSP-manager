@@ -5,6 +5,7 @@ using OpenIddict.Validation.AspNetCore;
 using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.Community.CSPManager.Authorization;
 using Umbraco.Community.CSPManager.Middleware;
@@ -43,6 +44,7 @@ public static class UmbracoBuilderExtensions
 
 		builder.AddNotificationHandler<CspSavedNotification, CspSavedNotificationHandler>();
 		builder.AddNotificationHandler<CspDeletedNotification, CspSavedNotificationHandler>();
+		builder.AddNotificationHandler<LanguageCacheRefresherNotification, CspLanguageCacheHandler>();
 
 		builder.Services.AddSingleton<IAuthorizationHandler, CspManagerAllowedApplicationHandler>();
 		builder.Services.AddAuthorizationBuilder().AddPolicy(Constants.AuthorizationPolicies.SectionAccess,

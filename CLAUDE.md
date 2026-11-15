@@ -24,9 +24,19 @@ src/
 ## Tech Stack
 
 - Backend: .NET 10, Umbraco 18+, NPoco ORM
-- Frontend: Lit 3.x, Vite 7.x, Node 22+
+- Frontend: Lit 3.x, Vite 8.x, Node 24+
 - Testing: NUnit (backend), Playwright (frontend)
 - API: OpenAPI code generation via @hey-api/openapi-ts
+
+## Commands
+
+- Build everything: `dotnet build src/Umbraco.Community.CSPManager.slnx`
+- Backend tests (about 2 minutes): `dotnet test src/Umbraco.Community.CSPManager.Tests`
+- Run the test site on https://localhost:44370 (admin@example.com / 1234567890):
+  `ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Umbraco.Community.CSPManager.TestSite --launch-profile Umbraco.Web.UI`
+- Running a test site rewrites files under its folder (uSync exports, `appsettings.json`, views).
+  Don't commit them: `git checkout -- src/Umbraco.Community.CSPManager.TestSite` afterwards.
+- Client and Playwright commands: see `src/Umbraco.Community.CSPManager/Client/CLAUDE.md`
 
 ## Releasing
 
@@ -102,7 +112,10 @@ environment's allowed domains; without it only that project fails to build.
 
 The Node version lives in one place, `NODE_MAJOR` in the hook. The environment's Setup
 script runs the same hook; there `CLAUDE_ENV_FILE` is unset, so the hook writes the Node PATH
-to `~/.bashrc` instead (session shells source it), replacing its own earlier lines.
+to the top of `~/.bashrc` instead, replacing its own earlier lines (the top, because the image's
+`~/.bashrc` returns early for non-interactive shells). Neither route reaches every tool shell,
+so the hook also links `node`, `npm`, `npx` and `corepack` into `~/.local/bin`, which is ahead
+of the image's Node 22 on `PATH`. Check with `node -v` (expect 24).
 
 ## Umbraco CLI
 

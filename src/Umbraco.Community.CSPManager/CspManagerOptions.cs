@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Umbraco.Community.CSPManager;
 
 /// <summary>
@@ -17,8 +19,8 @@ public sealed class CspManagerOptions
 	public CspFailureBehavior FailureBehavior { get; set; } = CspFailureBehavior.FailOpen;
 
 	/// <summary>
-	/// Gets or sets the policy behavior when a request matches a domain whose policy is disabled.
-	/// Defaults to <see cref="DisabledNodePolicyBehavior.FallbackToGlobal"/>.
+	/// Gets or sets what happens when the node policy a request would get is disabled. Defaults to
+	/// <see cref="DisabledNodePolicyBehavior.FallbackToGlobal"/>.
 	/// </summary>
 	public DisabledNodePolicyBehavior DisabledNodePolicyBehavior { get; set; } = DisabledNodePolicyBehavior.FallbackToGlobal;
 }
@@ -26,15 +28,20 @@ public sealed class CspManagerOptions
 /// <summary>
 /// Specifies the policy fallback behavior when a node policy is disabled.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<DisabledNodePolicyBehavior>))]
 public enum DisabledNodePolicyBehavior
 {
 	/// <summary>
-	/// Applies the default global frontend policy.
+	/// Skips the disabled policy, as if it didn't exist: the request gets the next policy that
+	/// applies to it (another culture's or an ancestor's policy), and otherwise the global frontend
+	/// policy.
 	/// </summary>
 	FallbackToGlobal = 0,
 
 	/// <summary>
-	/// Sends no CSP header for the domain.
+	/// Sends no CSP header for the requests a disabled complete policy would apply to. A disabled
+	/// policy that only adds sources (<see cref="Models.CspPolicyInheritance.Extend"/>) is still
+	/// skipped: it has no header of its own to switch off.
 	/// </summary>
 	NoHeader = 1,
 }

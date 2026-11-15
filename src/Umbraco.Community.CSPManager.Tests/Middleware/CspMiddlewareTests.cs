@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,6 +15,7 @@ using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Routing;
 using Umbraco.Cms.Core.Services;
@@ -899,13 +901,24 @@ public class CspMiddlewareTests
 	}
 
 	// ── Node policies ──────────────────────────────────────────────────────
+	// Which policy applies (nearest node, language fallback, extending policies, what a disabled
+	// policy does) is the service's decision: see CspNodePolicyResolverTests and
+	// CspServiceNodePolicyResolutionTests. These tests cover what the middleware hands the service
+	// and what it does with the answer.
 
 	private const string RoutedDomainName = "a.example.com";
 
-	// The content node the routed domain is assigned to: node policies are keyed on it.
+	// The content node the routed domain is assigned to.
 	private const int RoutedContentId = 1000;
 
 	private static readonly Guid RoutedContentKey = new("5b0c2c1e-8d1f-4b5e-9a37-0f6f3c2d4e81");
+
+	// A page below the routed domain's node.
+	private static readonly Guid PageKey = new("c2a9d1f4-6f0e-4a41-8f0b-3b5a7e9d1c22");
+
+	// Any call that asks the service which node policy applies.
+	private static readonly Expression<Func<ICspService, Task<CspDefinition>>> AnyNodePolicyLookup =
+		x => x.ResolveCspDefinitionAsync(It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>());
 
 	private static CspDefinition GlobalFrontend() => new()
 	{
@@ -914,7 +927,7 @@ public class CspMiddlewareTests
 		Sources = [new CspDefinitionSource { Source = "global.example.com", Directives = [Constants.Directives.DefaultSource] }]
 	};
 
-	private static CspDefinition DomainPolicy(bool enabled) => new()
+	private static CspDefinition NodePolicy(bool enabled) => new()
 	{
 		Id = Guid.NewGuid(),
 		ContentKey = RoutedContentKey,
@@ -922,19 +935,28 @@ public class CspMiddlewareTests
 		Sources = [new CspDefinitionSource { Source = "domain.example.com", Directives = [Constants.Directives.DefaultSource] }]
 	};
 
-	// What Umbraco's routing leaves behind for a request matched to a Culture & Hostnames domain.
-	// (Routing only ever sets a non-wildcard domain here; DomainAndUri can't even be built for one.)
-	private void SetRoutedDomain(string domainName = RoutedDomainName, int contentId = RoutedContentId)
+	// What Umbraco's routing leaves behind for a request: the matched Culture & Hostnames domain
+	// (routing only ever sets a non-wildcard domain here; DomainAndUri can't even be built for
+	// one), the page and the culture.
+	private void SetRoutedRequest(
+		string domainName = RoutedDomainName,
+		int contentId = RoutedContentId,
+		Guid? pageKey = null,
+		string culture = null,
+		string domainCulture = "en-US")
 	{
-		var domain = new DomainAndUri(new Domain(1234, domainName, contentId, "en-US", false, 0), new Uri("https://a.example.com/"));
-		var publishedRequest = Mock.Of<IPublishedRequest>(r => r.Domain == domain);
+		var domain = domainName is null
+			? null
+			: new DomainAndUri(new Domain(1234, domainName, contentId, domainCulture, false, 0), new Uri("https://a.example.com/"));
+		var page = pageKey is { } key ? Mock.Of<IPublishedContent>(c => c.Key == key) : null;
+		var publishedRequest = Mock.Of<IPublishedRequest>(r => r.Domain == domain && r.PublishedContent == page && r.Culture == culture);
 		var umbracoContext = Mock.Of<IUmbracoContext>(c => c.PublishedRequest == publishedRequest);
 		Mock.Get(_umbracoContextAccessor)
 			.Setup(x => x.TryGetUmbracoContext(out umbracoContext))
 			.Returns(true);
 	}
 
-	private void SetPolicies(CspDefinition global, CspDefinition domainPolicy, CspDefinition backoffice = null)
+	private void SetPolicies(CspDefinition global, CspDefinition nodePolicy, CspDefinition backoffice = null)
 	{
 		Mock.Get(_cspService)
 			.Setup(x => x.GetCachedCspDefinitionAsync(false, It.IsAny<CancellationToken>()))
@@ -943,86 +965,109 @@ public class CspMiddlewareTests
 			.Setup(x => x.GetCachedCspDefinitionAsync(true, It.IsAny<CancellationToken>()))
 			.ReturnsAsync(backoffice);
 		Mock.Get(_cspService)
-			.Setup(x => x.GetCachedCspDefinitionForNodeAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
-			.ReturnsAsync(domainPolicy);
+			.Setup(AnyNodePolicyLookup)
+			.ReturnsAsync(nodePolicy);
 	}
 
+	private void VerifyNoNodePolicyLookup()
+		=> Mock.Get(_cspService).Verify(
+			AnyNodePolicyLookup,
+			Times.Never);
+
 	[Test]
-	public async Task CspMiddleware_RoutedDomainWithEnabledPolicy_AppliesTheDomainPolicy()
+	public async Task CspMiddleware_RequestWithANodePolicy_AppliesTheNodePolicy()
 	{
-		SetRoutedDomain();
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
+		SetRoutedRequest();
+		SetPolicies(GlobalFrontend(), NodePolicy(enabled: true));
 
 		var response = await _host.GetTestClient().GetAsync("/");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src domain.example.com"));
 		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never,
-			"the global policy isn't needed when the node policy applies");
+			"the global policy isn't needed when a node policy applies");
 	}
 
 	[Test]
-	public async Task CspMiddleware_RoutedDomainWithPolicy_PassesTheDomainPolicyToTheWritingNotification()
+	public async Task CspMiddleware_RequestWithANodePolicy_PassesTheNodePolicyToTheWritingNotification()
 	{
-		SetRoutedDomain();
-		var domainPolicy = DomainPolicy(enabled: true);
-		SetPolicies(GlobalFrontend(), domainPolicy);
+		SetRoutedRequest();
+		var nodePolicy = NodePolicy(enabled: true);
+		SetPolicies(GlobalFrontend(), nodePolicy);
 
 		await _host.GetTestClient().GetAsync("/");
 
 		Mock.Get(_eventAggregator).Verify(x => x.PublishAsync(
-			It.Is<CspWritingNotification>(n => n.CspDefinition.Id == domainPolicy.Id && n.CspDefinition.ContentKey == RoutedContentKey),
+			It.Is<CspWritingNotification>(n => n.CspDefinition.Id == nodePolicy.Id && n.CspDefinition.ContentKey == RoutedContentKey),
 			It.IsAny<CancellationToken>()), Times.Once);
 	}
 
-	// A multilingual site: one node with a hostname per culture. Every one of them gets the node's policy.
+	// The service needs the page (to walk up the content tree), the node of the hostname (for
+	// content served from outside the site) and the culture the page is rendered in.
 	[Test]
-	[TestCase("a.example.com")]
-	[TestCase("a.example.com/fr")]
-	[TestCase("a.example.de")]
-	public async Task CspMiddleware_AnyHostnameOfTheNode_AppliesTheNodesPolicy(string domainName)
+	public async Task CspMiddleware_AsksForThePolicyOfThePageTheHostnamesNodeAndTheCulture()
 	{
-		SetRoutedDomain(domainName);
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
+		SetRoutedRequest(pageKey: PageKey, culture: "fr-FR");
+		SetPolicies(GlobalFrontend(), nodePolicy: null);
+
+		await _host.GetTestClient().GetAsync("/");
+
+		Mock.Get(_cspService).Verify(
+			x => x.ResolveCspDefinitionAsync(PageKey, RoutedContentKey, "fr-FR", It.IsAny<CancellationToken>()),
+			Times.Once);
+	}
+
+	// A site without Culture & Hostnames, or a page reached without a hostname: any content node
+	// can have a policy, so the page alone is enough to ask.
+	[Test]
+	public async Task CspMiddleware_PageWithoutARoutedDomain_AsksForThePolicyOfThePage()
+	{
+		SetRoutedRequest(domainName: null, pageKey: PageKey, culture: "en-US");
+		SetPolicies(GlobalFrontend(), NodePolicy(enabled: true));
 
 		var response = await _host.GetTestClient().GetAsync("/");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src domain.example.com"));
+		Mock.Get(_cspService).Verify(
+			x => x.ResolveCspDefinitionAsync(PageKey, null, "en-US", It.IsAny<CancellationToken>()),
+			Times.Once);
+	}
+
+	// The request's culture is the hostname's unless routing set another one.
+	[Test]
+	public async Task CspMiddleware_RequestWithoutACulture_UsesTheCultureOfTheHostname()
+	{
+		SetRoutedRequest(pageKey: PageKey, culture: null, domainCulture: "da-DK");
+		SetPolicies(GlobalFrontend(), nodePolicy: null);
+
+		await _host.GetTestClient().GetAsync("/");
+
+		Mock.Get(_cspService).Verify(
+			x => x.ResolveCspDefinitionAsync(PageKey, RoutedContentKey, "da-DK", It.IsAny<CancellationToken>()),
+			Times.Once);
 	}
 
 	[Test]
 	public async Task CspMiddleware_RoutedDomainWhoseNodeCannotBeResolved_UsesTheGlobalPolicy()
 	{
-		SetRoutedDomain(contentId: 4242);
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
+		SetRoutedRequest(contentId: 4242);
+		SetPolicies(GlobalFrontend(), NodePolicy(enabled: true));
 
 		var response = await _host.GetTestClient().GetAsync("/");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src global.example.com"));
-		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForNodeAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+		VerifyNoNodePolicyLookup();
 	}
 
+	// The service only returns a disabled policy when it is configured to send no header for it
+	// (DisabledNodePolicyBehavior.NoHeader); otherwise it returns the policy to fall back to.
 	[Test]
-	public async Task CspMiddleware_RoutedDomainWithDisabledPolicy_FallsBackToTheGlobalPolicyByDefault()
+	public async Task CspMiddleware_DisabledNodePolicyFromTheService_SendsNoHeader()
 	{
-		SetRoutedDomain();
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: false));
+		SetRoutedRequest();
+		var nodePolicy = NodePolicy(enabled: false);
+		SetPolicies(GlobalFrontend(), nodePolicy);
 
 		var response = await _host.GetTestClient().GetAsync("/");
-
-		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src global.example.com"));
-	}
-
-	[Test]
-	public async Task CspMiddleware_RoutedDomainWithDisabledPolicy_AndNoHeaderBehaviour_SendsNoHeader()
-	{
-		SetRoutedDomain();
-		var domainPolicy = DomainPolicy(enabled: false);
-		SetPolicies(GlobalFrontend(), domainPolicy);
-
-		using var host = BuildTestHost(extraServices: s =>
-			s.Configure<CspManagerOptions>(o => o.DisabledNodePolicyBehavior = DisabledNodePolicyBehavior.NoHeader));
-
-		var response = await host.GetTestClient().GetAsync("/");
 
 		Assert.Multiple(() =>
 		{
@@ -1030,29 +1075,15 @@ public class CspMiddlewareTests
 			Assert.That(response.Headers.Contains(Constants.ReportOnlyHeaderName), Is.False);
 		});
 		Mock.Get(_eventAggregator).Verify(x => x.PublishAsync(
-			It.Is<CspWritingNotification>(n => n.CspDefinition.Id == domainPolicy.Id),
+			It.Is<CspWritingNotification>(n => n.CspDefinition.Id == nodePolicy.Id),
 			It.IsAny<CancellationToken>()), Times.Once);
 	}
 
 	[Test]
-	public async Task CspMiddleware_RoutedDomainWithEnabledPolicy_AndNoHeaderBehaviour_StillAppliesTheDomainPolicy()
+	public async Task CspMiddleware_RequestWithoutANodePolicy_UsesTheGlobalPolicy()
 	{
-		SetRoutedDomain();
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
-
-		using var host = BuildTestHost(extraServices: s =>
-			s.Configure<CspManagerOptions>(o => o.DisabledNodePolicyBehavior = DisabledNodePolicyBehavior.NoHeader));
-
-		var response = await host.GetTestClient().GetAsync("/");
-
-		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src domain.example.com"));
-	}
-
-	[Test]
-	public async Task CspMiddleware_RoutedDomainWithoutPolicy_UsesTheGlobalPolicy()
-	{
-		SetRoutedDomain();
-		SetPolicies(GlobalFrontend(), domainPolicy: null);
+		SetRoutedRequest(pageKey: PageKey);
+		SetPolicies(GlobalFrontend(), nodePolicy: null);
 
 		var response = await _host.GetTestClient().GetAsync("/");
 
@@ -1060,20 +1091,20 @@ public class CspMiddlewareTests
 	}
 
 	[Test]
-	public async Task CspMiddleware_NoRoutedDomain_UsesTheGlobalPolicyWithoutLookingUpADomain()
+	public async Task CspMiddleware_NoPageAndNoRoutedDomain_UsesTheGlobalPolicyWithoutLookingUpANodePolicy()
 	{
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
+		SetPolicies(GlobalFrontend(), NodePolicy(enabled: true));
 
 		var response = await _host.GetTestClient().GetAsync("/");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src global.example.com"));
-		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForNodeAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+		VerifyNoNodePolicyLookup();
 	}
 
 	[Test]
-	public async Task CspMiddleware_BackOfficeRequest_NeverUsesADomainPolicy()
+	public async Task CspMiddleware_BackOfficeRequest_NeverUsesANodePolicy()
 	{
-		SetRoutedDomain();
+		SetRoutedRequest(pageKey: PageKey);
 		var backoffice = new CspDefinition
 		{
 			Id = Constants.DefaultBackofficeId,
@@ -1081,21 +1112,21 @@ public class CspMiddlewareTests
 			IsBackOffice = true,
 			Sources = [new CspDefinitionSource { Source = "'self'", Directives = [Constants.Directives.DefaultSource] }]
 		};
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true), backoffice);
+		SetPolicies(GlobalFrontend(), NodePolicy(enabled: true), backoffice);
 
 		var response = await _host.GetTestClient().GetAsync("/umbraco");
 
 		Assert.That(response.Headers.GetValues(Constants.HeaderName).Single(), Is.EqualTo("default-src 'self'"));
-		Mock.Get(_cspService).Verify(x => x.GetCachedCspDefinitionForNodeAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+		VerifyNoNodePolicyLookup();
 	}
 
 	[Test]
-	public async Task CspMiddleware_DomainLookupFails_FallsBackToTheGlobalPolicy()
+	public async Task CspMiddleware_NodePolicyLookupFails_FallsBackToTheGlobalPolicy()
 	{
-		SetRoutedDomain();
-		SetPolicies(GlobalFrontend(), domainPolicy: null);
+		SetRoutedRequest();
+		SetPolicies(GlobalFrontend(), nodePolicy: null);
 		Mock.Get(_cspService)
-			.Setup(x => x.GetCachedCspDefinitionForNodeAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
+			.Setup(AnyNodePolicyLookup)
 			.ThrowsAsync(new InvalidOperationException("database down"));
 
 		var response = await _host.GetTestClient().GetAsync("/");
@@ -1104,15 +1135,15 @@ public class CspMiddlewareTests
 	}
 
 	[Test]
-	public async Task CspMiddleware_DomainLookup_IsNotTiedToTheRequestLifetime()
+	public async Task CspMiddleware_NodePolicyLookup_IsNotTiedToTheRequestLifetime()
 	{
-		SetRoutedDomain();
-		SetPolicies(GlobalFrontend(), DomainPolicy(enabled: true));
+		SetRoutedRequest();
+		SetPolicies(GlobalFrontend(), NodePolicy(enabled: true));
 		CancellationToken observedToken = new(canceled: true);
 		Mock.Get(_cspService)
-			.Setup(x => x.GetCachedCspDefinitionForNodeAsync(RoutedContentKey, It.IsAny<CancellationToken>()))
-			.Callback<Guid, CancellationToken>((_, token) => observedToken = token)
-			.ReturnsAsync(DomainPolicy(enabled: true));
+			.Setup(AnyNodePolicyLookup)
+			.Callback<Guid?, Guid?, string, CancellationToken>((_, _, _, token) => observedToken = token)
+			.ReturnsAsync(NodePolicy(enabled: true));
 
 		await _host.GetTestClient().GetAsync("/");
 

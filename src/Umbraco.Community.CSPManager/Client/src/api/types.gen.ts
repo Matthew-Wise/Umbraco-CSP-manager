@@ -10,6 +10,9 @@ export type CspApiDefinition = {
 	reportOnly: boolean;
 	isBackOffice: boolean;
 	contentKey?: null | string;
+	culture?: null | string;
+	inheritance: CspPolicyInheritance;
+	appliesTo: CspPolicyScope;
 	contentName?: null | string;
 	domains: Array<CspApiDomainName>;
 	disabledNodePolicyBehavior?: null | DisabledNodePolicyBehavior;
@@ -42,11 +45,27 @@ export type CspApiNodePolicy = {
 	id: string;
 	contentKey: string;
 	contentName?: null | string;
+	culture?: null | string;
+	inheritance: CspPolicyInheritance;
+	appliesTo: CspPolicyScope;
 	enabled: boolean;
 	isOrphaned: boolean;
 };
 
-export type DisabledNodePolicyBehavior = number;
+export enum CspPolicyInheritance {
+	REPLACE = 'Replace',
+	EXTEND = 'Extend',
+}
+
+export enum CspPolicyScope {
+	DESCENDANTS = 'Descendants',
+	NODE_ONLY = 'NodeOnly',
+}
+
+export enum DisabledNodePolicyBehavior {
+	FALLBACK_TO_GLOBAL = 'FallbackToGlobal',
+	NO_HEADER = 'NoHeader',
+}
 
 export type ProblemDetails = {
 	type?: null | string;
@@ -62,6 +81,7 @@ export type GetDefinitionsData = {
 	query?: {
 		isBackOffice?: boolean;
 		contentKey?: string;
+		culture?: string;
 	};
 	url: '/umbraco/csp/api/v1/Definitions';
 };
@@ -165,6 +185,9 @@ export type PostDefinitionsCreateFromFrontendData = {
 	path?: never;
 	query?: {
 		contentKey?: string;
+		culture?: string;
+		inheritance?: CspPolicyInheritance;
+		appliesTo?: CspPolicyScope;
 	};
 	url: '/umbraco/csp/api/v1/Definitions/create-from-frontend';
 };
@@ -196,6 +219,40 @@ export type PostDefinitionsCreateFromFrontendResponses = {
 
 export type PostDefinitionsCreateFromFrontendResponse =
 	PostDefinitionsCreateFromFrontendResponses[keyof PostDefinitionsCreateFromFrontendResponses];
+
+export type GetDefinitionsEffectiveData = {
+	body?: never;
+	path?: never;
+	query?: {
+		contentKey?: string;
+		culture?: string;
+	};
+	url: '/umbraco/csp/api/v1/Definitions/effective';
+};
+
+export type GetDefinitionsEffectiveErrors = {
+	/**
+	 * The resource is protected and requires an authentication token
+	 */
+	401: unknown;
+	/**
+	 * The authenticated user does not have access to this resource
+	 */
+	403: unknown;
+	/**
+	 * Not Found
+	 */
+	404: unknown;
+};
+
+export type GetDefinitionsEffectiveResponses = {
+	/**
+	 * OK
+	 */
+	200: CspApiDefinition;
+};
+
+export type GetDefinitionsEffectiveResponse = GetDefinitionsEffectiveResponses[keyof GetDefinitionsEffectiveResponses];
 
 export type GetDefinitionsNodePoliciesData = {
 	body?: never;

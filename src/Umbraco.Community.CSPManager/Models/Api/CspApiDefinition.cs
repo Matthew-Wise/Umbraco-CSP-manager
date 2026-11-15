@@ -38,11 +38,33 @@ public sealed class CspApiDefinition : IValidatableObject
 	public bool IsBackOffice { get; set; }
 
 	/// <summary>
-	/// Gets or sets the key of the content node this node policy belongs to (a node with a hostname
-	/// in Culture and Hostnames), or <c>null</c> for the two global policies. It can't be changed once
-	/// a node policy exists.
+	/// Gets or sets the key of the content node this node policy belongs to, or <c>null</c> for the
+	/// two global policies. It can't be changed once a node policy exists.
 	/// </summary>
 	public Guid? ContentKey { get; set; }
+
+	/// <summary>
+	/// Gets or sets the culture (ISO code of one of the site's languages) this node policy is for, or
+	/// <c>null</c> for the node's policy for all cultures and for the two global policies. It can't
+	/// be changed once a node policy exists.
+	/// </summary>
+	public string? Culture { get; set; }
+
+	/// <summary>
+	/// Gets or sets whether this node policy is complete (<see cref="CspPolicyInheritance.Replace"/>,
+	/// the default) or adds its sources to the policy it inherits
+	/// (<see cref="CspPolicyInheritance.Extend"/>). An extending policy only uses
+	/// <see cref="Enabled"/> and <see cref="Sources"/>: the other settings come from the policy it
+	/// extends. Always <see cref="CspPolicyInheritance.Replace"/> for the two global policies.
+	/// </summary>
+	public CspPolicyInheritance Inheritance { get; set; }
+
+	/// <summary>
+	/// Gets or sets whether this node policy applies to its node and the pages below it
+	/// (<see cref="CspPolicyScope.Descendants"/>, the default) or to its node alone
+	/// (<see cref="CspPolicyScope.NodeOnly"/>).
+	/// </summary>
+	public CspPolicyScope AppliesTo { get; set; }
 
 	/// <summary>
 	/// Gets or sets the name of the content node, for display only (ignored on save). <c>null</c> for
@@ -51,8 +73,9 @@ public sealed class CspApiDefinition : IValidatableObject
 	public string? ContentName { get; set; }
 
 	/// <summary>
-	/// Gets or sets the hostnames the policy applies to, for display only (ignored on save). Empty for
-	/// the global policies, and for an orphaned node policy whose node has no hostname any more.
+	/// Gets or sets the hostnames assigned to the policy's content node, for display only (ignored
+	/// on save). Empty for the global policies and for a node without a hostname, such as a page
+	/// inside a site.
 	/// </summary>
 	public List<CspApiDomainName> Domains { get; set; } = [];
 
@@ -96,10 +119,20 @@ public sealed class CspApiDefinition : IValidatableObject
 		// The service enforces the same rules (and checks the stored row); this just fails fast.
 		if (ContentKey is null)
 		{
-			// Without a domain, only the two global policies exist.
+			// Without a content node, only the two global policies exist.
 			if (!isGlobalId)
 			{
 				yield return new ValidationResult("Invalid Id", [nameof(Id)]);
+			}
+
+			if (!string.IsNullOrWhiteSpace(Culture))
+			{
+				yield return new ValidationResult("The global frontend and backoffice policies cannot be assigned to a culture", [nameof(Culture)]);
+			}
+
+			if (Inheritance != CspPolicyInheritance.Replace)
+			{
+				yield return new ValidationResult("The global frontend and backoffice policies have nothing to inherit from", [nameof(Inheritance)]);
 			}
 		}
 		else
@@ -112,6 +145,16 @@ public sealed class CspApiDefinition : IValidatableObject
 			if (IsBackOffice)
 			{
 				yield return new ValidationResult("Node policies cannot be backoffice policies", [nameof(IsBackOffice)]);
+			}
+
+			if (!Enum.IsDefined(Inheritance))
+			{
+				yield return new ValidationResult("Unknown inheritance option", [nameof(Inheritance)]);
+			}
+
+			if (!Enum.IsDefined(AppliesTo))
+			{
+				yield return new ValidationResult("Unknown applies-to option", [nameof(AppliesTo)]);
 			}
 		}
 
@@ -135,6 +178,9 @@ public sealed class CspApiDefinition : IValidatableObject
 		{
 			Id = definition.Id,
 			ContentKey = definition.ContentKey,
+			Culture = definition.Culture,
+			Inheritance = definition.Inheritance,
+			AppliesTo = definition.AppliesTo,
 			ContentName = definition.ContentKey is null ? null : contentName,
 			Domains = definition.ContentKey is null || domains is null ? [] : [.. domains],
 			DisabledNodePolicyBehavior = definition.ContentKey is null ? null : disabledNodePolicyBehavior,
@@ -158,6 +204,9 @@ public sealed class CspApiDefinition : IValidatableObject
 			ReportingDirective = ReportingDirective,
 			ReportUri = ReportUri,
 			ContentKey = ContentKey,
+			Culture = Culture,
+			Inheritance = Inheritance,
+			AppliesTo = AppliesTo,
 			Sources = Sources.ConvertAll(CspApiDefinitionSource.ToCspDefinitionSource)
 		};
 }

@@ -11,8 +11,8 @@ using uSync.BackOffice.Services;
 namespace Umbraco.Community.CSPManager.uSync.Handlers;
 
 /// <summary>
-/// Syncs node policies. They belong to a content node with a hostname, so they import in the
-/// Content group, after uSync's Content and Domain handlers.
+/// Syncs node policies. They belong to a content node, so they import in the Content group,
+/// after uSync's Content and Domain handlers.
 /// </summary>
 [SyncHandler("CspNodePolicyHandler", "CSP Node Policies", "CspNodePolicies", 3010, Icon = "icon-shield", EntityType = CspItemNames.NodePolicyEntityType)]
 public class CspNodePolicyHandler : CspHandlerBase<CspNodePolicySerializer>

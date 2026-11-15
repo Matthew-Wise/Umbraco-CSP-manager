@@ -32,7 +32,7 @@ export default {
 		summaryFallback: 'Every hostname of %0% uses the Frontend policy.',
 		summaryNoHeader: 'Every hostname of %0% gets no CSP header.',
 		treeInactive: '%0% (inactive)',
-		treeNoHostname: '%0% (no hostname)',
+		treeNoHostname: '%0% (not in use)',
 		deleteAction: 'Delete domain policy',
 		deleting: 'Deleting...',
 		deleteConfirmHeadline: 'Delete domain policy',

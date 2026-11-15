@@ -146,7 +146,7 @@ public class CspServiceConcurrencyTests : UmbracoIntegrationTestWithContent
 		Assert.Multiple(() =>
 		{
 			Assert.That(ex!.MemberName, Is.EqualTo(nameof(CspDefinition.ContentKey)));
-			Assert.That(ex.Message, Is.EqualTo("A policy already exists for this content node."));
+			Assert.That(ex.Message, Is.EqualTo("A policy already exists for this content node and culture."));
 			Assert.That(policies, Is.Empty);
 		});
 	}
@@ -154,13 +154,16 @@ public class CspServiceConcurrencyTests : UmbracoIntegrationTestWithContent
 	[Test]
 	public void IsContentKeyUniqueViolation_RecognisesTheSqlServerErrorByIndexName()
 	{
-		var sqlServerLike = new FakeDbException("Cannot insert duplicate key row in object 'dbo.CspDefinition' with unique index 'IX_CspDefinition_ContentKey'. The duplicate key value is (…).");
+		// One index for a node's policy for all cultures, one for its policies per culture.
+		var allCultures = new FakeDbException("Cannot insert duplicate key row in object 'dbo.CspDefinition' with unique index 'IX_CspDefinition_ContentKey_AllCultures'. The duplicate key value is (…).");
+		var oneCulture = new FakeDbException("Cannot insert duplicate key row in object 'dbo.CspDefinition' with unique index 'IX_CspDefinition_ContentKey_Culture'. The duplicate key value is (…, fr-FR).");
 
 		Assert.Multiple(() =>
 		{
-			Assert.That(CspService.IsContentKeyUniqueViolation(new InvalidOperationException("wrapped", sqlServerLike)), Is.True);
+			Assert.That(CspService.IsContentKeyUniqueViolation(new InvalidOperationException("wrapped", allCultures)), Is.True);
+			Assert.That(CspService.IsContentKeyUniqueViolation(new InvalidOperationException("wrapped", oneCulture)), Is.True);
 			Assert.That(CspService.IsContentKeyUniqueViolation(new FakeDbException("UNIQUE constraint failed: CspDefinitionSource.DefinitionId, CspDefinitionSource.Source")), Is.False);
-			Assert.That(CspService.IsContentKeyUniqueViolation(new InvalidOperationException("IX_CspDefinition_ContentKey")), Is.False, "only database errors count");
+			Assert.That(CspService.IsContentKeyUniqueViolation(new InvalidOperationException("IX_CspDefinition_ContentKey_AllCultures")), Is.False, "only database errors count");
 		});
 	}
 

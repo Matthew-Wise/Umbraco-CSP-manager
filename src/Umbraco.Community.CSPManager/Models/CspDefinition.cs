@@ -35,15 +35,43 @@ public class CspDefinition
 	public bool UpgradeInsecureRequests { get; set; }
 
 	/// <summary>
-	/// Gets or sets the key of the content node this node policy belongs to: a node with at least
-	/// one hostname assigned in Culture and Hostnames. <c>null</c> for the two global policies.
+	/// Gets or sets the key of the content node this node policy belongs to. <c>null</c> for the
+	/// two global policies.
 	/// </summary>
 	/// <remarks>
-	/// When set, this definition overrides the global frontend policy for requests routed through any
-	/// of the node's hostnames (every culture of a multilingual site shares the one policy).
+	/// When set, this definition applies to requests for that content node and, depending on
+	/// <see cref="AppliesTo"/>, the pages below it. How it combines with the policy that would
+	/// apply otherwise is decided by <see cref="Inheritance"/>.
 	/// </remarks>
 	[NullSetting(NullSetting = NullSettings.Null)]
 	public Guid? ContentKey { get; set; }
+
+	/// <summary>
+	/// Gets or sets the culture (ISO code, e.g. <c>fr-FR</c>) this node policy is for.
+	/// <c>null</c> means every culture without a policy of its own, and is always <c>null</c> for
+	/// the two global policies.
+	/// </summary>
+	/// <remarks>
+	/// A request in a culture without a policy on the node follows Umbraco's language fallback,
+	/// then the node's policy for all cultures.
+	/// </remarks>
+	[Length(35)]
+	[NullSetting(NullSetting = NullSettings.Null)]
+	public string? Culture { get; set; }
+
+	/// <summary>
+	/// Gets or sets whether this node policy is complete (<see cref="CspPolicyInheritance.Replace"/>)
+	/// or adds its sources to the policy that applies without it
+	/// (<see cref="CspPolicyInheritance.Extend"/>). Always <see cref="CspPolicyInheritance.Replace"/>
+	/// for the two global policies.
+	/// </summary>
+	public CspPolicyInheritance Inheritance { get; set; }
+
+	/// <summary>
+	/// Gets or sets whether this node policy applies to the pages below its content node too.
+	/// Has no meaning for the two global policies.
+	/// </summary>
+	public CspPolicyScope AppliesTo { get; set; }
 
 	[ResultColumn]
 	[Reference(ReferenceType.Many,

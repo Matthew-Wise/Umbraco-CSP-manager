@@ -6,6 +6,8 @@ using Umbraco.Cms.Core.Migrations;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.Navigation;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Community.CSPManager.Models;
@@ -22,8 +24,8 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 {
 	private ICspService _cspService;
 	private IDomainService _domainService;
-	// Node policies belong to content nodes: A and B have a hostname each, the third only a
-	// culture (wildcard) domain, which never qualifies.
+	// Node policies belong to content nodes: A (the root) and B (below it) have a hostname each,
+	// the third only a culture (wildcard) domain. A node needs no hostname to have a policy.
 	private Guid _nodeA;
 	private Guid _nodeB;
 	private Guid _wildcardOnlyNode;
@@ -61,7 +63,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	}
 
 	private CspService CreateService(AppCaches caches, IEventAggregator eventAggregator = null)
-		=> new(eventAggregator ?? GetRequiredService<IEventAggregator>(), ScopeProvider, caches, NullLogger<CspService>.Instance, _domainService, GetRequiredService<IEntityService>());
+		=> CspTestServiceFactory.Create(Services, caches, eventAggregator);
 
 	private static CspDefinition NewDomainPolicy(Guid contentKey, Guid? id = null, params string[] sources)
 	{
@@ -161,9 +163,9 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	}
 
 	[Test]
-	public void SaveCspDefinitionAsync_ForANodeWithOnlyACultureDomain_IsRejected()
+	public void SaveCspDefinitionAsync_ForANodeWithOnlyACultureDomain_IsAccepted()
 	{
-		Assert.ThrowsAsync<CspDefinitionValidationException>(
+		Assert.DoesNotThrowAsync(
 			() => _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_wildcardOnlyNode), CancellationToken.None));
 	}
 
@@ -354,7 +356,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 	}
 
 	[Test]
-	public async Task OrphanedPolicy_IsKeptWhenItsNodeLosesItsHostnames()
+	public async Task APolicy_IsKeptWhenItsNodeLosesItsHostnames()
 	{
 		var policy = await _cspService.CreateCspDefinitionForNodeAsync(_nodeA, CancellationToken.None);
 
@@ -372,6 +374,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		GetRequiredService<IContentService>().MoveToRecycleBin(Textpage);
 
 		Assert.That(await _cspService.ContentNodeHasHostnameAsync(_nodeA, CancellationToken.None), Is.False);
+		Assert.That(await _cspService.ContentNodeExistsAsync(_nodeA, CancellationToken.None), Is.False);
 		Assert.ThrowsAsync<CspDefinitionValidationException>(
 			() => _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeA), CancellationToken.None));
 	}
@@ -406,12 +409,26 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		Assert.DoesNotThrowAsync(() => _cspService.SaveCspDefinitionAsync(stored, CancellationToken.None));
 	}
 
+	// Any content node can have a policy: see CspServiceNodePolicyResolutionTests.
 	[Test]
-	public void SaveCspDefinitionAsync_ForANodeWithoutAnyDomain_IsRejected()
+	public async Task SaveCspDefinitionAsync_ForANodeWithoutAnyDomain_IsAccepted()
 	{
-		var ex = Assert.ThrowsAsync<CspDefinitionValidationException>(
-			() => _cspService.SaveCspDefinitionAsync(NewDomainPolicy(Subpage3.Key), CancellationToken.None));
-		Assert.That(ex!.MemberName, Is.EqualTo(nameof(CspDefinition.ContentKey)));
+		var saved = await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(Subpage3.Key), CancellationToken.None);
+
+		Assert.That((await _cspService.GetCspDefinitionForNodeAsync(Subpage3.Key, CancellationToken.None))?.Id, Is.EqualTo(saved.Id));
+	}
+
+	// An existing policy stays editable while its node is in the recycle bin (it comes back into
+	// use when the node is restored).
+	[Test]
+	public async Task SaveCspDefinitionAsync_ExistingPolicyOfANodeInTheRecycleBin_IsAccepted()
+	{
+		var policy = await _cspService.SaveCspDefinitionAsync(NewDomainPolicy(_nodeB), CancellationToken.None);
+		GetRequiredService<IContentService>().MoveToRecycleBin(Subpage2);
+
+		policy.Enabled = false;
+
+		Assert.DoesNotThrowAsync(() => _cspService.SaveCspDefinitionAsync(policy, CancellationToken.None));
 	}
 
 	// ── Cache ────────────────────────────────────────────────────────────────
@@ -441,7 +458,7 @@ public class CspServiceDomainPolicyTests : UmbracoIntegrationTestWithContent
 		var service = CreateService(caches);
 
 		Assert.That(await service.GetCachedCspDefinitionForNodeAsync(_nodeA, CancellationToken.None), Is.Null);
-		Assert.That(caches.RuntimeCache.Get(Constants.NodeCacheKey(_nodeA)), Is.Not.Null,
+		Assert.That(caches.RuntimeCache.Get(Constants.NodePoliciesCacheKey), Is.Not.Null,
 			"a domain without a policy should be cached too, or every request on it hits the database");
 
 		// Created through another cache instance, so `service`'s negative entry isn't invalidated.
