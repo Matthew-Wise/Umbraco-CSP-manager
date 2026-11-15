@@ -27,7 +27,7 @@ testing, A and B are paired (each one's `appsettings.Development.json` points at
 2. **Site running.** The CLI talks to a live site. If a request fails to connect, start it:
    `dotnet run --project <project> --launch-profile Umbraco.Web.UI`.
 3. **API user.** Each site has its own SQLite database. In Development, each site creates
-   the `umbraco-back-office-mcp` API user on startup if it's missing (`DevApiUserSeeder.cs`).
+   the `umbraco-back-office-mcp` API user on startup if it's missing (`src/Umbraco.Community.CSPManager.DevSetup`).
    An authentication error usually means the env file and `TestSite:ApiUser` disagree.
 
 ## Cloud sessions
@@ -35,8 +35,8 @@ testing, A and B are paired (each one's `appsettings.Development.json` points at
 A cloud session can't reach the user's localhost, so it runs the site itself in the
 background (`ASPNETCORE_ENVIRONMENT=Development dotnet run --project <project> --launch-profile Umbraco.Web.UI &`)
 and waits for `/umbraco/management/api/v1/server/status` to return 200. The SQLite databases
-aren't committed, so a fresh clone installs an empty site. Each site's `DevApiUserSeeder`
-then creates the API user from `TestSite:ApiUser` in `appsettings.Development.json` (the same
+aren't committed, so a fresh clone installs an empty site. `DevApiUserSeeder` (in the shared
+`Umbraco.Community.CSPManager.DevSetup` project) then creates the API user from `TestSite:ApiUser` in `appsettings.Development.json` (the same
 values as the env file), so the CLI can log in straight away.
 
 ## Commands

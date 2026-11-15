@@ -24,6 +24,7 @@
     <Project Path="uSync/uSync.TestSite/uSync.TestSite.csproj" />
     <Project Path="uSync/uSync.TestSiteB/uSync.TestSiteB.csproj" />
   </Folder>
+  <Project Path="Umbraco.Community.CSPManager.DevSetup/Umbraco.Community.CSPManager.DevSetup.csproj" />
   <Project Path="Umbraco.Community.CSPManager.TestSite/Umbraco.Community.CSPManager.TestSite.csproj" />
   <Project Path="Umbraco.Community.CSPManager/Umbraco.Community.CSPManager.csproj" />
 </Solution>

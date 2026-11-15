@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Composing;
@@ -9,11 +12,11 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 
-namespace uSync.TestSite;
+namespace Umbraco.Community.CSPManager.DevSetup;
 
 /// <summary>
-/// Development only: makes sure the API user the Umbraco CLI (`.env.usync-a`) logs in with
-/// exists, so a fresh clone or cloud session can use the CLI without clicking through the
+/// Development only: makes sure the API user the Umbraco CLI (`.env.&lt;site&gt;`) logs in with
+/// exists on each test site, so a fresh clone or cloud session can use the CLI without clicking through the
 /// backoffice. Driven by the <c>TestSite:ApiUser</c> section, which only
 /// <c>appsettings.Development.json</c> sets.
 /// </summary>
@@ -69,10 +72,10 @@ public sealed class DevApiUserSeeder(
 				UserName = settings.Email,
 				Name = "Umbraco CLI",
 				Kind = UserKind.Api,
-				UserGroupKeys = new HashSet<Guid> { Umbraco.Cms.Core.Constants.Security.AdminGroupKey },
+				UserGroupKeys = new HashSet<Guid> { Constants.Security.AdminGroupKey },
 			};
 
-			var created = await userService.CreateAsync(Umbraco.Cms.Core.Constants.Security.SuperUserKey, create, approveUser: true);
+			var created = await userService.CreateAsync(Constants.Security.SuperUserKey, create, approveUser: true);
 			if (!created.Success || created.Result.CreatedUser is null)
 			{
 				logger.LogWarning("Could not create the Umbraco CLI API user: {Status}", created.Status);

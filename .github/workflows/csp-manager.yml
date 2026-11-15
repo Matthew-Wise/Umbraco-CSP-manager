@@ -11,6 +11,9 @@ on:
       - 'src/Umbraco.Community.CSPManager/**'
       - 'src/Umbraco.Community.CSPManager.Tests/**'
       - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
+      # Dev-only test site + its helpers: not built here, listed so their PRs report `build`.
+      - 'src/Umbraco.Community.CSPManager.TestSite/**'
+      - 'src/Umbraco.Community.CSPManager.DevSetup/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
       - 'global.json'
@@ -24,6 +27,9 @@ on:
       - 'src/Umbraco.Community.CSPManager/**'
       - 'src/Umbraco.Community.CSPManager.Tests/**'
       - 'src/Umbraco.Community.CSPManager.Benchmarks/**'
+      # Dev-only test site + its helpers: not built here, listed so their PRs report `build`.
+      - 'src/Umbraco.Community.CSPManager.TestSite/**'
+      - 'src/Umbraco.Community.CSPManager.DevSetup/**'
       - 'src/Directory.Build.props'
       - 'src/Directory.Packages.props'
       - 'global.json'
